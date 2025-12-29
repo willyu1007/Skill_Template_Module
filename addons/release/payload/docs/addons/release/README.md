@@ -1,0 +1,62 @@
+# Release Add-on
+
+## Purpose
+
+This add-on provides **version and changelog management** infrastructure for consistent release processes.
+
+## Versioning Strategies
+
+| Strategy | Format | When to Use |
+|----------|--------|-------------|
+| `semantic` | major.minor.patch | Libraries, APIs with compatibility concerns |
+| `calendar` | YYYY.MM.DD | Regular release schedules |
+| `manual` | custom | Special requirements |
+
+## Key Components
+
+### Release Configuration
+
+`release/config.json` stores:
+- Current version
+- Versioning strategy
+- Branch configuration
+
+### Changelog
+
+`release/changelog-template.md` provides the changelog format following [Keep a Changelog](https://keepachangelog.com/).
+
+### semantic-release Integration
+
+`.releaserc.json.template` provides configuration for automated releases using [semantic-release](https://semantic-release.gitbook.io/).
+
+## AI/LLM Usage
+
+When working with releases, AI should:
+
+1. **Check** status: `releasectl status`
+2. **Prepare** release: `releasectl prepare --version x.y.z`
+3. **Generate** changelog: `releasectl changelog`
+4. **Document** in `workdocs/`
+5. **Request human** to approve and tag
+
+Never directly create git tags or modify version files.
+
+## Quick Reference
+
+```bash
+# Initialize
+node .ai/scripts/releasectl.js init --strategy semantic
+
+# Check status
+node .ai/scripts/releasectl.js status
+
+# Prepare release
+node .ai/scripts/releasectl.js prepare --version 1.2.0
+
+# Generate changelog
+node .ai/scripts/releasectl.js changelog
+
+# Create tag (requires human approval)
+node .ai/scripts/releasectl.js tag --version 1.2.0
+```
+

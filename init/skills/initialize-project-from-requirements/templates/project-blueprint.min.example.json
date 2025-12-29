@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "project": {
+    "name": "minimal-project",
+    "description": "Minimal project setup with backend only"
+  },
+  "repo": {
+    "layout": "single",
+    "language": "typescript",
+    "packageManager": "pnpm"
+  },
+  "capabilities": {
+    "backend": {
+      "enabled": true,
+      "framework": "express"
+    }
+  },
+  "quality": {
+    "testing": {
+      "unit": true
+    }
+  },
+  "skills": {
+    "packs": ["workflows", "backend"]
+  },
+  "addons": {}
+}
+

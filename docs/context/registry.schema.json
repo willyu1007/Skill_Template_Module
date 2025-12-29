@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Project Context Registry (Derived)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "updatedAt", "artifacts"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "updatedAt": { "type": "string", "description": "ISO 8601 timestamp" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "moduleId", "artifactId", "type", "path", "mode"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Namespaced artifact id: <moduleId>:<artifactId>",
+            "pattern": "^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]:[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$"
+          },
+          "moduleId": { "type": "string" },
+          "artifactId": { "type": "string" },
+          "type": { "type": "string" },
+          "path": { "type": "string" },
+          "mode": { "type": "string", "enum": ["contract", "generated"] },
+          "format": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "lastUpdated": { "type": "string" },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "type": "string", "enum": ["manual", "command"] },
+              "command": { "type": "string" },
+              "cwd": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

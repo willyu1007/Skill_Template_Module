@@ -1,0 +1,47 @@
+# Deployment - AI Guidance
+
+## Conclusions (read first)
+
+- `ops/deploy/` contains all deployment configuration.
+- Use `deployctl.js` to manage deployments.
+- AI plans deployments; humans execute and approve.
+
+## Directory Structure
+
+- `http_services/` - HTTP service deployment configs
+- `workloads/` - Background workload configs
+- `clients/` - Client application configs
+- `k8s/` - Kubernetes-specific configs (if enabled)
+- `environments/` - Environment-specific configs
+- `scripts/` - Deployment helper scripts
+- `workdocs/` - Deployment plans and runbooks
+
+## AI Workflow
+
+1. **Register** services: `node .ai/scripts/deployctl.js add-service --id <id>`
+2. **Plan** deployment: `node .ai/scripts/deployctl.js plan --service <id> --env <env>`
+3. **Document** in `workdocs/`
+4. **Request human** to execute deployment
+
+## Environment Rules
+
+| Environment | AI Permissions |
+|-------------|---------------|
+| `dev` | Can propose direct deployment |
+| `staging` | Requires review |
+| `prod` | Requires formal approval |
+
+## Deployment Models
+
+- `k8s` - Kubernetes (helm/kustomize/manifests)
+- `serverless` - Cloud functions
+- `vm` - Virtual machines
+- `paas` - Platform-as-a-Service
+
+## Forbidden Actions
+
+- Direct deployment execution
+- Credential handling
+- Production changes without approval
+- Skipping environment progression
+

@@ -1,0 +1,6 @@
+# SSOT: Integration scenarios
+#
+# - This file is manually maintained, but validated.
+# - Use `integrationctl new-scenario` to scaffold.
+
+scenarios: []

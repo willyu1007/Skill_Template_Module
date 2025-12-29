@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Module Context Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "moduleId", "updatedAt", "artifacts"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "moduleId": {
+      "type": "string",
+      "description": "Module instance id (globally unique)",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$"
+    },
+    "updatedAt": { "type": "string", "description": "ISO 8601 timestamp" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifactId", "type", "path", "mode"],
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "description": "Artifact id unique within module",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$"
+          },
+          "type": { "type": "string" },
+          "path": { "type": "string", "description": "Repo-relative path" },
+          "mode": { "type": "string", "enum": ["contract", "generated"] },
+          "format": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "lastUpdated": { "type": "string", "description": "ISO 8601 timestamp" },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "type": "string", "enum": ["manual", "command"] },
+              "command": { "type": "string" },
+              "cwd": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

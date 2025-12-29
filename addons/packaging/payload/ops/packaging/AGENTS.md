@@ -1,0 +1,46 @@
+# Packaging - AI Guidance
+
+## Conclusions (read first)
+
+- `ops/packaging/` contains all containerization artifacts.
+- Use `packctl.js` to manage packaging configuration.
+- AI proposes changes; humans execute builds.
+
+## Directory Structure
+
+- `services/` - Service Dockerfiles (long-running)
+- `jobs/` - Job Dockerfiles (batch/cron)
+- `apps/` - Application Dockerfiles (CLI tools, etc.)
+- `templates/` - Dockerfile templates by language
+- `scripts/` - Build helper scripts
+- `workdocs/` - Packaging plans and notes
+
+## AI Workflow
+
+1. **Register** targets: `node .ai/scripts/packctl.js add-service --id <id> --module <path>`
+2. **Customize** Dockerfile if needed (copy from template)
+3. **Document** decisions in `workdocs/`
+4. **Request human** to build and push
+
+## Dockerfile Templates
+
+Use templates from `templates/` as starting points:
+
+- `Dockerfile.node` - Node.js applications
+- `Dockerfile.python` - Python applications
+- `Dockerfile.go` - Go applications
+
+## Build Commands (Human)
+
+```bash
+# Build a single target
+docker build -f ops/packaging/services/<name>.Dockerfile -t <registry>/<name>:<tag> .
+
+# Push to registry
+docker push <registry>/<name>:<tag>
+```
+
+## Registry
+
+All targets are tracked in `docs/packaging/registry.json`.
+

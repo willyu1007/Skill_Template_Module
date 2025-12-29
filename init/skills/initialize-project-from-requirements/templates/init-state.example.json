@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "stage": "A",
+  "stageA": {
+    "mustAsk": {
+      "onePurpose": { "asked": false, "answered": false, "writtenTo": null },
+      "userRoles": { "asked": false, "answered": false, "writtenTo": null },
+      "mustRequirements": { "asked": false, "answered": false, "writtenTo": null },
+      "outOfScope": { "asked": false, "answered": false, "writtenTo": null },
+      "userJourneys": { "asked": false, "answered": false, "writtenTo": null },
+      "constraints": { "asked": false, "answered": false, "writtenTo": null },
+      "successMetrics": { "asked": false, "answered": false, "writtenTo": null }
+    },
+    "branches": {
+      "api": { "applicable": null, "completed": false },
+      "database": { "applicable": null, "completed": false },
+      "bpmn": { "applicable": null, "completed": false },
+      "ciQuality": { "applicable": null, "completed": false }
+    },
+    "docsWritten": {
+      "requirements": false,
+      "nfr": false,
+      "glossary": false,
+      "riskQuestions": false
+    },
+    "validated": false,
+    "userApproved": false
+  },
+  "stageB": {
+    "drafted": false,
+    "validated": false,
+    "packsReviewed": false,
+    "userApproved": false
+  },
+  "stageC": {
+    "scaffoldPreviewed": false,
+    "scaffoldApplied": false,
+    "manifestUpdated": false,
+    "wrappersSynced": false,
+    "userApproved": false
+  },
+  "history": []
+}
+

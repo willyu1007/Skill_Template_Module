@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Init State",
+  "description": "Tracks the progress of the 3-stage initialization conversation",
+  "type": "object",
+  "required": ["version", "stage", "stageA"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["A", "B", "C", "complete"],
+      "description": "Current stage of initialization"
+    },
+    "stageA": {
+      "type": "object",
+      "description": "Stage A: Requirements interview progress",
+      "properties": {
+        "mustAsk": {
+          "type": "object",
+          "description": "MUST-ask questions (all required before Stage A completion)",
+          "properties": {
+            "onePurpose": { "$ref": "#/$defs/questionState" },
+            "userRoles": { "$ref": "#/$defs/questionState" },
+            "mustRequirements": { "$ref": "#/$defs/questionState" },
+            "outOfScope": { "$ref": "#/$defs/questionState" },
+            "userJourneys": { "$ref": "#/$defs/questionState" },
+            "constraints": { "$ref": "#/$defs/questionState" },
+            "successMetrics": { "$ref": "#/$defs/questionState" }
+          },
+          "required": ["onePurpose", "userRoles", "mustRequirements", "outOfScope", "userJourneys", "constraints", "successMetrics"]
+        },
+        "branches": {
+          "type": "object",
+          "description": "Branch modules (conditional based on capabilities)",
+          "properties": {
+            "api": { "$ref": "#/$defs/branchState" },
+            "database": { "$ref": "#/$defs/branchState" },
+            "bpmn": { "$ref": "#/$defs/branchState" },
+            "ciQuality": { "$ref": "#/$defs/branchState" }
+          }
+        },
+        "docsWritten": {
+          "type": "object",
+          "description": "Stage A document drafts written",
+          "properties": {
+            "requirements": { "type": "boolean" },
+            "nfr": { "type": "boolean" },
+            "glossary": { "type": "boolean" },
+            "riskQuestions": { "type": "boolean" }
+          }
+        },
+        "validated": {
+          "type": "boolean",
+          "description": "check-docs passed"
+        },
+        "userApproved": {
+          "type": "boolean",
+          "description": "User explicitly approved Stage A outputs"
+        }
+      }
+    },
+    "stageB": {
+      "type": "object",
+      "description": "Stage B: Blueprint generation progress",
+      "properties": {
+        "drafted": { "type": "boolean" },
+        "validated": { "type": "boolean" },
+        "packsReviewed": { "type": "boolean" },
+        "userApproved": { "type": "boolean" }
+      }
+    },
+    "stageC": {
+      "type": "object",
+      "description": "Stage C: Scaffold and skills",
+      "properties": {
+        "scaffoldPreviewed": { "type": "boolean" },
+        "scaffoldApplied": { "type": "boolean" },
+        "manifestUpdated": { "type": "boolean" },
+        "wrapperssynced": { "type": "boolean" },
+        "userApproved": { "type": "boolean" }
+      }
+    },
+    "history": {
+      "type": "array",
+      "description": "Conversation checkpoints for audit",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "event": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "questionState": {
+      "type": "object",
+      "properties": {
+        "asked": { "type": "boolean" },
+        "answered": { "type": "boolean" },
+        "writtenTo": { 
+          "type": "string",
+          "description": "Which doc file this answer was written to"
+        }
+      }
+    },
+    "branchState": {
+      "type": "object",
+      "properties": {
+        "applicable": { 
+          "type": "boolean",
+          "description": "Whether this branch applies to this project"
+        },
+        "completed": { "type": "boolean" }
+      }
+    }
+  }
+}
+
