@@ -58,3 +58,7 @@ Do NOT use this skill if:
 ## References
 
 - `reference.md`
+
+## Verification
+
+- Run `node .ai/scripts/sync-skills.cjs --scope current --providers both --dry-run`.

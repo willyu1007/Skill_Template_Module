@@ -64,3 +64,13 @@ See `examples/` for example flow definitions:
 - `order_processing_flow.yaml` - Order lifecycle flow
 
 Copy and adapt these to your business requirements.
+
+## Verification
+
+- Run `node .ai/scripts/flowctl.js lint --strict` and `node .ai/scripts/flowctl.js graph`.
+
+## Boundaries
+
+- Do **not** edit derived artifacts directly; use the ctl scripts to regenerate them.
+- Do **not** introduce alternative SSOT files or duplicate registries (single source of truth is enforced).
+- Keep changes scoped: prefer module-local updates (MANIFEST, interact registry) over project-wide edits when possible.

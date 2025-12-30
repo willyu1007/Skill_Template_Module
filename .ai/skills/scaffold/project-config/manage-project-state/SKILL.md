@@ -52,3 +52,7 @@ Do NOT use this skill to store secrets (passwords, tokens, private keys).
 ## References
 
 - `reference.md`
+
+## Verification
+
+- Run `node .ai/scripts/projectctl.js verify`.

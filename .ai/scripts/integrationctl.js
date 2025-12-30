@@ -55,6 +55,7 @@ Commands:
   compile
     --scenarios <path>          Default: modules/integration/scenarios.yaml
     --out-dir <path>            Default: modules/integration/compiled
+    --no-clean                  Do not delete existing compiled *.json before writing
     Compile scenarios into resolved step plans (DERIVED).
 
   run
@@ -97,6 +98,15 @@ function parseArgs(argv) {
 
 function isoNow() {
   return new Date().toISOString();
+}
+
+function cleanJsonFilesInDir(dirPath) {
+  if (!fs.existsSync(dirPath)) return;
+  for (const ent of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    if (!ent.isFile()) continue;
+    if (!ent.name.endsWith('.json')) continue;
+    fs.unlinkSync(path.join(dirPath, ent.name));
+  }
 }
 
 function ensureDir(p) {
@@ -437,9 +447,11 @@ function validate(repoRoot, scenariosDoc, opts = {}) {
   return { warnings, errors, scenarios };
 }
 
-function compile(repoRoot, scenariosDoc, outDirOpt) {
+function compile(repoRoot, scenariosDoc, outDirOpt, compileOpts = {}) {
   const outDir = path.join(repoRoot, outDirOpt || 'modules/integration/compiled');
   ensureDir(outDir);
+  const doClean = compileOpts.clean !== false;
+  if (doClean) cleanJsonFilesInDir(outDir);
 
   const { warnings, errors, scenarios } = validate(repoRoot, scenariosDoc, { strict: false });
 
@@ -741,14 +753,19 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
   };
 
   const plans = [];
+  const idx = path.join(compiledDir, 'index.json');
+  if (!fs.existsSync(idx)) die(`[error] compiled index missing: ${idx} (run compile first)`);
+  const indexDoc = JSON.parse(fs.readFileSync(idx, 'utf8'));
+  const allowed = new Set((indexDoc.scenarios || []).map(s => s.id));
+
   if (scenarioIdOpt) {
+    if (!allowed.has(scenarioIdOpt)) {
+      die(`[error] scenario not present in compiled index: ${scenarioIdOpt} (run compile first)`);
+    }
     const plan = loadPlan(scenarioIdOpt);
     if (!plan) die(`[error] compiled plan not found for scenario: ${scenarioIdOpt} (expected ${compiledDir}/${scenarioIdOpt}.json)`);
     plans.push(plan);
   } else {
-    const idx = path.join(compiledDir, 'index.json');
-    if (!fs.existsSync(idx)) die(`[error] compiled index missing: ${idx}`);
-    const indexDoc = JSON.parse(fs.readFileSync(idx, 'utf8'));
     for (const sc of indexDoc.scenarios || []) {
       const plan = loadPlan(sc.id);
       if (plan) plans.push(plan);
@@ -942,7 +959,8 @@ async function main() {
     }
     case 'compile': {
       const { doc } = loadScenarios(repoRoot, opts.scenarios);
-      const { warnings, errors, plans, outDir, indexPath } = compile(repoRoot, doc, opts['out-dir']);
+      const clean = !opts['no-clean'];
+      const { warnings, errors, plans, outDir, indexPath } = compile(repoRoot, doc, opts['out-dir'], { clean });
       console.log(`[ok] wrote compiled scenarios to ${outDir}`);
       console.log(`[ok] wrote ${indexPath}`);
       if (warnings.length > 0) {

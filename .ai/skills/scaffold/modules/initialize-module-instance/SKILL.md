@@ -73,3 +73,13 @@ See `examples/example.api/` for a complete module skeleton including:
 - `workdocs/` - Module work documentation
 
 Copy and customize for your new module.
+
+## Verification
+
+- Run `node .ai/scripts/modulectl.js verify` and `node .ai/scripts/contextctl.js build`.
+
+## Boundaries
+
+- Do **not** edit derived artifacts directly; use the ctl scripts to regenerate them.
+- Do **not** introduce alternative SSOT files or duplicate registries (single source of truth is enforced).
+- Keep changes scoped: prefer module-local updates (MANIFEST, interact registry) over project-wide edits when possible.

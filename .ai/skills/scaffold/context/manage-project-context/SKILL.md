@@ -88,3 +88,7 @@ node .ai/scripts/contextctl.js verify --strict
 
 - `docs/context/INDEX.md`
 - `.system/modular/schemas/module_context_registry.schema.json`
+
+## Verification
+
+- Run `node .ai/scripts/contextctl.js verify --strict` and `node .ai/scripts/contextctl.js build`.

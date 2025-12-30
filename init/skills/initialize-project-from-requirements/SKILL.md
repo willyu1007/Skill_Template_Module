@@ -24,11 +24,12 @@
 在 module-first 模板中，Context System 是**内置能力**（不再从 `addons/context-awareness` 安装）。
 
 默认行为：
-- 除非 blueprint 显式禁用 `addons.contextAwareness: false`，否则会执行：
+- `contextAwareness` 是 core capability 的启用开关：除非 blueprint 显式禁用 `addons.contextAwareness: false`，否则会执行内置步骤：
   - `node .ai/scripts/projectctl.js init`
   - `node .ai/scripts/projectctl.js set-context-mode <contract|snapshot>`
   - `node .ai/scripts/contextctl.js init`
   - `node .ai/scripts/contextctl.js build`
+- 可选：若 `init-pipeline.cjs apply` 启用 `--verify-addons`，还会执行 `node .ai/scripts/contextctl.js verify`
 
 
 ---
@@ -54,12 +55,14 @@
 - Provider wrappers 生成/更新：
   - `node .ai/scripts/sync-skills.cjs`（支持 `--providers`）
 
-### 可选：Context Awareness Add-on 产物
-当启用 Context Awareness 并执行 `apply` 后，通常会出现：
+### Context System 产物（内置）
+当 `contextAwareness` 未显式禁用（默认启用）并执行 `apply` 后，会确保/生成以下核心产物：
 
 - `.ai/scripts/contextctl.js`
 - `.ai/scripts/projectctl.js`
-- `docs/context/`（上下文 registry、工作流等，视 add-on 实现而定）
+- `docs/context/`（上下文 registry、工作流等；由内置脚本维护）
+
+说明：Context System 不会从 `addons/` 安装 payload；即使禁用 `addons.contextAwareness: false`，这些文件仍属于模板核心，只是跳过相关 init/build/verify 步骤。
 
 ---
 
@@ -69,8 +72,9 @@
    - 验证由脚本命令写入 `init/.init-state.json`
    - 推进阶段必须显式执行 `approve` 命令（不允许手工编辑 state 文件来跳阶段）
 2. 严禁在未获用户批准的情况下跨阶段推进。
-3. Add-on（Context Awareness）按需安装：
-   - 仅当 `blueprint.addons.contextAwareness: true` 时才会尝试从 `/addons/<addonId>/payload` 安装
+3. Context System（core capability）启用开关：
+   - `addons.contextAwareness` 是内置能力开关；除非显式为 `false`，否则默认启用
+   - 不会从 `/addons/<addonId>/payload` 安装任何内容（Context 不属于 add-ons）
    - `blueprint.context.*` 仅作为配置使用，不会触发安装
 4. manifest schema 统一为“扁平 schema”。
    - 不再使用 `collections.current` 之类结构

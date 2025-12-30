@@ -1,3 +1,8 @@
+---
+name: update-dev-docs-for-handoff
+description: Update a task's workdocs to be handoff-ready for another developer or agent.
+---
+
 # update-dev-docs-for-handoff
 
 ## Purpose
@@ -6,7 +11,7 @@ Update a task's **workdocs** to be handoff-ready.
 
 ## Inputs
 
-- Task scope (module / integration / project)
+- Task scope (module / integration)
 - The task workdocs directory
 - Current repo state (PR, branch, or working tree)
 
@@ -22,10 +27,9 @@ A handoff-ready workdocs set including:
 
 ## Procedure
 
-1. Locate the task’s workdocs folder:
+1. Locate the task's workdocs folder:
    - Module: `modules/<module_id>/workdocs/active/<task_slug>/`
    - Integration: `modules/integration/workdocs/active/<task_slug>/`
-   - Project: `workdocs/active/<task_slug>/`
 
 2. Ensure `status.md` clearly states:
    - Progress summary
@@ -48,3 +52,22 @@ A handoff-ready workdocs set including:
 ## Notes
 
 - Do not use `dev/` in this template; it has been replaced by `workdocs/` and module-local `workdocs/`.
+
+## Verification
+
+- Confirm the workdocs folder contains:
+  - `status.md` with next steps and validation commands
+  - `plan.md` with completed items checked off
+  - `context.md` with updated links/paths
+  - `decisions.md` updated as needed
+  - `handoff.md` with concise handoff instructions
+- If the work involved modular SSOT, run:
+  - `node .ai/scripts/flowctl.js lint`
+  - `node .ai/scripts/integrationctl.js validate`
+  - `node .ai/scripts/contextctl.js verify`
+
+## Boundaries
+
+- Do **not** make additional product/code changes when preparing the handoff; only document and point to the existing changes.
+- Do **not** edit derived artifacts directly; regenerate them via the corresponding ctl scripts if needed.
+- Keep handoff notes operational: commands, file paths, and exact known issues; avoid long narratives.
