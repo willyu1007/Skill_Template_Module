@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skills Landing Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "ssot_dir": {
+      "type": "string",
+      "description": "Destination SSOT directory inside repo. Default: .ai/skills"
+    },
+    "ignore": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Glob-style patterns to ignore during copy (matched against POSIX-style relative paths)."
+    },
+    "provider_roots": {
+      "type": "object",
+      "description": "Provider root definitions for sync.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to provider skill root (relative to repo root or absolute)."
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "flatten": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, flatten SSOT categories so each skill is copied to <root>/<skill-name>/"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "backup_dir": {
+      "type": "string",
+      "description": "Backup base directory (relative to repo root or absolute). Default: .ai/.backups/skills-landing"
+    },
+    "default_overwrite": {
+      "type": "string",
+      "enum": [
+        "never",
+        "changed",
+        "always"
+      ],
+      "default": "changed"
+    },
+    "default_prune": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

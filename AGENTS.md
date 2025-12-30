@@ -18,7 +18,6 @@ Read `init/AGENTS.md` for project initialization instructions.
 | `modules/` | **Module instances** + cross-module integration workspace |
 | `.system/modular/` | **Modular system SSOT** (flow graph, bindings, type graph) + derived registries/graphs |
 | `docs/context/` | Context registries (project SSOT + derived aggregated view) |
-| `workdocs/` | Optional project-level working docs (module-local workdocs live under each module) |
 | `.ai/skills/` | Skill SSOT (workflows + scaffolding) |
 | `.ai/scripts/` | Control scripts (module/init/context/flow/integration) |
 | `.codex/` | Codex wrapper stubs (generated) |

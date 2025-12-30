@@ -1,0 +1,18 @@
+# SSOT: Business flow graph
+#
+# This file defines business flows in BPMN-like structured data.
+# It does NOT reference modules or endpoints - those link to this via MANIFEST.yaml.
+#
+# Guidelines:
+# - IDs are stable, machine-friendly (snake_case or dot.separated)
+# - Descriptions are short business-language sentences
+# - Deprecate instead of renaming: use status: deprecated
+#
+# After editing, run:
+#   node .ai/scripts/flowctl.js lint
+#   node .ai/scripts/flowctl.js graph
+#
+# For examples, see:
+#   .ai/skills/scaffold/flow/maintain-flow-graph/examples/
+
+flows: []

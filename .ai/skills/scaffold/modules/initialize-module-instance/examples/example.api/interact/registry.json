@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "moduleId": "example.api",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "artifacts": [
+    {
+      "artifactId": "openapi",
+      "type": "openapi",
+      "path": "modules/example.api/interact/openapi.yaml",
+      "mode": "contract",
+      "format": "yaml",
+      "tags": ["api", "http"],
+      "checksumSha256": null,
+      "lastUpdated": null
+    }
+  ]
+}
+

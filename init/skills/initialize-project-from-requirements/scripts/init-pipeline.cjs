@@ -497,13 +497,9 @@ function recommendedAddonsFromBlueprint(blueprint) {
   const q = blueprint.quality || {};
   const devops = blueprint.devops || {};
 
-  // context-awareness: enabled when API/database/BPMN are enabled
-  // Note: api.style is checked because schema uses api.style (not api.enabled)
-  const needsContext =
-    (caps.api && (caps.api.enabled || (caps.api.style && caps.api.style !== 'none'))) ||
-    (caps.database && caps.database.enabled) ||
-    (caps.bpmn && caps.bpmn.enabled);
-  if (needsContext) rec.push('context-awareness');
+  // NOTE: context-awareness is a CORE capability in the module-first template.
+  // It is NOT an addon and is always enabled by default.
+  // See isContextAwarenessEnabled() for how to explicitly disable it.
 
   // db-mirror: enabled when database is enabled
   if (caps.database && caps.database.enabled) rec.push('db-mirror');
@@ -543,7 +539,8 @@ function getEnabledAddons(blueprint) {
   const addons = blueprint.addons || {};
   const enabled = [];
   
-  if (isContextAwarenessEnabled(blueprint)) enabled.push('context-awareness');
+  // NOTE: context-awareness is a CORE capability, not an addon.
+  // It is not included in this list because it doesn't live in addons/.
   if (isDbMirrorEnabled(blueprint)) enabled.push('db-mirror');
   if (isCiTemplatesEnabled(blueprint)) enabled.push('ci-templates');
   if (isPackagingEnabled(blueprint)) enabled.push('packaging');
@@ -863,46 +860,33 @@ function ensureContextAwarenessAddon(repoRoot, blueprint, addonsRoot, apply, opt
 
   if (!enabled) return result;
 
-  // If already installed and not force, just (re-)initialize skeleton (idempotent)
+  // In the module-first template, context awareness is a CORE capability.
+  // contextctl.js and projectctl.js are pre-installed core scripts, not add-on payloads.
   const contextctl = path.join(repoRoot, '.ai', 'scripts', 'contextctl.js');
   const projectctl = path.join(repoRoot, '.ai', 'scripts', 'projectctl.js');
 
-  const needsInstall = !fs.existsSync(contextctl) || force;
-  if (needsInstall) {
-    const payloadDir = findAddonPayloadDir(repoRoot, addonsRoot, 'context-awareness');
-    if (!payloadDir) {
-      result.errors.push(`Context awareness is enabled, but add-on payload is not found. Expected: ${path.join(addonsRoot, 'context-awareness', 'payload')}`);
-      return result;
-    }
-
-    const copyRes = copyDirIfMissing(payloadDir, repoRoot, apply, force);
-    if (!copyRes.ok) {
-      result.errors.push(copyRes.error || 'Failed to copy add-on payload.');
-      return result;
-    }
-    result.actions.push({ op: force ? 'reinstall-addon' : 'install-addon', from: payloadDir, to: repoRoot, mode: apply ? 'applied' : 'dry-run' });
-    result.actions.push(...copyRes.actions);
+  // Verify core scripts exist (they should be pre-installed in the template)
+  if (!fs.existsSync(contextctl)) {
+    result.errors.push(`Core script .ai/scripts/contextctl.js is missing. This is a required core capability in the module-first template.`);
+    return result;
   }
 
-  if (!fs.existsSync(contextctl)) {
-    result.errors.push(`Context awareness payload did not provide .ai/scripts/contextctl.js (missing after install).`);
-    return result;
+  if (!fs.existsSync(projectctl)) {
+    result.warnings.push(`Core script .ai/scripts/projectctl.js is missing. Project state management will be limited.`);
   }
 
   // Initialize docs/context skeleton (idempotent)
   result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, contextctl, ['init', '--repo-root', repoRoot].concat(apply ? [] : ['--dry-run']), apply));
 
-  // Initialize project state if projectctl exists (optional)
+  // Initialize project state if projectctl exists
   if (fs.existsSync(projectctl)) {
     result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['init', '--repo-root', repoRoot].concat(apply ? [] : ['--dry-run']), apply));
     const mode = getContextMode(blueprint);
     result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set-context-mode', mode, '--repo-root', repoRoot].concat(apply ? [] : ['--dry-run']), apply));
-  } else {
-    result.warnings.push('projectctl.js not found; skipping project state initialization.');
   }
 
   // Run verify if requested
-  if (verify && apply && fs.existsSync(contextctl)) {
+  if (verify && apply) {
     const verifyRes = runNodeScriptWithRepoRootFallback(repoRoot, contextctl, ['verify', '--repo-root', repoRoot], apply);
     result.actions.push(verifyRes);
     if (verifyRes.mode === 'failed') {
@@ -1286,8 +1270,9 @@ function cleanupUnusedAddons(repoRoot, blueprint, addonsRoot, apply) {
   const enabledAddons = getEnabledAddons(blueprint);
   const addonsDir = path.join(repoRoot, addonsRoot);
   
+  // NOTE: context-awareness is NOT in this list because it is a CORE capability,
+  // not an addon. Its scripts live in .ai/scripts/, not addons/.
   const allAddonIds = [
-    'context-awareness',
     'db-mirror',
     'ci-templates',
     'packaging',
@@ -1872,6 +1857,38 @@ if (command === 'validate') {
     const syncResult = syncWrappers(repoRoot, providers, true);
     if (syncResult.mode === 'failed') die(`[error] sync-skills.cjs failed with exit code ${syncResult.exitCode}`);
 
+    // Modular core build (module-first; ensures SSOT + derived artifacts are consistent)
+    const modularResults = [];
+    console.log('[info] Running modular core build...');
+    const flowctl = path.join(repoRoot, '.ai', 'scripts', 'flowctl.js');
+    const modulectl = path.join(repoRoot, '.ai', 'scripts', 'modulectl.js');
+    const integrationctl = path.join(repoRoot, '.ai', 'scripts', 'integrationctl.js');
+    const contextctl = path.join(repoRoot, '.ai', 'scripts', 'contextctl.js');
+
+    const modularSteps = [
+      { name: 'flowctl init', script: flowctl, args: ['init', '--repo-root', repoRoot] },
+      { name: 'integrationctl init', script: integrationctl, args: ['init', '--repo-root', repoRoot] },
+      { name: 'modulectl registry-build', script: modulectl, args: ['registry-build', '--repo-root', repoRoot] },
+      { name: 'flowctl update-from-manifests', script: flowctl, args: ['update-from-manifests', '--repo-root', repoRoot] },
+      { name: 'flowctl lint', script: flowctl, args: ['lint', '--repo-root', repoRoot] },
+      { name: 'flowctl graph', script: flowctl, args: ['graph', '--repo-root', repoRoot] },
+      { name: 'integrationctl validate', script: integrationctl, args: ['validate', '--repo-root', repoRoot] },
+      { name: 'contextctl build', script: contextctl, args: ['build', '--repo-root', repoRoot] },
+    ];
+
+    for (const step of modularSteps) {
+      if (!fs.existsSync(step.script)) {
+        modularResults.push({ op: 'skip', step: step.name, reason: 'missing_script', path: step.script });
+        console.warn(`[warn] modular step skipped (missing script): ${step.name}`);
+        continue;
+      }
+      const res = runNodeScriptWithRepoRootFallback(repoRoot, step.script, step.args, true);
+      res.step = step.name;
+      modularResults.push(res);
+      if (res.mode === 'failed') die(`[error] Modular core build failed: ${res.cmd}`);
+    }
+    console.log('[ok] Modular core build completed.');
+
     // Auto-update state
     const state = loadState(repoRoot);
     if (state) {
@@ -1914,6 +1931,7 @@ if (command === 'validate') {
         configs: configResults,
         manifest: manifestResult,
         sync: syncResult,
+        modular: modularResults,
         cleanup: cleanupResult,
         addonsCleanup: addonsCleanupResult
       }, null, 2));
@@ -1938,6 +1956,7 @@ if (command === 'validate') {
       if (stageARes.warnings.length > 0) console.log('[warn] Stage A docs check has warnings; ensure TBD/TODO items are tracked.');
       console.log(`- Manifest updated: ${path.relative(repoRoot, manifestResult.path)}`);
       console.log(`- Wrappers synced via: ${syncResult.cmd || '(skipped)'}`);
+      console.log(`- Modular core build: ${modularResults.some(r => r.mode === 'failed') ? 'failed' : 'completed'}`);
       if (cleanupResult) console.log(`- init/ cleanup: ${cleanupResult.mode}`);
       if (addonsCleanupResult) console.log(`- Unused add-ons pruned: ${addonsCleanupResult.removed.length > 0 ? addonsCleanupResult.removed.map(r => r.addonId).join(', ') : 'none'}`);
     }

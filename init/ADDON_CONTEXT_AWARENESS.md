@@ -1,8 +1,6 @@
 # Context System (Core)
 
-Historically, the template shipped a `context-awareness` add-on.
-
-In the **module-first** version of the template, context is a **core capability** and is already present in the repository.
+This repository includes the context registry system as a **built-in capability** (no add-on installation required).
 
 ## What you get
 

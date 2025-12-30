@@ -1,0 +1,22 @@
+{
+  "id": "context-core",
+  "version": "1.0.0",
+  "description": "Core context awareness skills for managing project context artifacts",
+  "includePrefixes": [
+    "context/",
+    "scaffold/context"
+  ],
+  "dependencies": [],
+  "scripts": {
+    "init": "node .ai/scripts/contextctl.js init && node .ai/scripts/projectctl.js init",
+    "verify": "node .ai/scripts/contextctl.js verify --strict && node .ai/scripts/projectctl.js verify"
+  },
+  "metadata": {
+    "author": "context-awareness-addon",
+    "tags": [
+      "context",
+      "core",
+      "llm"
+    ]
+  }
+}

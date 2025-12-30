@@ -11,4 +11,5 @@ Typical loop:
    - `node .ai/scripts/flowctl.js update-from-manifests`
 4. Create or update scenarios.
 5. `node .ai/scripts/integrationctl.js validate`
-6. `node .ai/scripts/integrationctl.js run --scenario <id>` (when runtime endpoints are configured)
+6. `node .ai/scripts/integrationctl.js compile`
+7. `node .ai/scripts/integrationctl.js run --scenario <id>` (when runtime endpoints are configured)

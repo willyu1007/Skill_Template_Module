@@ -52,13 +52,21 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 5. Context system (core):
    - runs `node .ai/scripts/contextctl.js init`
    - runs `node .ai/scripts/projectctl.js init` and `set-context-mode`
-   - runs `node .ai/scripts/contextctl.js build`
 
    (These steps are performed unless the blueprint explicitly disables `addons.contextAwareness`.)
 6. Enables skill packs:
    - If `.ai/scripts/skillsctl.js` exists: **scheme A** (packs enabled via skillsctl)
    - Else: additive update of `.ai/skills/_meta/sync-manifest.json` includePrefixes
 7. Syncs provider wrappers via `.ai/scripts/sync-skills.cjs`
+8. Runs modular core build (module-first consistency):
+   - `node .ai/scripts/flowctl.js init`
+   - `node .ai/scripts/integrationctl.js init`
+   - `node .ai/scripts/modulectl.js registry-build`
+   - `node .ai/scripts/flowctl.js update-from-manifests`
+   - `node .ai/scripts/flowctl.js lint`
+   - `node .ai/scripts/flowctl.js graph`
+   - `node .ai/scripts/integrationctl.js validate`
+   - `node .ai/scripts/contextctl.js build`
 
 ---
 
@@ -86,4 +94,3 @@ Optional: remove `init/` bootstrap kit after completion:
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init --repo-root . --apply --i-understand
 ```
-

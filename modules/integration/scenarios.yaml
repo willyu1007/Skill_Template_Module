@@ -1,6 +1,21 @@
 # SSOT: Integration scenarios
 #
-# - This file is manually maintained, but validated.
-# - Use `integrationctl new-scenario` to scaffold.
+# This file defines end-to-end integration test scenarios.
+# Scenarios describe paths across flow nodes and endpoints.
+#
+# Guidelines:
+# - Each step must reference a valid flow node
+# - Steps must follow valid edges in the flow graph
+# - Use `endpoint_id` for explicit endpoint selection
+# - Use `use_binding` for binding-based selection
+# - Use `allow_unresolved: true` for draft scenarios
+#
+# Commands:
+#   node .ai/scripts/integrationctl.js validate
+#   node .ai/scripts/integrationctl.js compile
+#   node .ai/scripts/integrationctl.js run --execute
+#
+# For examples, see:
+#   .ai/skills/scaffold/integration/manage-integration-scenarios/examples/
 
 scenarios: []

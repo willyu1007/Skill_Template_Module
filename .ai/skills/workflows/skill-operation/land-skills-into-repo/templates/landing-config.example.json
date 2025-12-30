@@ -1,0 +1,23 @@
+{
+  "ssot_dir": ".ai/skills",
+  "ignore": [
+    "**/.DS_Store",
+    "**/__pycache__/**",
+    "**/*.pyc"
+  ],
+  "backup_dir": ".ai/.backups/skills-landing",
+  "default_overwrite": "changed",
+  "default_prune": false,
+  "provider_roots": {
+    "codex": {
+      "path": ".codex/skills",
+      "enabled": true,
+      "flatten": true
+    },
+    "claude": {
+      "path": ".claude/skills",
+      "enabled": true,
+      "flatten": true
+    }
+  }
+}

@@ -1,0 +1,44 @@
+# GitLab CI Configuration Template
+# This is a template file. Use 'node .ai/scripts/cictl.js generate' to create the actual config.
+
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  NODE_VERSION: "20"
+
+.node_template:
+  image: node:${NODE_VERSION}
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+
+lint:
+  extends: .node_template
+  stage: lint
+  script:
+    - npm ci
+    - npm run lint
+
+test:
+  extends: .node_template
+  stage: test
+  script:
+    - npm ci
+    - npm test
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+
+build:
+  extends: .node_template
+  stage: build
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+

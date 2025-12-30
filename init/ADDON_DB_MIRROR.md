@@ -1,8 +1,6 @@
 # DB Mirror (Core)
 
-Historically, the template shipped a `db-mirror` add-on.
-
-In the **module-first** version of the template, DB mirror is a **core capability** and is already present in the repository.
+This repository includes DB mirror tooling as a **built-in capability** (no add-on installation required).
 
 ## What you get
 
@@ -13,8 +11,10 @@ In the **module-first** version of the template, DB mirror is a **core capabilit
 
 ```bash
 node .ai/scripts/dbctl.js init
-node .ai/scripts/dbctl.js pull
-node .ai/scripts/dbctl.js snapshot
+node .ai/scripts/dbctl.js add-table --name users --columns "id:uuid:pk,email:string:unique"
+node .ai/scripts/dbctl.js list-tables
+node .ai/scripts/dbctl.js generate-migration --name add-user-roles
+node .ai/scripts/dbctl.js verify
 node .ai/scripts/dbctl.js sync-to-context
 node .ai/scripts/contextctl.js build
 node .ai/scripts/contextctl.js verify --strict
@@ -27,4 +27,4 @@ node .ai/scripts/contextctl.js verify --strict
 
 ## Notes
 
-- DB mirror is optional to use, but it is part of the base template.
+- DB mirror is optional to use, but it ships with the base template.

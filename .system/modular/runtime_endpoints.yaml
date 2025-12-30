@@ -1,0 +1,11 @@
+# Runtime endpoint configuration used by integration runner.
+#
+# This file is environment-specific. Treat values as non-secret, or keep them out of VCS.
+#
+# Example:
+# modules:
+#   sample.core:
+#     http_base: http://localhost:3000
+
+version: 1
+modules: {}

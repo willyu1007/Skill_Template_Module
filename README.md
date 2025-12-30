@@ -27,8 +27,6 @@ modules/                      # Module instances + integration workspace
 
 docs/context/                 # Context registries (SSOT + derived aggregated view)
 
-workdocs/                     # Optional project-level working docs
-
 init/                         # Project bootstrap kit (Stage A/B/C)
 
 .ai/

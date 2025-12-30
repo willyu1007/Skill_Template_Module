@@ -23,3 +23,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Generated / derived artifacts
+.ai/.tmp/
+modules/integration/compiled/
+modules/integration/runs/

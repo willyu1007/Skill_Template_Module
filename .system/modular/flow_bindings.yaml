@@ -1,0 +1,21 @@
+# SSOT: Manual bindings for flow nodes with multiple implementations
+#
+# When a flow node has >1 possible implementation endpoint, add a binding here.
+#
+# Example:
+# bindings:
+#   - id: order.place_order_default
+#     flow_id: order_fulfillment
+#     node_id: place_order
+#
+#     candidates:
+#       - endpoint_id: order.api:http_api.create_order
+#         weight: 1.0
+#
+#     conditions:
+#       - env: ["dev", "staging"]
+#         override:
+#           - endpoint_id: order.experimental:http_api.create_order_v2
+#             weight: 1.0
+
+bindings: []
