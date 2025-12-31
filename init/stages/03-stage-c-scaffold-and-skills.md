@@ -17,8 +17,7 @@ Before writing anything, you can preview the scaffold plan:
 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs scaffold \
-  --repo-root . \
-  --blueprint docs/project/project-blueprint.json
+  --repo-root .
 ```
 
 To actually create the scaffold files/folders (minimal set only):
@@ -26,9 +25,10 @@ To actually create the scaffold files/folders (minimal set only):
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs scaffold \
   --repo-root . \
-  --blueprint docs/project/project-blueprint.json \
   --apply
 ```
+
+> Default `--blueprint` is `init/project-blueprint.json`.
 
 ---
 
@@ -39,9 +39,10 @@ From repo root:
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs apply \
   --repo-root . \
-  --blueprint docs/project/project-blueprint.json \
   --providers both
 ```
+
+> Default `--blueprint` is `init/project-blueprint.json`.
 
 ### What `apply` does
 
@@ -91,6 +92,26 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 
 Optional: remove `init/` bootstrap kit after completion:
 
+**Option A: Remove `init/` only (no archive)**
+
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init --repo-root . --apply --i-understand
 ```
+
+**Option B: Archive to docs/project/ then remove `init/`** (recommended)
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
+  --repo-root . \
+  --apply \
+  --i-understand \
+  --archive
+```
+
+This archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
+
+| Archive Option | Effect |
+|----------------|--------|
+| `--archive` | Archive all (Stage A docs + Blueprint) |
+| `--archive-docs` | Archive Stage A docs only |
+| `--archive-blueprint` | Archive Blueprint only |

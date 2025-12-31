@@ -88,40 +88,44 @@ Record in: `stageA/interview-notes.md`, `stageB/agent-blueprint.json` (`observab
 - SHOULD include a failure scenario and a kill-switch scenario.
 Record in: `stageA/interview-notes.md`, `stageB/agent-blueprint.json` (`acceptance.scenarios[]`).
 
-### 14) Deliverables and registry
-- MUST define `deliverables.agent_module_path`, `deliverables.docs_path`, `deliverables.registry_path`.
-- SHOULD define `deliverables.module_ids` (one or more) to map agent -> module scope.
+### 14) Deliverables and module embedding
+- MUST define `deliverables.agent_module_path` (e.g. `modules/<module_id>/src/agents/<agent_id>`).
+- MUST define `deliverables.docs_path` (e.g. `modules/<module_id>/workdocs/active/agent-<agent_id>`).
+- MUST define `deliverables.interact_path` (e.g. `modules/<module_id>/interact/agents/<agent_id>`).
 - MUST ensure core/adapters separation is `required`.
-- **For module-first repos**: Use `agents/<agent_id>/` as the base path; use `module_ids` for LLM scope.
-Record in: `stageB/agent-blueprint.json` (`deliverables.*`).
+- Paths MUST align with `modular.host_module_id` (agent is a module subcomponent, not a standalone module).
+Record in: `stageB/agent-blueprint.json` (`deliverables.*`, `modular.*`).
 
 ### 15) Lifecycle and versioning
 - SHOULD define versioning, migration notes, and deprecation policy for the agent.
 Record in: `stageA/interview-notes.md`, `stageB/agent-blueprint.json` (`lifecycle.*`).
 
-### 16) Module system integration (Module-First repos only)
-- MUST run post-scaffold integration commands after Stage C/E.
-- SHOULD define which flow_id/node_id the agent implements (if applicable).
-- SHOULD update MANIFEST.yaml with proper interfaces declaration.
-- SHOULD update `.system/modular/flow_graph.yaml` (and `flow_bindings.yaml` if needed) when introducing new nodes/edges.
-- SHOULD ensure `agents/registry.json` includes `agent_module_map` entries (agent_id -> module_ids).
-Record in: `stageA/interview-notes.md`, run integration commands post-scaffold.
+### 16) Module system integration (required)
+- MUST define `modular.host_module_id` — the agent is embedded under an existing module instance.
+- MUST define `modular.flow_node.flow_id` and `modular.flow_node.node_id` — the business flow binding.
+- MUST ensure `.system/modular/flow_graph.yaml` contains the target flow/node **before** running `integrate-modular`.
+- The `integrate-modular` command will automatically update `modules/<module_id>/MANIFEST.yaml` with interfaces and implements.
+- Do NOT manually edit global registries; use `integrate-modular` to trigger ctl scripts.
+Record in: `stageA/integration-decision.md`, `stageB/agent-blueprint.json` (`modular.*`).
 
 ## Verification
 - `stageA` artifacts exist only in the temporary workdir (not in the repo).
 - `stageB/agent-blueprint.json` passes `validate-blueprint` with no errors.
 - All required decisions above are represented in `stageB/agent-blueprint.json`.
 
-## Post-Scaffold Integration (Module-First repos)
+## Post-Scaffold Integration
 
 After `apply --apply`, run:
 
 ```bash
-node .ai/scripts/modulectl.js registry-build
-node .ai/scripts/flowctl.js update-from-manifests
-node .ai/scripts/flowctl.js lint
-node .ai/scripts/contextctl.js build
+node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --apply
 ```
+
+This will:
+1. Validate the target flow/node exists in `.system/modular/flow_graph.yaml`.
+2. Update `modules/<module_id>/MANIFEST.yaml` with interfaces (health, run) and implements.
+3. Optionally scaffold an integration scenario.
+4. Trigger ctl scripts: `modulectl registry-build`, `flowctl update-from-manifests`, `flowctl lint`, `contextctl build/verify`, `integrationctl validate/compile`.
 
 ## Prompt Template
 ```

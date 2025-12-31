@@ -24,3 +24,4 @@ node .ai/scripts/contextctl.js verify --strict
 
 - `docs/context/registry.json` is derived; do not edit it by hand.
 - Add-ons under `addons/` are reserved for non-core capabilities (packaging/deployment/release/observability).
+

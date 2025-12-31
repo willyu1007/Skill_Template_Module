@@ -60,4 +60,4 @@ node .ai/scripts/sync-skills.cjs --scope current --providers both
 
 Non-core add-ons are available under `addons/` (packaging, deployment, release, observability). See:
 
-- `init/ADDONS_DIRECTORY.md`
+- `init/addon-docs/convention.md`

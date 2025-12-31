@@ -4,8 +4,8 @@
  *
  * Dependency-free helper for a 3-stage, verifiable init pipeline:
  *
- *   Stage A: requirements docs under `docs/project/`
- *   Stage B: blueprint JSON at `docs/project/project-blueprint.json`
+ *   Stage A: requirements docs under `init/stage-a-docs/`
+ *   Stage B: blueprint JSON at `init/project-blueprint.json`
  *   Stage C: minimal scaffold + skill pack manifest update + wrapper sync
  *
  * Commands:
@@ -56,12 +56,12 @@ Commands:
     Record explicit user approval and advance state to the next stage.
 
   validate
-    --blueprint <path>          Blueprint JSON path (required)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
     --format <text|json>        Output format (default: text)
 
   check-docs
-    --docs-root <path>          Stage A docs root (default: <repo-root>/docs/project)
+    --docs-root <path>          Stage A docs root (default: <repo-root>/init/stage-a-docs)
     --repo-root <path>          Repo root (default: cwd)
     --strict                    Treat warnings as errors (exit non-zero)
     --format <text|json>        Output format (default: text)
@@ -78,24 +78,24 @@ Commands:
     --note <text>               Optional audit note
 
   suggest-packs
-    --blueprint <path>          Blueprint JSON path (required)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
     --format <text|json>        Output format (default: text)
     --write                      Add missing recommended packs into blueprint (safe-add only)
 
   suggest-addons
-    --blueprint <path>          Blueprint JSON path (required)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
     --format <text|json>        Output format (default: text)
     --write                      Add missing recommended add-ons into blueprint (safe-add only)
 
   scaffold
-    --blueprint <path>          Blueprint JSON path (required)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
     --apply                      Actually create directories/files (default: dry-run)
 
   apply
-    --blueprint <path>          Blueprint JSON path (required)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
     --providers <both|codex|claude|codex,claude>
     --addons-root <path>        Add-ons directory (default: addons)
@@ -112,17 +112,21 @@ Commands:
     --repo-root <path>          Repo root (default: cwd)
     --apply                      Actually remove init/ (default: dry-run)
     --i-understand              Required acknowledgement (refuses without it)
+    --archive                   Archive all (Stage A docs + Blueprint) to docs/project/ before cleanup
+    --archive-docs              Archive Stage A docs only to docs/project/
+    --archive-blueprint         Archive Blueprint only to docs/project/
     --cleanup-addons            Also remove unused add-on directories from addons/
     --addons-root <path>        Add-ons directory (default: addons)
-    --blueprint <path>          Blueprint JSON path (needed with --cleanup-addons)
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
 
 Examples:
   node .../init-pipeline.cjs start
   node .../init-pipeline.cjs status
-  node .../init-pipeline.cjs check-docs --docs-root docs/project
-  node .../init-pipeline.cjs validate --blueprint docs/project/project-blueprint.json
-  node .../init-pipeline.cjs apply --blueprint docs/project/project-blueprint.json --providers both
+  node .../init-pipeline.cjs check-docs --strict
+  node .../init-pipeline.cjs validate
+  node .../init-pipeline.cjs apply --providers both
   node .../init-pipeline.cjs approve --stage A
+  node .../init-pipeline.cjs cleanup-init --apply --i-understand --archive
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -303,68 +307,68 @@ function getStageProgress(state) {
 
 function printStatus(state, repoRoot) {
   const progress = getStageProgress(state);
-  const stageNames = { A: '需求 (Requirements)', B: '蓝图 (Blueprint)', C: '脚手架 (Scaffold)', complete: '完成' };
+  const stageNames = { A: 'Requirements', B: 'Blueprint', C: 'Scaffold', complete: 'Complete' };
 
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────┐');
-  console.log('│  初始化状态 (Init State)                                │');
+  console.log('│  Init State                                              │');
   console.log('├─────────────────────────────────────────────────────────┤');
-  console.log(`│  当前阶段: Stage ${progress.stage} - ${stageNames[progress.stage] || progress.stage}`);
+  console.log(`│  Current stage: Stage ${progress.stage} - ${stageNames[progress.stage] || progress.stage}`);
   console.log('│');
 
   if (progress.stage === 'A' || progress.stage === 'B' || progress.stage === 'C') {
-    console.log('│  Stage A 进度:');
-    console.log(`│    必问问题: ${progress.stageA.mustAskAnswered}/${progress.stageA.mustAskTotal} 已完成`);
-    console.log(`│    文档撰写: ${progress.stageA.docsWritten}/${progress.stageA.docsTotal} 已完成`);
-    console.log(`│    验证状态: ${progress.stageA.validated ? '✓ 已验证' : '✗ 未验证'}`);
-    console.log(`│    用户确认: ${progress.stageA.userApproved ? '✓ 已确认' : '✗ 未确认'}`);
+    console.log('│  Stage A progress:');
+    console.log(`│    Must-ask: ${progress.stageA.mustAskAnswered}/${progress.stageA.mustAskTotal} completed`);
+    console.log(`│    Docs written: ${progress.stageA.docsWritten}/${progress.stageA.docsTotal} completed`);
+    console.log(`│    Validation: ${progress.stageA.validated ? '✓ validated' : '✗ not validated'}`);
+    console.log(`│    User approval: ${progress.stageA.userApproved ? '✓ approved' : '✗ not approved'}`);
   }
 
   if (progress.stage === 'B' || progress.stage === 'C') {
     console.log('│');
-    console.log('│  Stage B 进度:');
-    console.log(`│    蓝图起草: ${progress.stageB.drafted ? '✓' : '✗'}`);
-    console.log(`│    蓝图验证: ${progress.stageB.validated ? '✓' : '✗'}`);
-    console.log(`│    技能包审查: ${progress.stageB.packsReviewed ? '✓' : '✗'}`);
-    console.log(`│    用户确认: ${progress.stageB.userApproved ? '✓' : '✗'}`);
+    console.log('│  Stage B progress:');
+    console.log(`│    Drafted: ${progress.stageB.drafted ? '✓' : '✗'}`);
+    console.log(`│    Validated: ${progress.stageB.validated ? '✓' : '✗'}`);
+    console.log(`│    Packs reviewed: ${progress.stageB.packsReviewed ? '✓' : '✗'}`);
+    console.log(`│    User approval: ${progress.stageB.userApproved ? '✓' : '✗'}`);
   }
 
   if (progress.stage === 'C' || progress.stage === 'complete') {
     console.log('│');
-    console.log('│  Stage C 进度:');
-    console.log(`│    脚手架创建: ${progress.stageC.scaffoldApplied ? '✓' : '✗'}`);
-    console.log(`│    配置文件: ${progress.stageC.configsGenerated ? '✓' : '✗'}`);
-    console.log(`│    清单更新: ${progress.stageC.manifestUpdated ? '✓' : '✗'}`);
-    console.log(`│    Wrapper同步: ${progress.stageC.wrappersSynced ? '✓' : '✗'}`);
+    console.log('│  Stage C progress:');
+    console.log(`│    Scaffold: ${progress.stageC.scaffoldApplied ? '✓' : '✗'}`);
+    console.log(`│    Configs: ${progress.stageC.configsGenerated ? '✓' : '✗'}`);
+    console.log(`│    Manifest: ${progress.stageC.manifestUpdated ? '✓' : '✗'}`);
+    console.log(`│    Wrappers synced: ${progress.stageC.wrappersSynced ? '✓' : '✗'}`);
   }
 
   console.log('│');
-  console.log('│  下一步:');
+  console.log('│  Next steps:');
   if (progress.stage === 'A') {
     if (!progress.stageA.validated) {
-      console.log('│    1. 完成需求访谈并撰写文档');
-      console.log('│    2. 运行: check-docs --docs-root docs/project');
+      console.log('│    1. Complete the requirements interview and write docs (init/stage-a-docs/*.md)');
+      console.log('│    2. Run: check-docs --strict');
     } else if (!progress.stageA.userApproved) {
-      console.log('│    请用户审查 Stage A 文档并确认');
-      console.log('│    确认后运行: advance');
+      console.log('│    Have the user review and approve Stage A docs');
+      console.log('│    After approval, run: approve --stage A');
     }
   } else if (progress.stage === 'B') {
     if (!progress.stageB.validated) {
-      console.log('│    1. 创建 docs/project/project-blueprint.json');
-      console.log('│    2. 运行: validate --blueprint docs/project/project-blueprint.json');
+      console.log('│    1. Edit init/project-blueprint.json');
+      console.log('│    2. Run: validate');
     } else if (!progress.stageB.userApproved) {
-      console.log('│    请用户审查蓝图并确认');
-      console.log('│    确认后运行: advance');
+      console.log('│    Have the user review and approve the blueprint');
+      console.log('│    After approval, run: approve --stage B');
     }
   } else if (progress.stage === 'C') {
     if (!progress.stageC.wrappersSynced) {
-      console.log('│    运行: apply --blueprint docs/project/project-blueprint.json');
+      console.log('│    Run: apply --providers both');
     } else if (!progress.stageC.userApproved) {
-      console.log('│    初始化基本完成，请用户确认');
-      console.log('│    确认后可选运行: cleanup-init --apply --i-understand');
+      console.log('│    Initialization is nearly complete; have the user confirm');
+      console.log('│    After confirmation, run: cleanup-init --apply --i-understand [--archive]');
     }
   } else if (progress.stage === 'complete') {
-    console.log('│    初始化已完成！');
+    console.log('│    Initialization completed!');
   }
 
   console.log('└─────────────────────────────────────────────────────────┘');
@@ -1328,24 +1332,67 @@ function main() {
   const format = (opts['format'] || 'text').toLowerCase();
 
   const repoRoot = path.resolve(opts['repo-root'] || process.cwd());
-  const blueprintPath = resolvePath(repoRoot, opts['blueprint']);
-  const docsRoot = resolvePath(repoRoot, opts['docs-root'] || path.join('docs', 'project'));
+  const blueprintPath = resolvePath(repoRoot, opts['blueprint'] || path.join('init', 'project-blueprint.json'));
+  const docsRoot = resolvePath(repoRoot, opts['docs-root'] || path.join('init', 'stage-a-docs'));
 
   // ========== start ==========
   if (command === 'start') {
     const existingState = loadState(repoRoot);
     if (existingState) {
-      console.log('[info] 检测到已存在的初始化状态');
+      console.log('[info] Existing init state detected');
       printStatus(existingState, repoRoot);
-      console.log('[info] 如需重新开始，请先删除 init/.init-state.json');
+      console.log('[info] To restart, delete init/.init-state.json');
       process.exit(0);
+    }
+
+    // Create Stage A docs directory and templates
+    const stageADocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
+    const templatesDir = path.join(path.dirname(__filename), '..', 'templates');
+    
+    if (!fs.existsSync(stageADocsDir)) {
+      fs.mkdirSync(stageADocsDir, { recursive: true });
+      console.log('[ok] Created directory: init/stage-a-docs/');
+    }
+
+    // Copy Stage A doc templates
+    const stageATemplates = [
+      { src: 'requirements.template.md', dst: 'requirements.md' },
+      { src: 'non-functional-requirements.template.md', dst: 'non-functional-requirements.md' },
+      { src: 'domain-glossary.template.md', dst: 'domain-glossary.md' },
+      { src: 'risk-open-questions.template.md', dst: 'risk-open-questions.md' }
+    ];
+
+    for (const tpl of stageATemplates) {
+      const srcPath = path.join(templatesDir, tpl.src);
+      const dstPath = path.join(stageADocsDir, tpl.dst);
+      if (!fs.existsSync(dstPath) && fs.existsSync(srcPath)) {
+        fs.copyFileSync(srcPath, dstPath);
+        console.log(`[ok] Created template: init/stage-a-docs/${tpl.dst}`);
+      } else if (fs.existsSync(dstPath)) {
+        console.log(`[skip] Already exists: init/stage-a-docs/${tpl.dst}`);
+      }
+    }
+
+    // Copy Blueprint template
+    const blueprintDst = path.join(repoRoot, 'init', 'project-blueprint.json');
+    const blueprintSrc = path.join(templatesDir, 'project-blueprint.min.example.json');
+    if (!fs.existsSync(blueprintDst) && fs.existsSync(blueprintSrc)) {
+      fs.copyFileSync(blueprintSrc, blueprintDst);
+      console.log('[ok] Created template: init/project-blueprint.json');
+    } else if (fs.existsSync(blueprintDst)) {
+      console.log('[skip] Already exists: init/project-blueprint.json');
     }
 
     const state = createInitialState();
     addHistoryEvent(state, 'init_started', 'Initialization started');
     saveState(repoRoot, state);
 
-    console.log('[ok] 初始化状态已创建: init/.init-state.json');
+    console.log('[ok] Init state created: init/.init-state.json');
+    console.log('');
+    console.log('Next steps:');
+    console.log('  1. Edit init/stage-a-docs/*.md and fill in requirements');
+    console.log('  2. Run: check-docs --strict');
+    console.log('  3. Run: approve --stage A');
     printStatus(state, repoRoot);
     process.exit(0);
   }
@@ -1354,8 +1401,8 @@ function main() {
   if (command === 'status') {
     const state = loadState(repoRoot);
     if (!state) {
-      console.log('[info] 未检测到初始化状态');
-      console.log('[info] 运行 "start" 命令开始初始化');
+      console.log('[info] No init state detected');
+      console.log('[info] Run the \"start\" command to begin initialization');
       process.exit(0);
     }
 
@@ -1371,60 +1418,60 @@ function main() {
   if (command === 'advance') {
     const state = loadState(repoRoot);
     if (!state) {
-      die('[error] 未检测到初始化状态，请先运行 "start" 命令');
+      die('[error] No init state detected; run the \"start\" command first');
     }
 
     const progress = getStageProgress(state);
     const self = path.relative(repoRoot, __filename);
     const docsRel = path.relative(repoRoot, docsRoot);
-    const bpRel = blueprintPath ? path.relative(repoRoot, blueprintPath) : 'docs/project/project-blueprint.json';
+    const bpRel = blueprintPath ? path.relative(repoRoot, blueprintPath) : 'init/project-blueprint.json';
 
     if (progress.stage === 'A') {
       if (!progress.stageA.validated) {
-        console.log('[info] Stage A 需求文档尚未通过结构验证。');
-        console.log('请先运行:');
+        console.log('[info] Stage A requirements docs have not passed structural validation.');
+        console.log('Run first:');
         console.log(`  node ${self} check-docs --docs-root ${docsRel} --strict`);
         process.exit(1);
       }
       console.log('\n== Stage A → B Checkpoint ==\n');
-      console.log('Stage A 文档已通过结构验证。下一步需要用户审查并明确批准。');
-      console.log('批准后运行:');
+      console.log('Stage A docs passed structural validation. Next: the user must review and explicitly approve.');
+      console.log('After approval, run:');
       console.log(`  node ${self} approve --stage A --repo-root ${repoRoot}`);
       process.exit(0);
     }
 
     if (progress.stage === 'B') {
       if (!progress.stageB.validated) {
-        console.log('[info] Stage B 蓝图尚未验证。');
-        console.log('请先运行:');
+        console.log('[info] Stage B blueprint has not been validated.');
+        console.log('Run first:');
         console.log(`  node ${self} validate --blueprint ${bpRel}`);
         process.exit(1);
       }
       console.log('\n== Stage B → C Checkpoint ==\n');
-      console.log('Stage B 蓝图已验证通过。下一步需要用户审查并明确批准。');
-      console.log('批准后运行:');
+      console.log('Stage B blueprint validated successfully. Next: the user must review and explicitly approve.');
+      console.log('After approval, run:');
       console.log(`  node ${self} approve --stage B --repo-root ${repoRoot}`);
       process.exit(0);
     }
 
     if (progress.stage === 'C') {
       if (!progress.stageC.wrappersSynced) {
-        console.log('[info] Stage C 尚未完成（wrappers 未同步）。');
-        console.log('请先运行:');
+        console.log('[info] Stage C is not complete (wrappers not synced).');
+        console.log('Run first:');
         console.log(`  node ${self} apply --blueprint ${bpRel}`);
         process.exit(1);
       }
 
       console.log('\n== Stage C Completion Checkpoint ==\n');
-      console.log('Stage C 已执行完成（scaffold + skills 已落盘）。');
-      console.log('下一步需要用户确认：生成的骨架与启用的能力符合预期。');
-      console.log('确认后运行:');
+      console.log('Stage C completed (scaffold + skills written).');
+      console.log('Next: the user must confirm the generated scaffold and enabled capabilities match expectations.');
+      console.log('After confirmation, run:');
       console.log(`  node ${self} approve --stage C --repo-root ${repoRoot}`);
-      console.log('\n可选：之后可运行 cleanup-init --apply --i-understand 删除 init/ 目录');
+      console.log('\nOptional: after that, run cleanup-init --apply --i-understand to delete the init/ directory');
       process.exit(0);
     }
 
-    console.log('[info] 初始化已完成 (state.stage = complete)');
+    console.log('[info] Initialization completed (state.stage = complete)');
     process.exit(0);
   }
 
@@ -1434,7 +1481,7 @@ function main() {
   if (command === 'approve') {
     const state = loadState(repoRoot);
     if (!state) {
-      die('[error] 未检测到初始化状态，请先运行 "start" 命令');
+      die('[error] No init state detected; run the \"start\" command first');
     }
 
     const current = String(state.stage || '').toUpperCase();
@@ -1446,12 +1493,12 @@ function main() {
     }
 
     if (desired !== current) {
-      die(`[error] 当前 stage=${state.stage}，无法批准 stage=${desired}。请先运行 status 确认，或不要传 --stage。`);
+      die(`[error] Current stage=${state.stage}; cannot approve stage=${desired}. Run status to confirm, or omit --stage.`);
     }
 
     if (desired === 'A') {
       if (!state.stageA.validated) {
-        die('[error] Stage A 尚未验证。请先运行 check-docs');
+        die('[error] Stage A is not validated. Run check-docs first.');
       }
       state.stageA.userApproved = true;
       state.stage = 'B';
@@ -1463,7 +1510,7 @@ function main() {
 
     if (desired === 'B') {
       if (!state.stageB.validated) {
-        die('[error] Stage B 尚未验证。请先运行 validate');
+        die('[error] Stage B is not validated. Run validate first.');
       }
       state.stageB.userApproved = true;
       state.stage = 'C';
@@ -1475,7 +1522,7 @@ function main() {
 
     if (desired === 'C') {
       if (!state.stageC.wrappersSynced) {
-        die('[error] Stage C 尚未完成。请先运行 apply');
+        die('[error] Stage C is not complete. Run apply first.');
       }
       state.stageC.userApproved = true;
       state.stage = 'complete';
@@ -1485,12 +1532,12 @@ function main() {
       process.exit(0);
     }
 
-    console.log('[info] 已完成，无需重复 approve');
+    console.log('[info] Already complete; no need to approve again');
     process.exit(0);
   }
 
 if (command === 'validate') {
-    if (!blueprintPath) die('[error] --blueprint is required for validate');
+    if (!fs.existsSync(blueprintPath)) die(`[error] Blueprint not found: ${blueprintPath}`);
     const blueprint = readJson(blueprintPath);
     const v = validateBlueprint(blueprint);
 
@@ -1502,7 +1549,7 @@ if (command === 'validate') {
         state.stageB.validated = true;
         addHistoryEvent(state, 'stage_b_validated', 'Stage B blueprint validated');
         saveState(repoRoot, state);
-        console.log('[auto] 状态已更新: stageB.validated = true');
+        console.log('[auto] State updated: stageB.validated = true');
       }
     }
 
@@ -1541,7 +1588,7 @@ if (command === 'validate') {
         };
         addHistoryEvent(state, 'stage_a_validated', 'Stage A docs validated');
         saveState(repoRoot, state);
-        console.log('[auto] 状态已更新: stageA.validated = true');
+        console.log('[auto] State updated: stageA.validated = true');
       }
     }
 
@@ -1561,7 +1608,7 @@ if (command === 'validate') {
     }
 
     const state = loadState(repoRoot);
-    if (!state) die('[error] 未检测到初始化状态，请先运行 "start" 命令');
+    if (!state) die('[error] No init state detected; run the \"start\" command first');
 
     const mustAsk = state.stageA && state.stageA.mustAsk;
     if (!mustAsk || !mustAsk[key]) {
@@ -1582,7 +1629,7 @@ if (command === 'validate') {
   if (command === 'review-packs') {
     const note = opts['note'];
     const state = loadState(repoRoot);
-    if (!state) die('[error] 未检测到初始化状态，请先运行 "start" 命令');
+    if (!state) die('[error] No init state detected; run the \"start\" command first');
 
     if (!state.stageB) state.stageB = {};
     state.stageB.packsReviewed = true;
@@ -1898,7 +1945,7 @@ if (command === 'validate') {
       state.stageC.wrappersSynced = syncResult.mode === 'applied';
       addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
       saveState(repoRoot, state);
-      console.log('[auto] 状态已更新: stageC.* = true');
+      console.log('[auto] State updated: stageC.* = true');
     }
 
     // Optional cleanup
@@ -1969,16 +2016,71 @@ if (command === 'validate') {
     const apply = !!opts['apply'];
     const cleanupAddonsFlag = !!opts['cleanup-addons'];
     const addonsRoot = opts['addons-root'] || 'addons';
+    
+    // Archive options
+    const archiveAll = !!opts['archive'];
+    const archiveDocs = archiveAll || !!opts['archive-docs'];
+    const archiveBlueprint = archiveAll || !!opts['archive-blueprint'];
 
-    const results = { init: null, addons: null };
+    const results = { init: null, addons: null, archived: [] };
+
+    // Archive before cleanup (if requested)
+    const archiveTarget = path.join(repoRoot, 'docs', 'project');
+    
+    if (archiveDocs || archiveBlueprint) {
+      if (!fs.existsSync(archiveTarget)) {
+        if (apply) {
+          fs.mkdirSync(archiveTarget, { recursive: true });
+          console.log(`[ok] Created archive directory: docs/project/`);
+        } else {
+          console.log(`[plan] Create archive directory: docs/project/`);
+        }
+      }
+    }
+
+    // Archive Stage A docs
+    if (archiveDocs) {
+      const stageADocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
+      if (fs.existsSync(stageADocsDir)) {
+        const files = fs.readdirSync(stageADocsDir);
+        for (const file of files) {
+          const srcFile = path.join(stageADocsDir, file);
+          const dstFile = path.join(archiveTarget, file);
+          if (fs.statSync(srcFile).isFile()) {
+            if (apply) {
+              fs.copyFileSync(srcFile, dstFile);
+              console.log(`[ok] Archived: init/stage-a-docs/${file} → docs/project/${file}`);
+            } else {
+              console.log(`[plan] Archive: init/stage-a-docs/${file} → docs/project/${file}`);
+            }
+            results.archived.push({ src: `init/stage-a-docs/${file}`, dst: `docs/project/${file}` });
+          }
+        }
+      }
+    }
+
+    // Archive Blueprint
+    if (archiveBlueprint) {
+      const blueprintSrc = path.join(repoRoot, 'init', 'project-blueprint.json');
+      const blueprintDst = path.join(archiveTarget, 'project-blueprint.json');
+      if (fs.existsSync(blueprintSrc)) {
+        if (apply) {
+          fs.copyFileSync(blueprintSrc, blueprintDst);
+          console.log(`[ok] Archived: init/project-blueprint.json → docs/project/project-blueprint.json`);
+        } else {
+          console.log(`[plan] Archive: init/project-blueprint.json → docs/project/project-blueprint.json`);
+        }
+        results.archived.push({ src: 'init/project-blueprint.json', dst: 'docs/project/project-blueprint.json' });
+      }
+    }
 
     // Cleanup init/ directory
     results.init = cleanupInit(repoRoot, apply);
 
     // Optionally cleanup unused add-on directories
     if (cleanupAddonsFlag) {
-      if (!blueprintPath) {
-        die('[error] --cleanup-addons requires --blueprint to determine enabled add-ons');
+      if (!fs.existsSync(blueprintPath)) {
+        die('[error] --cleanup-addons requires blueprint file to determine enabled add-ons');
       }
       const blueprint = readJson(blueprintPath);
       results.addons = cleanupUnusedAddons(repoRoot, blueprint, addonsRoot, apply);

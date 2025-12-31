@@ -2,13 +2,15 @@
 /**
  * agent-builder.js
  *
- * Dependency-free helper for a 5-stage (A–E) agent build flow.
+ * Dependency-free helper for a 6-stage (A–F) module-embedded agent build flow.
  *
- * Stage A: Interview notes + integration decision (TEMP workdir only; do not write repo)
- * Stage B: Blueprint JSON (TEMP workdir)
- * Stage C: Scaffold agent module + docs + registry (repo writes; no overwrite; registry merge)
+ * Stage A: Interview notes + modular integration decision (TEMP workdir only; never write repo)
+ * Stage B: Blueprint JSON (TEMP workdir; SSOT for scaffolding)
+ * Stage C: Scaffold agent component + module-local workdocs + module-local interact artifacts
+ *          (repo writes; no overwrite for code/docs; managed overwrite for contract artifacts)
  * Stage D: Implement (manual / project-specific)
- * Stage E: Verify + cleanup (delete TEMP workdir)
+ * Stage E: Verify (local acceptance via mock LLM; no external network)
+ * Stage F: Integrate into modular SSOT (module MANIFEST interfaces/implements + optional integration scenario + derived rebuilds)
  *
  * Commands:
  *   - start
@@ -17,11 +19,14 @@
  *   - validate-blueprint
  *   - plan
  *   - apply
+ *   - integrate-modular
+ *   - verify
  *   - finish
  *
  * Notes:
- * - This script intentionally has no dependencies other than Node.js.
+ * - This script intentionally has no external dependencies other than Node.js.
  */
+
 
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +34,9 @@ const os = require('os');
 const crypto = require('crypto');
 const http = require('http');
 const net = require('net');
-const { spawn } = require('child_process');
+const { pathToFileURL } = require('url');
+const child_process = require('child_process');
+const { spawn } = child_process;
 
 function usage(exitCode = 0) {
   const msg = `
@@ -38,14 +45,14 @@ agent-builder.js
 Commands:
   start
     --workdir <path>             Workdir path. Default: create under OS temp dir.
-    --repo-root <path>           Repo root to remember (default: cwd). No writes in start.
+    --repo-root <path>           Repo root to remember (default: cwd). No repo writes in start.
 
   status
     --workdir <path>             Workdir path (required unless AGENT_BUILDER_WORKDIR is set)
 
   approve
     --workdir <path>             Workdir path
-    --stage <A|B|C|D|E>           Stage to approve (A and B required before apply)
+    --stage <A|B|C|D|E|F>         Stage to approve (A and B required before apply)
 
   validate-blueprint
     --workdir <path>             Workdir path
@@ -60,10 +67,18 @@ Commands:
     --repo-root <path>           Repo root (default: cwd)
     --apply                       Actually write to repo (otherwise dry-run)
 
+  integrate-modular
+    --workdir <path>             Workdir path
+    --repo-root <path>           Repo root (default: cwd)
+    --apply                       Actually write to repo (otherwise dry-run)
+    --no-scenario                 Do not scaffold an integration scenario
+    --scenario-id <id>            Override default scenario id
+
   verify
     --workdir <path>             Workdir path
     --repo-root <path>           Repo root (default: cwd)
     --format <text|json>          Output format (default: text)
+    --skip-http                   Skip HTTP runtime checks (for sandbox/CI)
 
   finish
     --workdir <path>             Workdir path
@@ -77,7 +92,7 @@ Examples:
   node .../agent-builder.js plan --workdir <WORKDIR> --repo-root .
   node .../agent-builder.js apply --workdir <WORKDIR> --repo-root . --apply
   node .../agent-builder.js verify --workdir <WORKDIR> --repo-root .
-  node .../agent-builder.js verify --workdir <WORKDIR> --repo-root . --skip-http  # for sandbox/CI
+  node .../agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply
   node .../agent-builder.js finish --workdir <WORKDIR> --apply
 `;
   console.log(msg.trim());
@@ -748,7 +763,7 @@ function validateBlueprint(blueprint) {
   req(Number.isInteger(blueprint.version) && blueprint.version >= 1, 'version must be an integer >= 1.');
 
   const mustBlocks = [
-    'meta','agent','scope','integration','interfaces','api','schemas','contracts','model',
+    'meta','agent','scope','modular','integration','interfaces','api','schemas','contracts','model',
     'configuration','conversation','budgets','data_flow','observability','security','acceptance','deliverables'
   ];
   for (const b of mustBlocks) req(blueprint[b] && typeof blueprint[b] === 'object', `Missing required block: ${b}`);
@@ -760,6 +775,8 @@ function validateBlueprint(blueprint) {
   // Agent
   const agent = blueprint.agent || {};
   req(typeof agent.id === 'string' && agent.id.trim(), 'agent.id is required (string).');
+  const idPattern = /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/;
+  req(idPattern.test(agent.id), 'agent.id must match /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/ (lowercase letters, numbers, dot, underscore, dash).');
   req(typeof agent.name === 'string' && agent.name.trim(), 'agent.name is required (string).');
   req(typeof agent.summary === 'string' && agent.summary.trim(), 'agent.summary is required (string).');
   req(Array.isArray(agent.owners) && agent.owners.length > 0, 'agent.owners must be a non-empty array.');
@@ -775,6 +792,24 @@ function validateBlueprint(blueprint) {
   req(Array.isArray(scope.in_scope) && scope.in_scope.length > 0, 'scope.in_scope must be a non-empty array.');
   req(Array.isArray(scope.out_of_scope), 'scope.out_of_scope is required (array).');
   req(typeof scope.definition_of_done === 'string' && scope.definition_of_done.trim(), 'scope.definition_of_done is required (string).');
+
+  // Modular binding (module-embedded agent component)
+  const modular = blueprint.modular || {};
+  const moduleIdPattern = /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/;
+  req(typeof modular.host_module_id === 'string' && modular.host_module_id.trim(), 'modular.host_module_id is required (string).');
+  if (typeof modular.host_module_id === 'string' && modular.host_module_id.trim()) {
+    req(moduleIdPattern.test(modular.host_module_id), 'modular.host_module_id must match /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.');
+  }
+  const flowNode = modular.flow_node || {};
+  req(flowNode && typeof flowNode === 'object', 'modular.flow_node is required (object).');
+  req(typeof flowNode.flow_id === 'string' && flowNode.flow_id.trim(), 'modular.flow_node.flow_id is required (string).');
+  req(moduleIdPattern.test(flowNode.flow_id), 'modular.flow_node.flow_id must match /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.');
+  req(typeof flowNode.node_id === 'string' && flowNode.node_id.trim(), 'modular.flow_node.node_id is required (string).');
+  req(moduleIdPattern.test(flowNode.node_id), 'modular.flow_node.node_id must match /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.');
+  if (flowNode.variant !== undefined && flowNode.variant !== null && String(flowNode.variant).trim() !== '') {
+    req(typeof flowNode.variant === 'string' && String(flowNode.variant).trim(), 'modular.flow_node.variant must be a non-empty string when provided.');
+  }
+
 
   const integration = blueprint.integration || {};
   req(integration.primary === 'api', 'integration.primary must be "api" (v1).');
@@ -962,12 +997,29 @@ function validateBlueprint(blueprint) {
     }
   }
 
-  // Deliverables
+  // Deliverables (module-embedded)
   const del = blueprint.deliverables || {};
   req(typeof del.agent_module_path === 'string' && del.agent_module_path.trim(), 'deliverables.agent_module_path is required (string).');
   req(typeof del.docs_path === 'string' && del.docs_path.trim(), 'deliverables.docs_path is required (string).');
-  req(typeof del.registry_path === 'string' && del.registry_path.trim(), 'deliverables.registry_path is required (string).');
+  if (del.registry_path !== undefined && del.registry_path !== null && String(del.registry_path).trim() !== '') {
+    warnings.push('[DEPRECATED] deliverables.registry_path is ignored in module-embedded mode.');
+  }
+  if (!del.interact_path || !String(del.interact_path).trim()) {
+    warnings.push('deliverables.interact_path is not set; defaulting to modules/<module_id>/interact/agents/<agent_id>.');
+  }
   req(del.core_adapter_separation === 'required', 'deliverables.core_adapter_separation must be "required".');
+
+  // Ensure deliverables are scoped under the host module directory.
+  const expectedPrefix = (modular && modular.host_module_id) ? `modules/${modular.host_module_id}/` : null;
+  if (expectedPrefix && typeof del.agent_module_path === 'string') {
+    req(del.agent_module_path.startsWith(expectedPrefix), `deliverables.agent_module_path must be under ${expectedPrefix}`);
+  }
+  if (expectedPrefix && typeof del.docs_path === 'string') {
+    req(del.docs_path.startsWith(expectedPrefix), `deliverables.docs_path must be under ${expectedPrefix}`);
+  }
+  if (expectedPrefix && del.interact_path) {
+    req(String(del.interact_path).startsWith(expectedPrefix), `deliverables.interact_path must be under ${expectedPrefix}`);
+  }
 
   // Tools validation (if present)
   for (let ti = 0; ti < tools.length; ti++) {
@@ -1289,12 +1341,137 @@ function sanitizeManifest(bp) {
   return m;
 }
 
+
+function posixRelativePath(repoRoot, absPath) {
+  const rel = path.relative(repoRoot, absPath);
+  return rel.split(path.sep).join('/');
+}
+
+function joinUrlPath(basePath, routePath) {
+  const a = String(basePath || '').trim();
+  const b = String(routePath || '').trim();
+  const left = a.endsWith('/') ? a.slice(0, -1) : a;
+  const right = b.startsWith('/') ? b : `/${b}`;
+  return `${left}${right}`;
+}
+
+function schemaRefToOpenApi(ref) {
+  // blueprint format: #/schemas/Name  -> openapi format: #/components/schemas/Name
+  const m = String(ref || '').match(/^#\/schemas\/([A-Za-z0-9_]+)$/);
+  if (!m) return null;
+  return `#/components/schemas/${m[1]}`;
+}
+
+function generateOpenApiFromBlueprint(bp) {
+  const api = bp.api || {};
+  const routes = Array.isArray(api.routes) ? api.routes : [];
+  const basePath = api.base_path || '/';
+  const run = routes.find(r => r && r.name === 'run');
+  const health = routes.find(r => r && r.name === 'health');
+
+  const paths = {};
+
+  function addRoute(r, summary) {
+    if (!r) return;
+    const fullPath = joinUrlPath(basePath, r.path);
+    const method = String(r.method || 'post').toLowerCase();
+    const reqRef = schemaRefToOpenApi(r.request_schema_ref);
+    const resRef = schemaRefToOpenApi(r.response_schema_ref);
+    const errRef = schemaRefToOpenApi(r.error_schema_ref);
+
+    if (!paths[fullPath]) paths[fullPath] = {};
+    paths[fullPath][method] = {
+      summary,
+      operationId: `${bp.agent?.id || 'agent'}.${r.name}`,
+      requestBody: {
+        required: method !== 'get',
+        content: {
+          'application/json': {
+            schema: reqRef ? { $ref: reqRef } : { type: 'object' }
+          }
+        }
+      },
+      responses: {
+        '200': {
+          description: 'OK',
+          content: {
+            'application/json': {
+              schema: resRef ? { $ref: resRef } : { type: 'object' }
+            }
+          }
+        },
+        '400': {
+          description: 'Error',
+          content: {
+            'application/json': {
+              schema: errRef ? { $ref: errRef } : { type: 'object' }
+            }
+          }
+        },
+        '500': {
+          description: 'Error',
+          content: {
+            'application/json': {
+              schema: errRef ? { $ref: errRef } : { type: 'object' }
+            }
+          }
+        }
+      }
+    };
+  }
+
+  addRoute(health, 'Health check');
+  addRoute(run, 'Run agent');
+
+  const schemas = bp.schemas || {};
+  return {
+    openapi: '3.0.0',
+    info: {
+      title: bp.agent?.name || bp.agent?.id || 'agent',
+      version: bp.contracts?.version || '0.0.0',
+      description: bp.agent?.summary || ''
+    },
+    paths,
+    components: {
+      schemas
+    }
+  };
+}
+
+function ensureModuleRegistryShape(reg, moduleId) {
+  const out = reg && typeof reg === 'object' ? reg : {};
+  if (out.version !== 1) out.version = 1;
+  if (!out.moduleId) out.moduleId = moduleId;
+  if (!out.updatedAt) out.updatedAt = nowIso();
+  if (!Array.isArray(out.artifacts)) out.artifacts = [];
+  // Drop unknown top-level keys? Keep as-is; contextctl verify will enforce strictness.
+  return out;
+}
+
+function upsertModuleArtifact(reg, artifact) {
+  const idx = reg.artifacts.findIndex(a => a && a.artifactId === artifact.artifactId);
+  if (idx >= 0) reg.artifacts[idx] = { ...reg.artifacts[idx], ...artifact };
+  else reg.artifacts.push(artifact);
+}
+
+function sha256FileHex(absPath) {
+  const buf = fs.readFileSync(absPath);
+  return crypto.createHash('sha256').update(buf).digest('hex');
+}
+
 function planScaffold(bp, repoRoot) {
   const plan = [];
 
   const agentDir = safeResolve(repoRoot, bp.deliverables.agent_module_path);
   const docsDir = safeResolve(repoRoot, bp.deliverables.docs_path);
-  const registryPath = safeResolve(repoRoot, bp.deliverables.registry_path);
+
+  const moduleId = String(bp.modular?.host_module_id || '').trim();
+  const interactRel = (bp.deliverables && bp.deliverables.interact_path && String(bp.deliverables.interact_path).trim())
+    ? String(bp.deliverables.interact_path).trim()
+    : `modules/${moduleId}/interact/agents/${bp.agent.id}`;
+  const interactDir = safeResolve(repoRoot, interactRel);
+
+  const moduleRegistryPath = safeResolve(repoRoot, path.join('modules', moduleId, 'interact', 'registry.json'));
 
   // Agent kit templates
   const templatesRoot = loadTemplatesRoot();
@@ -1335,22 +1512,36 @@ function planScaffold(bp, repoRoot) {
     plan.push({ action: 'create', path: path.join(docsDir, base) });
   }
 
-  // Registry (merge)
-  plan.push({ action: exists(registryPath) ? 'update' : 'create', path: registryPath });
+  // Module-local interact artifacts (managed; overwrite)
+  const bpDst = path.join(interactDir, 'blueprint.json');
+  const oaDst = path.join(interactDir, 'openapi.json');
+  plan.push({ action: exists(bpDst) ? 'update' : 'create', path: bpDst });
+  plan.push({ action: exists(oaDst) ? 'update' : 'create', path: oaDst });
 
-  return { agentDir, docsDir, registryPath, plan, ctx };
+  // Module context registry (upsert artifacts)
+  plan.push({ action: exists(moduleRegistryPath) ? 'update' : 'create', path: moduleRegistryPath });
+
+  return { agentDir, docsDir, interactDir, moduleId, moduleRegistryPath, plan, ctx };
 }
 
 function applyScaffold(bp, repoRoot, apply) {
-  const { agentDir, docsDir, registryPath, plan, ctx } = planScaffold(bp, repoRoot);
+  const { agentDir, docsDir, interactDir, moduleId, moduleRegistryPath, plan, ctx } = planScaffold(bp, repoRoot);
 
   const templatesRoot = loadTemplatesRoot();
   const kitRoot = path.join(templatesRoot, 'agent-kit', 'node', 'layout');
 
   const created = [];
+  const updated = [];
   const skipped = [];
 
-  // 1) Create agent module from kit templates
+  // Require host module directory (agent is a module-embedded component)
+  const moduleDir = safeResolve(repoRoot, path.join('modules', moduleId));
+  const moduleManifestPath = path.join(moduleDir, 'MANIFEST.yaml');
+  if (!exists(moduleDir) || !exists(moduleManifestPath)) {
+    die(`Host module instance not initialized: modules/${moduleId}\nExpected: modules/${moduleId}/MANIFEST.yaml\nRun: node .ai/scripts/modulectl.js init --module-id ${moduleId} --module-type service --apply`);
+  }
+
+  // 1) Create agent component from kit templates
   for (const src of listFilesRecursive(kitRoot)) {
     const rel = path.relative(kitRoot, src);
     const outRel = rel.endsWith('.template') ? rel.replace(/\.template$/, '') : rel;
@@ -1398,13 +1589,12 @@ function applyScaffold(bp, repoRoot, apply) {
     skipped.push(manifestDst);
   }
 
-  // 5) .env.example
+  // 5) .env.example (append-only env var enforcement)
   const envDst = path.join(agentDir, '.env.example');
   const desiredEnvVars = Array.isArray(bp.configuration?.env_vars) ? bp.configuration.env_vars : [];
   if (!exists(envDst)) {
     created.push(envDst);
     if (apply) {
-      // Seed file with a header; actual variables will be appended/merged below.
       const base = [
         `# .env.example for ${bp.agent.id}`,
         '# Never commit real secrets. This file is placeholders only.',
@@ -1414,7 +1604,6 @@ function applyScaffold(bp, repoRoot, apply) {
     }
   }
 
-  // Always ensure required env vars are present (append-only; never delete existing lines).
   if (apply) {
     const current = exists(envDst) ? readText(envDst) : '';
     let out = current;
@@ -1438,10 +1627,11 @@ function applyScaffold(bp, repoRoot, apply) {
         out += `${v.name}=${v.example_placeholder || ''}\n\n`;
       }
       writeText(envDst, out);
+      updated.push(envDst);
     }
   }
 
-  // 6) Docs
+  // 6) Docs (module-local workdocs)
   const docsTemplates = path.join(templatesRoot, 'docs');
   const docCtx = buildDocsContext(bp);
   for (const src of listFilesRecursive(docsTemplates)) {
@@ -1455,48 +1645,75 @@ function applyScaffold(bp, repoRoot, apply) {
     writeText(dst, rendered);
   }
 
-  // 7) Registry merge (always update/create)
-  const registryDir = path.dirname(registryPath);
-  const relAgentModule = bp.deliverables.agent_module_path;
-  const relDocs = bp.deliverables.docs_path;
-  const entry = {
-    id: bp.agent.id,
-    name: bp.agent.name,
-    summary: bp.agent.summary,
-    owners: bp.agent.owners,
-    module_path: relAgentModule,
-    docs_path: relDocs,
-    primary: 'api',
-    attach: bp.integration.attach || [],
-    entrypoints: (bp.interfaces || []).map(i => ({ type: i.type, entrypoint: i.entrypoint, response_mode: i.response_mode })),
-    contract_version: bp.contracts.version,
-    updated_at: nowIso()
-  };
+  // 7) Module-local interact artifacts (managed overwrite)
+  const interactBlueprintPath = path.join(interactDir, 'blueprint.json');
+  const interactOpenApiPath = path.join(interactDir, 'openapi.json');
+  if (apply) fs.mkdirSync(interactDir, { recursive: true });
 
-  if (apply) {
-    fs.mkdirSync(registryDir, { recursive: true });
-    let reg = { version: 1, agents: [] };
-    if (exists(registryPath)) {
-      try { reg = readJson(registryPath); } catch (e) { die(`Failed to parse existing registry: ${registryPath}`); }
-      if (!Array.isArray(reg.agents)) reg.agents = [];
-      if (!reg.version) reg.version = 1;
-    }
-    const idx = reg.agents.findIndex(a => a && a.id === entry.id);
-    if (idx >= 0) reg.agents[idx] = { ...reg.agents[idx], ...entry };
-    else reg.agents.push(entry);
+  // blueprint.json (managed)
+  if (exists(interactBlueprintPath)) updated.push(interactBlueprintPath);
+  else created.push(interactBlueprintPath);
+  if (apply) writeJson(interactBlueprintPath, bp);
 
-    const moduleIds = Array.isArray(bp.deliverables.module_ids)
-      ? [...new Set(bp.deliverables.module_ids.map((id) => String(id || '').trim()).filter(Boolean))]
-      : [];
-    if (!Array.isArray(reg.agent_module_map)) reg.agent_module_map = [];
-    const mapEntry = { agent_id: bp.agent.id, module_ids: moduleIds };
-    const mapIdx = reg.agent_module_map.findIndex((a) => a && a.agent_id === mapEntry.agent_id);
-    if (mapIdx >= 0) reg.agent_module_map[mapIdx] = mapEntry;
-    else reg.agent_module_map.push(mapEntry);
-    writeJson(registryPath, reg);
+  // openapi.json (managed)
+  if (exists(interactOpenApiPath)) updated.push(interactOpenApiPath);
+  else created.push(interactOpenApiPath);
+  if (apply) writeJson(interactOpenApiPath, generateOpenApiFromBlueprint(bp));
+
+  // 8) Update module context registry (SSOT)
+  const registryDir = path.dirname(moduleRegistryPath);
+  if (apply) fs.mkdirSync(registryDir, { recursive: true });
+
+  let reg = { version: 1, moduleId, updatedAt: nowIso(), artifacts: [] };
+  if (exists(moduleRegistryPath)) {
+    try { reg = ensureModuleRegistryShape(readJson(moduleRegistryPath), moduleId); }
+    catch (e) { die(`Failed to parse module context registry: ${moduleRegistryPath}`); }
+  } else {
+    // Create minimal registry if missing (still requires module manifest to exist).
+    reg = ensureModuleRegistryShape(reg, moduleId);
+    if (apply) created.push(moduleRegistryPath);
   }
 
-  return { plan, created, skipped, registryPath };
+  if (apply) {
+    const now = nowIso();
+
+    const blueprintRel = posixRelativePath(repoRoot, interactBlueprintPath);
+    const openapiRel = posixRelativePath(repoRoot, interactOpenApiPath);
+
+    const blueprintEntry = {
+      artifactId: `agent.${bp.agent.id}.blueprint`,
+      type: 'agent_blueprint',
+      path: blueprintRel,
+      mode: 'contract',
+      format: 'json',
+      tags: ['agent', 'blueprint', bp.agent.id],
+      checksumSha256: sha256FileHex(interactBlueprintPath),
+      lastUpdated: now,
+      source: { kind: 'command', command: 'agent_builder apply', cwd: '.', notes: 'generated by agent_builder' }
+    };
+
+    const openapiEntry = {
+      artifactId: `agent.${bp.agent.id}.openapi`,
+      type: 'openapi',
+      path: openapiRel,
+      mode: 'contract',
+      format: 'json',
+      tags: ['agent', 'openapi', bp.agent.id],
+      checksumSha256: sha256FileHex(interactOpenApiPath),
+      lastUpdated: now,
+      source: { kind: 'command', command: 'agent_builder apply', cwd: '.', notes: 'generated by agent_builder' }
+    };
+
+    upsertModuleArtifact(reg, blueprintEntry);
+    upsertModuleArtifact(reg, openapiEntry);
+    reg.updatedAt = now;
+
+    // Write registry
+    if (exists(moduleRegistryPath)) updated.push(moduleRegistryPath);
+    writeJson(moduleRegistryPath, reg);
+  }
+
+  return { plan, created, updated, skipped, moduleRegistryPath, interactDir };
 }
 
 function commandStart(args) {
@@ -1530,7 +1747,7 @@ function commandStart(args) {
     stage: 'A',
     workdir,
     repo_root: repoRoot,
-    approvals: { A: false, B: false, C: false, D: false, E: false },
+    approvals: { A: false, B: false, C: false, D: false, E: false, F: false },
     stageA: {
       interview_notes_path: 'stageA/interview-notes.md',
       integration_decision_path: 'stageA/integration-decision.md'
@@ -1578,7 +1795,7 @@ function commandApprove(args) {
   ensureWorkdir(workdir);
 
   const stage = args.stage;
-  if (!stage || !['A','B','C','D','E'].includes(stage)) die('approve requires --stage <A|B|C|D|E>');
+  if (!stage || !['A','B','C','D','E','F'].includes(stage)) die('approve requires --stage <A|B|C|D|E>');
 
   const state = loadState(workdir);
   state.approvals[stage] = true;
@@ -1675,21 +1892,35 @@ function commandApply(args) {
 
   state.stageC.applied = apply;
   state.stageC.applied_at = nowIso();
-  state.stageC.generated_paths = result.created;
+  state.stageC.created_paths = result.created;
+  state.stageC.updated_paths = result.updated;
+  state.stageC.generated_paths = result.created.concat(result.updated);
   state.stageC.skipped_paths = result.skipped;
-  addHistory(state, 'apply', { repo_root: repoRoot, apply, created: result.created.length, skipped: result.skipped.length });
+  addHistory(state, 'apply', {
+    repo_root: repoRoot,
+    apply,
+    created: result.created.length,
+    updated: result.updated.length,
+    skipped: result.skipped.length
+  });
   saveState(workdir, state);
 
   console.log(apply ? 'Applied scaffold.' : 'Dry-run (no changes written).');
+
   console.log(`Created (${result.created.length})`);
   for (const p of result.created.slice(0, 200)) console.log(`  + ${p}`);
   if (result.created.length > 200) console.log(`  ... (${result.created.length - 200} more)`);
+
+  console.log(`Updated (${result.updated.length})`);
+  for (const p of result.updated.slice(0, 200)) console.log(`  ~ ${p}`);
+  if (result.updated.length > 200) console.log(`  ... (${result.updated.length - 200} more)`);
 
   console.log(`Skipped existing (${result.skipped.length})`);
   for (const p of result.skipped.slice(0, 200)) console.log(`  = ${p}`);
   if (result.skipped.length > 200) console.log(`  ... (${result.skipped.length - 200} more)`);
 
-  console.log(`Registry: ${result.registryPath}`);
+  console.log(`Module context registry: ${result.moduleRegistryPath}`);
+  console.log(`Interact dir: ${result.interactDir}`);
   if (!apply) {
     console.log('\nTo apply changes, rerun with --apply.');
   }
@@ -1703,6 +1934,293 @@ function commandApply(args) {
  *
  * Unsupported scenarios will be marked as skipped (with structural checks recorded).
  */
+
+// ------------------------------
+// ------------------------------
+// Integrate-modular command (Stage F)
+// ------------------------------
+
+async function loadYamlLib(repoRoot) {
+  const yamlLibPath = path.join(repoRoot, '.ai', 'scripts', 'lib', 'yaml.js');
+  if (!exists(yamlLibPath)) {
+    die(`YAML helper not found at ${yamlLibPath}`);
+  }
+  return import(pathToFileURL(yamlLibPath).href);
+}
+
+function isValidModularId(id) {
+  return /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.test(String(id || ''));
+}
+
+function isValidIntegrationId(id) {
+  return /^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$/.test(String(id || ''));
+}
+
+function normalizeIdPiece(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[^a-z0-9]+/g, '')
+    .replace(/[^a-z0-9]+$/g, '');
+}
+
+function makeScenarioId(moduleId, agentId) {
+  let id = `${normalizeIdPiece(moduleId)}.agent.${normalizeIdPiece(agentId)}.smoke`;
+  id = id.replace(/^[^a-z0-9]+/g, '').replace(/[^a-z0-9]+$/g, '');
+  if (id.length <= 64 && isValidIntegrationId(id)) return id;
+
+  const h = crypto.createHash('sha1').update(id).digest('hex').slice(0, 8);
+  const base = `${normalizeIdPiece(moduleId)}.agent.${normalizeIdPiece(agentId)}`;
+  const maxBase = Math.max(8, 64 - (1 + h.length + 6)); // ".<hash>.smoke"
+  let trimmed = base.slice(0, maxBase);
+  trimmed = trimmed.replace(/[^a-z0-9]+$/g, '');
+  id = `${trimmed}.${h}.smoke`;
+  if (id.length > 64) id = id.slice(0, 64);
+  id = id.replace(/^[^a-z0-9]+/g, '').replace(/[^a-z0-9]+$/g, '');
+  if (isValidIntegrationId(id)) return id;
+
+  return `agent.${h}.smoke`;
+}
+
+function flowHasNode(flowGraph, flowId, nodeId) {
+  const flows = Array.isArray(flowGraph?.flows) ? flowGraph.flows : [];
+  const flow = flows.find(f => f && f.id === flowId);
+  if (!flow) return { ok: false, reason: `flow_id not found: ${flowId}` };
+  const nodes = Array.isArray(flow.nodes) ? flow.nodes : [];
+  const node = nodes.find(n => n && n.id === nodeId);
+  if (!node) return { ok: false, reason: `node_id not found in flow ${flowId}: ${nodeId}` };
+  return { ok: true };
+}
+
+function renderFlowChangeRequest(bp) {
+  const moduleId = bp.modular?.host_module_id;
+  const flow = bp.modular?.flow_node?.flow_id;
+  const node = bp.modular?.flow_node?.node_id;
+  const variant = bp.modular?.flow_node?.variant;
+  const agentId = bp.agent?.id;
+
+  const variantLine = (variant && String(variant).trim()) ? `- variant: ${variant}` : `- variant: (none)`;
+
+  return `# Flow change request (agent_builder)\n\nThis agent blueprint expects a flow-node binding that is not present in **.system/modular/flow_graph.yaml**.\n\n## Requested binding\n\n- host_module_id: ${moduleId}\n- agent_id: ${agentId}\n- flow_id: ${flow}\n- node_id: ${node}\n${variantLine}\n\n## Required action\n\n1) Update **.system/modular/flow_graph.yaml** to include the flow and node above.\n2) Re-run:\n\n\`\`\`bash\nnode .ai/skills/scaffold/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply\n\`\`\`\n\nNotes:\n- agent_builder does not edit flow_graph.yaml.\n`;
+}
+
+function runNodeScript(repoRoot, scriptRel, argsArr) {
+  const scriptAbs = path.join(repoRoot, scriptRel);
+  const res = child_process.spawnSync(process.execPath, [scriptAbs, ...argsArr], {
+    cwd: repoRoot,
+    stdio: 'inherit'
+  });
+  if (res.status !== 0) {
+    die(`Command failed: node ${scriptRel} ${argsArr.join(' ')}`);
+  }
+}
+
+async function commandIntegrateModular(args) {
+  const workdir = args.workdir || process.env.AGENT_BUILDER_WORKDIR;
+  if (!workdir) die('Missing --workdir (or set AGENT_BUILDER_WORKDIR).');
+
+  const repoRoot = safeResolve(process.cwd(), args['repo-root'] || '.');
+  const apply = !!args.apply;
+  const noScenario = !!args['no-scenario'];
+  const scenarioIdOverride = args['scenario-id'];
+
+  if (!exists(statePath(workdir))) {
+    die(`No state found in workdir: ${workdir}\nRun: agent-builder.js start`);
+  }
+  const state = loadState(workdir);
+
+  if (!state.approvals?.A || !state.approvals?.B) {
+    die('Refusing to integrate: approvals for stages A and B are required.');
+  }
+  if (!state.stageC?.applied) {
+    die('Refusing to integrate: Stage C scaffold has not been applied. Run apply --apply first.');
+  }
+
+  const blueprintPath = state.stageB?.blueprint_path ? path.join(workdir, state.stageB.blueprint_path) : null;
+  if (!blueprintPath || !exists(blueprintPath)) {
+    die('Blueprint not found: approve stage B first (stageB.blueprint_path missing).');
+  }
+  const bp = readJson(blueprintPath);
+  const validation = validateBlueprint(bp);
+  if (!validation.ok) {
+    const msg = validation.errors.map(e => `- ${e}`).join('\n');
+    die(`Blueprint invalid:\n${msg}`);
+  }
+
+  const moduleId = String(bp.modular.host_module_id).trim();
+  if (!isValidModularId(moduleId)) {
+    die(`Invalid modular.host_module_id: ${moduleId}`);
+  }
+
+  const moduleDir = safeResolve(repoRoot, path.join('modules', moduleId));
+  const manifestPath = path.join(moduleDir, 'MANIFEST.yaml');
+  if (!exists(manifestPath)) {
+    die(`Host module MANIFEST.yaml not found: modules/${moduleId}/MANIFEST.yaml`);
+  }
+
+  const interactRel = (bp.deliverables && bp.deliverables.interact_path && String(bp.deliverables.interact_path).trim())
+    ? String(bp.deliverables.interact_path).trim()
+    : `modules/${moduleId}/interact/agents/${bp.agent.id}`;
+  const interactDir = safeResolve(repoRoot, interactRel);
+
+  const yamlLib = await loadYamlLib(repoRoot);
+
+  // 1) Validate flow_graph binding (agent_builder does NOT edit flow_graph)
+  const flowGraphPath = safeResolve(repoRoot, path.join('.system', 'modular', 'flow_graph.yaml'));
+  if (!exists(flowGraphPath)) die('Missing .system/modular/flow_graph.yaml');
+  const flowGraph = yamlLib.loadYamlFile(flowGraphPath) || {};
+
+  const flowId = String(bp.modular.flow_node.flow_id).trim();
+  const nodeId = String(bp.modular.flow_node.node_id).trim();
+  const variant = (bp.modular.flow_node.variant && String(bp.modular.flow_node.variant).trim())
+    ? String(bp.modular.flow_node.variant).trim()
+    : null;
+
+  const flowCheck = flowHasNode(flowGraph, flowId, nodeId);
+  if (!flowCheck.ok) {
+    const reqPath = path.join(interactDir, 'flow-change-request.md');
+    const content = renderFlowChangeRequest(bp);
+    console.error(`Flow binding missing: ${flowCheck.reason}`);
+    console.error(`Prepared flow change request: ${reqPath}`);
+    if (apply) {
+      fs.mkdirSync(interactDir, { recursive: true });
+      writeText(reqPath, content);
+    } else {
+      console.error('\n--- flow-change-request.md ---\n' + content);
+    }
+    die('Cannot integrate until flow_graph.yaml is updated (agent_builder will not modify it).');
+  }
+
+  // 2) Patch module MANIFEST.yaml interfaces/implements (SSOT)
+  const manifest = yamlLib.loadYamlFile(manifestPath) || {};
+  if (!Array.isArray(manifest.interfaces)) manifest.interfaces = [];
+
+  const routes = Array.isArray(bp.api?.routes) ? bp.api.routes : [];
+  const runRoute = routes.find(r => r && r.name === 'run');
+  const healthRoute = routes.find(r => r && r.name === 'health');
+  if (!runRoute || !healthRoute) {
+    die('Blueprint must define api.routes including {name:"run"} and {name:"health"}.');
+  }
+
+  const runIfaceId = `agent.${bp.agent.id}.run`;
+  const healthIfaceId = `agent.${bp.agent.id}.health`;
+
+  const runPath = joinUrlPath(bp.api.base_path, runRoute.path);
+  const healthPath = joinUrlPath(bp.api.base_path, healthRoute.path);
+
+  const implRef = { flow_id: flowId, node_id: nodeId };
+  if (variant) implRef.variant = variant;
+
+  let changed = false;
+
+  function upsertInterface(id, patchFn) {
+    const idx = manifest.interfaces.findIndex(x => x && x.id === id);
+    if (idx >= 0) {
+      const before = manifest.interfaces[idx];
+      const after = patchFn({ ...before });
+      manifest.interfaces[idx] = after;
+      if (JSON.stringify(before) !== JSON.stringify(after)) changed = true;
+    } else {
+      manifest.interfaces.push(patchFn({ id }));
+      changed = true;
+    }
+  }
+
+  upsertInterface(healthIfaceId, (iface) => {
+    const out = { ...iface };
+    out.id = healthIfaceId;
+    out.protocol = 'http';
+    out.method = String(healthRoute.method || 'POST').toUpperCase();
+    out.path = healthPath;
+    out.description = out.description || `Health check for agent ${bp.agent.id}`;
+    return out;
+  });
+
+  upsertInterface(runIfaceId, (iface) => {
+    const out = { ...iface };
+    out.id = runIfaceId;
+    out.protocol = 'http';
+    out.method = String(runRoute.method || 'POST').toUpperCase();
+    out.path = runPath;
+    out.description = out.description || `Run agent ${bp.agent.id}`;
+    if (!Array.isArray(out.implements)) out.implements = [];
+    const existsImpl = out.implements.some(x =>
+      x && x.flow_id === implRef.flow_id && x.node_id === implRef.node_id && (x.variant || null) === (implRef.variant || null)
+    );
+    if (!existsImpl) out.implements.push(implRef);
+    return out;
+  });
+
+  if (!apply) {
+    console.log('Dry-run. Would update module MANIFEST.yaml and (optionally) scaffold an integration scenario.');
+    console.log(`- Module: ${moduleId}`);
+    console.log(`- MANIFEST: ${manifestPath}`);
+    console.log(`- Interfaces ensured: ${healthIfaceId}, ${runIfaceId}`);
+    console.log(`- Flow binding: ${flowId}.${nodeId}${variant ? ' (variant ' + variant + ')' : ''}`);
+    console.log(`- Scenario: ${noScenario ? '(skipped)' : (scenarioIdOverride || makeScenarioId(moduleId, bp.agent.id))}`);
+    console.log('\nTo apply changes, rerun with --apply.');
+    return;
+  }
+
+  if (changed) {
+    yamlLib.saveYamlFile(manifestPath, manifest);
+    console.log(`Updated MANIFEST.yaml: ${manifestPath}`);
+  } else {
+    console.log('No MANIFEST.yaml changes required.');
+  }
+
+  // 3) Optional: scaffold integration scenario (uses implementation index)
+  const scenarioId = scenarioIdOverride || makeScenarioId(moduleId, bp.agent.id);
+  if (!noScenario) {
+    const scenariosPath = safeResolve(repoRoot, path.join('modules', 'integration', 'scenarios.yaml'));
+    if (!exists(scenariosPath)) {
+      die('Missing modules/integration/scenarios.yaml (integration module not initialized).');
+    }
+    let scenariosDoc = {};
+    try { scenariosDoc = yamlLib.loadYamlFile(scenariosPath) || {}; } catch (e) { scenariosDoc = {}; }
+    const scenarios = Array.isArray(scenariosDoc.scenarios) ? scenariosDoc.scenarios : [];
+    const already = scenarios.some(s => s && s.id === scenarioId);
+    if (already) {
+      console.log(`Integration scenario already exists: ${scenarioId}`);
+    } else {
+      console.log(`Scaffolding integration scenario: ${scenarioId}`);
+      runNodeScript(repoRoot, path.join('.ai', 'scripts', 'integrationctl.js'), [
+        'new-scenario',
+        '--id', scenarioId,
+        '--flow-id', flowId,
+        '--nodes', nodeId
+      ]);
+    }
+  } else {
+    console.log('Skipping integration scenario scaffolding (--no-scenario).');
+  }
+
+  // 4) Rebuild derived registries + validate (pipeline)
+  console.log('\nRebuilding derived registries + validating...');
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'modulectl.js'), ['registry-build']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'flowctl.js'), ['update-from-manifests']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'flowctl.js'), ['lint', '--strict']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'contextctl.js'), ['build', '--no-refresh']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'contextctl.js'), ['verify', '--strict']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'integrationctl.js'), ['validate', '--strict']);
+  runNodeScript(repoRoot, path.join('.ai', 'scripts', 'integrationctl.js'), ['compile']);
+
+  state.stageF = state.stageF || {};
+  state.stageF.integrated = true;
+  state.stageF.integrated_at = nowIso();
+  state.stage = 'F';
+  addHistory(state, 'integrate-modular', {
+    repo_root: repoRoot,
+    module_id: moduleId,
+    scenario_id: noScenario ? null : scenarioId
+  });
+  saveState(workdir, state);
+
+  console.log('\nIntegrated into modular SSOT successfully.');
+}
+
 async function commandVerify(args) {
   const workdir = getWorkdir(args);
   ensureWorkdir(workdir);
@@ -2816,6 +3334,12 @@ function main() {
   if (cmd === 'validate-blueprint') return commandValidateBlueprint(args);
   if (cmd === 'plan') return commandPlan(args);
   if (cmd === 'apply') return commandApply(args);
+  if (cmd === 'integrate-modular') {
+    return commandIntegrateModular(args).catch((e) => {
+      console.error(`Integrate failed: ${String(e && e.message ? e.message : e)}`);
+      process.exit(1);
+    });
+  }
   if (cmd === 'verify') {
     return commandVerify(args).catch((e) => {
       console.error(`Verify failed: ${String(e && e.message ? e.message : e)}`);

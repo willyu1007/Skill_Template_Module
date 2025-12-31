@@ -178,16 +178,16 @@ Ask if:
 Write add-on decisions to:
 - Stage B: `addons.*` section in `docs/project/project-blueprint.json`
 
-## E. 技术栈选择引导 (Technology Stack Selection)
+## E. Tech stack selection
 
-在完成需求访谈后，引导用户选择技术栈。
+After the requirements interview, guide the user to choose the tech stack.
 
-### E1. 开发语言选择
+### E1. Programming language
 
-**Ask**: "这个项目的主要开发语言是什么？"
+**Ask**: "What is the primary programming language for this project?"
 
-| 语言 | 有预置模板 | 推荐包管理器 |
-|------|-----------|-------------|
+| Language | Has template | Recommended package manager |
+|----------|--------------|----------------------------|
 | TypeScript | ✅ | pnpm |
 | JavaScript | ✅ | pnpm |
 | Go | ✅ | go |
@@ -197,77 +197,77 @@ Write add-on decisions to:
 | Kotlin | ❌ | gradle |
 | .NET (C#) | ❌ | dotnet |
 | Rust | ❌ | cargo |
-| Other | ❌ | (根据语言) |
+| Other | ❌ | (depends on language) |
 
-**决策逻辑**:
-- 有 ✅ 标记的语言：使用预置模板生成配置
-- 无 ✅ 标记的语言：LLM 根据 `llm-init-guide.md` 动态生成配置
+**Decision logic**:
+- Languages marked ✅: generate config using built-in templates
+- Languages marked ❌: the LLM generates config dynamically based on `llm-init-guide.md`
 
-### E2. 包管理器选择
+### E2. Package manager
 
-**Ask**: "使用哪个包管理器？"
+**Ask**: "Which package manager should we use?"
 
-根据语言给出选项：
-- TypeScript/JavaScript: "pnpm（推荐）、yarn、npm"
-- Python: "poetry（推荐）、pip、pipenv、uv"
-- Java/Kotlin: "gradle（推荐）、maven"
-- Go: 固定使用 `go`
-- Rust: 固定使用 `cargo`
-- .NET: 固定使用 `dotnet`
+Offer options based on the chosen language:
+- TypeScript/JavaScript: "pnpm (recommended), yarn, npm"
+- Python: "poetry (recommended), pip, pipenv, uv"
+- Java/Kotlin: "gradle (recommended), maven"
+- Go: fixed: `go`
+- Rust: fixed: `cargo`
+- .NET: fixed: `dotnet`
 
-### E3. 前端框架选择（如果 `capabilities.frontend.enabled: true`）
+### E3. Frontend framework (if `capabilities.frontend.enabled: true`)
 
-**Ask**: "前端使用什么框架？"
+**Ask**: "Which frontend framework should we use?"
 
-- React (推荐)
+- React (recommended)
 - Vue.js
 - Svelte
 - Angular
 - Solid
-- 其他（请说明）
+- Other (please specify)
 
-**元框架**（可选）:
+**Meta-frameworks** (optional):
 - Next.js (React)
 - Nuxt (Vue)
 - Remix (React)
 - SvelteKit (Svelte)
 
-### E4. 后端框架选择（如果 `capabilities.backend.enabled: true`）
+### E4. Backend framework (if `capabilities.backend.enabled: true`)
 
-**Ask**: "后端使用什么框架？"
+**Ask**: "Which backend framework should we use?"
 
 TypeScript/JavaScript:
-- Express (推荐，简单)
-- Fastify (性能优先)
-- NestJS (企业级)
-- Hono (边缘计算)
+- Express (recommended, simple)
+- Fastify (performance-first)
+- NestJS (enterprise-oriented)
+- Hono (edge-first)
 
 Python:
-- FastAPI (推荐，现代)
-- Django (全功能)
-- Flask (轻量)
+- FastAPI (recommended, modern)
+- Django (batteries-included)
+- Flask (lightweight)
 
 Go:
-- Gin (推荐)
+- Gin (recommended)
 - Echo
 - Fiber
 
 Java/Kotlin:
-- Spring Boot (推荐)
+- Spring Boot (recommended)
 - Quarkus
 - Micronaut
 
-### E5. Repo 布局选择
+### E5. Repo layout
 
-**Ask**: "项目是单一应用还是多应用/多包？"
+**Ask**: "Is this repo a single app or a multi-app/multi-package monorepo?"
 
-- **single** - 单一应用
-  - 目录结构: `src/`
-  - 适用: 简单项目、单一服务
+- **single** - single app
+  - Directory structure: `src/`
+  - Good for: simple projects, single service
   
-- **monorepo** - 多应用/多包
-  - 目录结构: `apps/` + `packages/`
-  - 适用: 前后端分离、共享库、多服务
+- **monorepo** - multi-app/multi-package
+  - Directory structure: `apps/` + `packages/`
+  - Good for: split frontend/backend, shared libraries, multiple services
 
 Write to:
 - Stage B: `repo.layout`, `repo.language`, `repo.packageManager`
@@ -275,23 +275,23 @@ Write to:
 
 ---
 
-## F. 配置文件生成引导 (Config Generation for Unsupported Languages)
+## F. Config generation guidance (unsupported languages)
 
-当用户选择的语言没有预置模板时，LLM 应根据以下规则生成配置文件。
+When the selected language does not have a built-in template, the LLM should generate config files using the rules below.
 
-**详细指南**: 参考 `templates/llm-init-guide.md` 的 "Phase 5: 配置文件生成" 章节。
+**Detailed guide**: see `templates/llm-init-guide.md`, "Phase 5: Config generation".
 
-### F1. Python 项目
+### F1. Python projects
 
-**必须生成**:
-- `pyproject.toml` - 项目配置（包含 pytest, ruff, mypy 配置）
-- 目录: `src/{{project_name}}/`, `tests/`
+**Must generate**:
+- `pyproject.toml` - project configuration (including pytest, ruff, mypy settings)
+- Directories: `src/{{project_name}}/`, `tests/`
 
-**可选**（根据包管理器）:
+**Optional** (based on the package manager):
 - `requirements.txt` (pip)
 - `Pipfile` (pipenv)
 
-**示例 pyproject.toml**:
+**Example `pyproject.toml`**:
 ```toml
 [project]
 name = "{{project.name}}"
@@ -307,37 +307,37 @@ line-length = 88
 target-version = "py311"
 ```
 
-### F2. Java 项目
+### F2. Java projects
 
-**Gradle（推荐）**:
+**Gradle (recommended)**:
 - `build.gradle.kts`
 - `settings.gradle.kts`
-- 目录: `src/main/java/`, `src/test/java/`
+- Directories: `src/main/java/`, `src/test/java/`
 
 **Maven**:
 - `pom.xml`
-- 目录: `src/main/java/`, `src/test/java/`
+- Directories: `src/main/java/`, `src/test/java/`
 
-### F3. .NET 项目
+### F3. .NET projects
 
-**必须生成**:
+**Must generate**:
 - `{{project.name}}.csproj`
 - `global.json`
-- 目录: `src/`, `tests/`
+- Directories: `src/`, `tests/`
 
-### F4. Rust 项目
+### F4. Rust projects
 
-**必须生成**:
+**Must generate**:
 - `Cargo.toml`
-- 目录: `src/`（包含 `main.rs` 或 `lib.rs`）
+- Directories: `src/` (with `main.rs` or `lib.rs`)
 
-### F5. 其他语言
+### F5. Other languages
 
-对于其他语言，LLM 应：
-1. 识别该语言的标准项目结构
-2. 生成对应的配置文件（build system, linter, formatter）
-3. 创建基础目录结构
-4. 添加 `.gitignore` 规则
+For other languages, the LLM should:
+1. Identify the language's standard project structure
+2. Generate the corresponding config files (build system, linter, formatter)
+3. Create a baseline directory structure
+4. Add `.gitignore` rules
 
 ---
 

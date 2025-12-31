@@ -1,22 +1,53 @@
 ---
 name: agent_builder
-description: Build a complete, production-embedded Agent module for a real feature request (API + optional worker/sdk/cron/pipeline), including blueprint, scaffolded runtime, prompt pack, docs, and registry entry. Enforces explicit user approvals, no-secrets-in-repo, fixed API route names (run/health), and conversation/memory strategy decisions.
-metadata:
-  short-description: Turn a feature request into a runnable agent module embedded into a project.
-  version: 2
+description: Scaffold a module-embedded agent component (agent proxy) and integrate its API/contract artifacts into module-first SSOT.
 ---
 
 # Agent Builder
 
-You are `agent_builder`: an **Agent Build Engineer** who turns a real feature request into a **repo-integrated, production-ready Agent**.
+## Purpose
 
-This skill is designed for **actual workflows** (not demos). The generated agent may be non-generic, but it must be:
-- embedded into a concrete production integration point,
-- runnable (not just a scaffold — tools and prompts are implemented),
-- configurable without secrets committed to the repo,
-- testable and maintainable (docs + registry entry + verification evidence),
-- structured with **Core vs Adapters** separation,
-- **integrated into the modular system** (flow graph, instance registry).
+Scaffold a **production-oriented agent component** (a.k.a. agent proxy) to solve a concrete product/ops problem, and bind it to:
+
+- an **existing module instance** (the agent is a module subcomponent, not a standalone module)
+- a **business flow node** in `.system/modular/flow_graph.yaml`
+- the module-first SSOT and integration toolchain (MANIFEST, module interact registry, integration scenarios)
+
+This skill is designed for **LLM-first, human support** workflows:
+- The agent_builder uses a temporary workdir, explicit approvals, deterministic scaffolding, and script-driven updates.
+- It avoids implicit edits to repository SSOT that the user did not approve.
+
+## Non-negotiable Constraints
+
+- **Agent is a module subcomponent**: Generated code lives under `modules/<module_id>/src/agents/<agent_id>/`, not a separate module.
+- **Flow binding is mandatory**: `modular.flow_node.flow_id` and `modular.flow_node.node_id` must be specified.
+- **agent_builder does NOT edit flow_graph.yaml**: If flow nodes are missing, a `flow-change-request.md` is emitted and integration stops.
+- **Explicit approvals required**: Stage A (integration decision) and Stage B (blueprint) require user approval before scaffolding.
+- **Kill switch mandatory**: `AGENT_ENABLED` env var must be in `configuration.env_vars`.
+- **API routes fixed**: Must include `run` and `health` routes.
+- **No secrets in repo**: `.env.example` contains placeholders only.
+- **Core/Adapters separation required**: All agents use the `core/` + `adapters/` structure.
+
+## Inputs
+
+- A clear problem statement + acceptance scenarios
+- Target module instance id (`modules/<module_id>/MANIFEST.yaml`)
+- Target business flow binding (`flow_id` + `node_id`)
+- API contract details (base_path, routes, schemas, auth, budgets)
+
+## Outputs
+
+- Agent component scaffolded under the host module:
+  - `modules/<module_id>/src/agents/<agent_id>/...`
+- Module-local agent workdocs:
+  - `modules/<module_id>/workdocs/active/agent-<agent_id>/...`
+- Module-local agent contract artifacts (SSOT):
+  - `modules/<module_id>/interact/agents/<agent_id>/blueprint.json`
+  - `modules/<module_id>/interact/agents/<agent_id>/openapi.json`
+- Script-driven modular integration (SSOT + derived):
+  - Update `modules/<module_id>/MANIFEST.yaml` interfaces + implements
+  - Optionally scaffold an integration scenario in `modules/integration/scenarios.yaml`
+  - Rebuild derived registries/indexes via `modulectl`, `flowctl`, `contextctl`, `integrationctl`
 
 ---
 
@@ -31,14 +62,16 @@ When a user requests "I want an Agent with X capability", execute the following 
 **Actions**:
 1. Extract from user request:
    - Functional goal (what the agent should do)
-   - Integration target (where it will be embedded)
+   - Integration target (where it will be embedded — which module?)
    - Trigger type (how it will be invoked)
    - Expected output format
 2. Identify implicit constraints:
    - Data sensitivity (PII, confidential, internal, public)
    - Performance requirements (latency, throughput)
    - Availability requirements (kill switch, fallback)
-3. Summarize understanding and confirm with user before proceeding.
+3. Confirm the **host module exists**: `modules/<module_id>/MANIFEST.yaml`.
+4. Confirm the **flow binding exists**: `.system/modular/flow_graph.yaml` contains the target `flow_id` + `node_id`.
+5. Summarize understanding and confirm with user before proceeding.
 
 **Output**: Verbal confirmation of understanding.
 
@@ -47,20 +80,19 @@ When a user requests "I want an Agent with X capability", execute the following 
 **Actions**:
 1. Run: `node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js start`
 2. Note the temporary workdir path returned.
-3. Walk through `reference/decision_checklist.md` with the user:
-   - For each decision point, ask clarifying questions if needed
-   - Record answers in structured format
+3. Walk through `reference/decision_checklist.md` with the user (16 decision points).
 4. Generate `stageA/interview-notes.md` in the workdir.
-5. Generate `stageA/integration-decision.md` in the workdir.
+5. Generate `stageA/integration-decision.md` in the workdir (use template at `templates/stageA/`).
 
 **Checkpoint**: Present the integration decision summary and request explicit user approval.
 
 ```
 [APPROVAL REQUIRED]
 Stage A complete. Please review the integration decision:
+- Host module: <module_id>
+- Flow binding: <flow_id>.<node_id>
 - Primary embedding: API (HTTP)
 - Attachments: [worker/sdk/cron/pipeline]
-- Integration target: [kind] / [name]
 - Failure mode: [propagate_error/return_fallback/enqueue_retry]
 
 Type "approve A" to proceed to Blueprint generation.
@@ -72,9 +104,10 @@ Type "approve A" to proceed to Blueprint generation.
 
 **Actions**:
 1. Encode all decisions into `stageB/agent-blueprint.json` following the schema at `templates/agent-blueprint.schema.json`.
-2. Ensure all required blocks are present and valid.
-3. Run validation: `node .../agent-builder.js validate-blueprint --workdir <WORKDIR>`
-4. If validation fails, fix errors and re-validate.
+2. Ensure `modular.host_module_id` matches the target module.
+3. Ensure `modular.flow_node.flow_id` and `modular.flow_node.node_id` are valid.
+4. Run validation: `node .../agent-builder.js validate-blueprint --workdir <WORKDIR>`
+5. If validation fails, fix errors and re-validate.
 
 **Checkpoint**: Present blueprint summary and request explicit user approval.
 
@@ -82,9 +115,10 @@ Type "approve A" to proceed to Blueprint generation.
 [APPROVAL REQUIRED]
 Blueprint validated successfully. Key configuration:
 - Agent ID: {{agent_id}}
+- Host Module: {{modular.host_module_id}}
+- Flow Binding: {{modular.flow_node.flow_id}}.{{modular.flow_node.node_id}}
 - Interfaces: [http, worker, ...]
 - Conversation mode: {{conversation.mode}}
-- Tools: [{{tool_ids}}]
 - Acceptance scenarios: {{scenario_count}}
 
 Type "approve B" to proceed to scaffolding.
@@ -95,200 +129,95 @@ Type "approve B" to proceed to scaffolding.
 ### Phase 3: Stage C — Scaffold
 
 **Actions**:
-1. Run plan first: `node .../agent-builder.js plan --workdir <WORKDIR> --repo-root .`
-2. Present the file list to be created.
-3. Run apply: `node .../agent-builder.js apply --workdir <WORKDIR> --repo-root . --apply`
+1. Run plan first: `node .../agent-builder.js plan --workdir <WORKDIR>`
+2. Present the file list to be created under the host module.
+3. Run apply: `node .../agent-builder.js apply --workdir <WORKDIR> --apply`
 4. Report created files and any skipped files.
 
 **Output**: List of generated files organized by category (code, docs, config).
 
 ### Phase 4: Stage D — Implement (Manual / LLM-assisted)
 
-> **Note:** Stage D is manual; the scaffold generates placeholders that require implementation.
+> Stage D is manual; the scaffold generates placeholders that require implementation.
 
 **Actions** (performed by developer or LLM):
 1. **Implement Tools**: For each tool in `blueprint.tools.tools[]`:
    - Read tool specification (kind, schemas, timeouts, auth)
-   - Implement logic in `src/core/tools.js` using patterns from `reference/stage_d_implementation_guide.md`
+   - Implement logic in `src/core/tools.js`
    - Add required env vars to `.env.example` if not present
-
 2. **Write Prompt Pack**: Based on `agent.summary`, `scope`, and `security`:
    - Write `prompts/system.md` with role, capabilities, boundaries
    - Write `prompts/examples.md` with in-scope and out-of-scope examples
-   - Write `prompts/developer.md` with internal instructions
-
 3. **Expand Tests**: For each scenario in `acceptance.scenarios[]`:
    - Write test case in `tests/acceptance.test.js`
-   - Include given/when/then structure
-   - Include expected_output_checks as assertions
-
-**Output**: Implemented components with file paths.
 
 ### Phase 5: Stage E — Verify
 
 **Actions**:
-1. Run verification: `node .../agent-builder.js verify --workdir <WORKDIR> --repo-root .`
-2. Review generated evidence:
-   - `stageE/verification-evidence.json` (structured data)
-   - `stageE/verification-report.md` (human-readable summary)
+1. Run verification: `node .../agent-builder.js verify --workdir <WORKDIR>`
+2. Review generated evidence in workdir:
+   - `stageE/verification-evidence.json`
+   - `stageE/verification-report.md`
 3. If any scenario fails, investigate and fix.
-4. Update docs if needed based on implementation.
-5. Cleanup: `node .../agent-builder.js finish --workdir <WORKDIR> --apply`
 
-**Output**: Verification report and final delivery summary.
+**Output**: Verification report.
 
-### Phase 6: Stage F — Module System Integration (Module-First repos)
-
-> **Critical for module-first repositories.** This step ensures the agent is properly integrated into the modular system.
+### Phase 6: Stage F — Modular Integration
 
 **Actions**:
-1. **Ensure `agents/registry.json` includes `agent_module_map`** for LLM scope alignment (agent_id -> module_ids; one agent can map to multiple modules).
-2. **Update `modules/<module_id>/MANIFEST.yaml`** for each mapped module (if not auto-generated):
-   - Add interface entries for HTTP routes (`run`, `health`)
-   - Add `implements` entries linking to flow graph nodes (if applicable)
+1. Run: `node .../agent-builder.js integrate-modular --workdir <WORKDIR> --apply`
+2. This will:
+   - Verify the target flow/node exists in `.system/modular/flow_graph.yaml`
+   - Update `modules/<module_id>/MANIFEST.yaml` with interfaces (health, run) and implements
+   - Scaffold an integration scenario (optional)
+   - Run ctl scripts to rebuild derived registries
 
-3. **Update flow SSOT if needed**:
-   - Add new nodes/edges in `.system/modular/flow_graph.yaml`
-   - Update `.system/modular/flow_bindings.yaml` when multiple implementations exist
+**If flow/node missing**: A `flow-change-request.md` is generated. Update flow_graph.yaml first, then re-run integrate-modular.
 
-4. **Run integration commands**:
-   ```bash
-   # Rebuild instance registry
-   node .ai/scripts/modulectl.js registry-build
-   
-   # Update flow implementation index
-   node .ai/scripts/flowctl.js update-from-manifests
-   
-   # Validate flow graph
-   node .ai/scripts/flowctl.js lint
-   
-   # Rebuild project context
-   node .ai/scripts/contextctl.js build
-   ```
+**Output**: Confirmation that module MANIFEST is updated and registries are consistent.
 
-5. **Verify integration**:
-   - Check `.system/modular/instance_registry.yaml` includes the new module
-   - Check `.system/modular/flow_impl_index.yaml` (if flow_id/node_id specified)
-   - Check `.system/modular/graphs/*.mmd` for updated diagrams
-
-**Output**: Confirmation that module is registered and flow graph is consistent.
-
----
-
-## Non-negotiable Constraints
-
-- **Stage A Interview must not write to the repo.** Use a temporary workdir and delete it at the end.
-- **User must explicitly approve**:
-  - the integration decision (Stage A → B),
-  - the blueprint (Stage B → C).
-- **Primary embedding is API (HTTP).**
-- **Attach types implemented in v1** (not future work): `worker`, `sdk`, `cron`, `pipeline`.
-- API routes must include **fixed names**: `run` and `health`.
-- `integration.failure_contract.mode` must NOT include any suppression mode (no `suppress_and_alert`).
-- **Kill switch** is mandatory (`AGENT_ENABLED` required in `configuration.env_vars`).
-- **Registry update** is mandatory (`deliverables.registry_path` must be created/updated with `agent_module_map` entries).
-- **Core / Adapters separation** is mandatory.
-- **Tools must be implemented** (not left as TODO stubs).
-- **Verification evidence must be generated** (JSON + Markdown).
-- **Module system integration** is mandatory for module-first repos (Stage F).
-
----
-
-## Workflow Stages (A–F)
-
-### Stage A — Interview (temporary workdir only)
-
-1. Create a temporary workdir via `agent-builder.js start`.
-2. Use the **Decision Checklist** (`reference/decision_checklist.md`) to capture all required decisions.
-3. Produce in the workdir:
-   - `stageA/interview-notes.md`
-   - `stageA/integration-decision.md`
-4. **Stop and request explicit user approval.**
-
-### Stage B — Blueprint (JSON)
-
-1. Encode decisions into `stageB/agent-blueprint.json`.
-2. Ensure required blocks and enums are present (API + selected attachments).
-3. Run validation (`validate-blueprint`).
-4. **Stop and request explicit user approval of the blueprint.**
-
-### Stage C — Scaffold (repo writes)
-
-1. Generate the complete agent module under `agents/<agent_id>/` (SSOT for agent assets).
-2. Generate docs under `agents/<agent_id>/workdocs/`.
-3. Create/update registry at `agents/registry.json` (include `agent_module_map` for LLM scope).
-4. Do not overwrite existing files; skip and report.
-
-### Stage D — Implement (manual / LLM-assisted)
-
-1. Implement real tool logic in `src/core/tools.js` based on blueprint tool definitions.
-2. Write prompt pack content (`prompts/*.md`) based on agent scope and security policy.
-3. Write acceptance test cases based on `acceptance.scenarios[]`.
-4. See `reference/stage_d_implementation_guide.md` for patterns and best practices.
-
-> Stage D is performed manually by the developer or with LLM assistance. The scaffold provides placeholders; actual implementation is project-specific.
-
-### Stage E — Verify + Cleanup
-
-1. Run `verify` command to execute acceptance scenarios.
-2. Generate verification evidence (JSON + Markdown).
-3. Review and fix any failures.
-4. Update docs/runbook if needed.
-5. Ensure registry entry is correct.
-6. Delete the temporary workdir via `finish --apply`.
-
-### Stage F — Module System Integration
-
-1. Ensure `agents/registry.json` includes `agent_module_map` (agent_id -> module_ids).
-2. Ensure `modules/<module_id>/MANIFEST.yaml` is complete with interface declarations (`run`, `health`) for each mapped module.
-3. If new nodes/edges were introduced, update `.system/modular/flow_graph.yaml` and `.system/modular/flow_bindings.yaml`.
-4. Run `modulectl.js registry-build` to update instance registry.
-5. Run `flowctl.js update-from-manifests` to link interfaces to flows.
-6. Run `flowctl.js lint` to validate consistency.
-7. Run `contextctl.js build` to update project context.
-
----
-
-## Helper Tool Commands
-
-Use the dependency-free helper script:
-
-```
-.ai/skills/scaffold/agent_builder/scripts/agent-builder.js
-```
-
-| Command | Purpose |
-|---------|---------|
-| `start` | Create temporary workdir and initial state |
-| `status` | Show current run state and next steps |
-| `approve --stage <A\|B>` | Mark stage approval (required before apply) |
-| `validate-blueprint` | Validate blueprint JSON for required fields and constraints |
-| `plan` | Dry-run: show files that would be created/updated |
-| `apply --apply` | Apply scaffold into the repo (requires approvals A+B) |
-| `verify` | Execute acceptance scenarios and generate evidence |
-| `finish --apply` | Delete the temporary workdir (safe-guarded) |
-
----
-
-## Module System Integration Commands
-
-For module-first repos, run these after Stage E:
+### Finish — Cleanup
 
 ```bash
-node .ai/scripts/modulectl.js registry-build
-node .ai/scripts/flowctl.js update-from-manifests
-node .ai/scripts/flowctl.js lint
-node .ai/scripts/contextctl.js build
+node .../agent-builder.js finish --workdir <WORKDIR> --apply
 ```
 
-| Command | Purpose |
-|---------|---------|
-| `modulectl.js registry-build` | Update `.system/modular/instance_registry.yaml` |
-| `flowctl.js update-from-manifests` | Build flow implementation index |
-| `flowctl.js lint` | Validate flow graph and bindings |
-| `contextctl.js build` | Rebuild project context registry |
-
 ---
+
+## Command Quick Reference
+
+| Stage | Command |
+|-------|---------|
+| Start | `node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js start` |
+| Approve A | `node .../agent-builder.js approve --stage A --workdir <WORKDIR>` |
+| Validate | `node .../agent-builder.js validate-blueprint --workdir <WORKDIR>` |
+| Approve B | `node .../agent-builder.js approve --stage B --workdir <WORKDIR>` |
+| Plan | `node .../agent-builder.js plan --workdir <WORKDIR>` |
+| Apply | `node .../agent-builder.js apply --workdir <WORKDIR> --apply` |
+| Verify | `node .../agent-builder.js verify --workdir <WORKDIR>` |
+| Integrate | `node .../agent-builder.js integrate-modular --workdir <WORKDIR> --apply` |
+| Finish | `node .../agent-builder.js finish --workdir <WORKDIR> --apply` |
+
+See **LLM Execution Protocol** above for detailed step-by-step instructions.
+
+## Verification
+
+- `node .ai/scripts/lint-skills.cjs --strict`
+- Generate a sample agent and run:
+  - `agent-builder.js verify`
+  - `agent-builder.js integrate-modular --apply`
+  - `node .ai/scripts/modulectl.js verify --strict`
+  - `node .ai/scripts/flowctl.js lint --strict`
+  - `node .ai/scripts/contextctl.js verify --strict`
+  - `node .ai/scripts/integrationctl.js validate --strict`
+
+## Boundaries
+
+- The generated agent is **not** a module instance; it must live under an existing module (`modules/<module_id>/...`).
+- `agent_builder` does **not** edit `.system/modular/flow_graph.yaml`. If flow nodes are missing, it must emit a flow-change-request and stop modular integration.
+- Do **not** commit workdir artifacts (Stage A/B templates). Only the scaffolded repo outputs are committed.
+- Do **not** write secrets to the repo. `.env.example` must contain placeholders only.
+- Do **not** edit derived registries/indexes by hand (`docs/context/registry.json`, `.system/modular/*_index.yaml`, `modules/integration/compiled/*`). Use the ctl scripts.
 
 ## Reference Documents
 
@@ -298,51 +227,5 @@ node .ai/scripts/contextctl.js build
 | `reference/agent_builder_handbook.md` | Design principles, decision trees, boundary conditions |
 | `reference/stage_d_implementation_guide.md` | Tool, prompt, and test implementation patterns |
 | `templates/agent-blueprint.schema.json` | Blueprint JSON Schema (canonical) |
+| `templates/stageA/integration-decision.template.md` | Stage A integration decision template |
 | `examples/usage.md` | Operator-oriented quick start guide |
-
----
-
-## Output Expectations
-
-When executing this skill, always produce:
-
-1. **Stage A**: Interview notes and integration decision (in workdir, not repo).
-2. **Stage B**: Validated blueprint JSON (in workdir).
-3. **Stage C**: Scaffold plan (file list) before applying, then apply summary.
-4. **Stage D**: Implemented tools, prompt pack, and test cases (in repo).
-5. **Stage E**: Verification evidence (JSON + Markdown) and delivery summary.
-6. **Stage F**: Module system integration confirmation (for module-first repos).
-
-### Final Delivery Summary Template
-
-```
-## Agent Delivery Summary
-
-### Agent
-- ID: {{agent_id}}
-- Name: {{agent_name}}
-- Agent Path: {{agent_module_path}}
-- Module IDs: {{module_ids}}
-
-### Interfaces
-| Type | Entrypoint | Response Mode |
-|------|------------|---------------|
-| http | node src/adapters/http/server.js | blocking |
-| http (SSE) | POST /run/stream | streaming |
-| http (WS) | ws://.../ws | streaming |
-| ... | ... | ... |
-
-### Verification
-- Scenarios: {{passed}}/{{total}} passed
-- Evidence: agents/{{agent_id}}/workdocs/verification-report.md
-
-### Module Integration
-- Instance Registry: ✅ Updated
-- Flow Implementation Index: ✅ Updated
-- Flow Lint: ✅ Passed
-
-### Next Steps
-- [ ] Configure environment variables (see .env.example)
-- [ ] Deploy to target environment
-- [ ] Enable kill switch (AGENT_ENABLED=true)
-```

@@ -24,7 +24,7 @@ They do **not** live under `addons/` anymore.
 | `release` | Version and changelog management | `releasectl.js` |
 | `observability` | Metrics/logs/traces contracts | `obsctl.js` |
 
-See individual `ADDON_*.md` files for detailed documentation.
+See individual add-on docs in this directory for detailed documentation.
 
 ---
 
@@ -91,3 +91,4 @@ When an add-on is enabled, Stage C `apply` will:
 This design is intentional for robustness:
 - you can safely re-run `apply` without clobbering local modifications
 - add-ons can be shipped as capability payloads without making upgrades destructive by default
+

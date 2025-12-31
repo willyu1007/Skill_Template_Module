@@ -1,15 +1,26 @@
 # Init kit (robust 3-stage pipeline)
 
+> Human-facing documentation. If you are an LLM/AI assistant, skip this file to save tokens and follow `init/AGENTS.md` instead.
+
 This `init/` package provides a 3-stage, checkpointed workflow to bootstrap a repository from requirements:
 
-- **Stage A**: Requirements docs (`docs/project/*`)
-- **Stage B**: Blueprint (`docs/project/project-blueprint.json`)
+- **Stage A**: Requirements docs (`init/stage-a-docs/*`)
+- **Stage B**: Blueprint (`init/project-blueprint.json`)
 - **Stage C**: Scaffold + configs + skill packs + add-ons + wrapper sync
 
 It is designed for **robustness and auditability**:
 - Each stage has a **validation step** (written into `init/.init-state.json`)
 - Stage transitions require **explicit user approval** (`approve` command)
 - Optional add-ons are installed **only when enabled in the blueprint**
+
+### Path conventions
+
+| Phase | Stage A docs | Blueprint |
+|-------|--------------|-----------|
+| **During init** (working paths) | `init/stage-a-docs/` | `init/project-blueprint.json` |
+| **After archive** (final paths) | `docs/project/` | `docs/project/project-blueprint.json` |
+
+The scripts default to working paths. Some skill docs (e.g., `SKILL.md`) reference final paths for post-init usage.
 
 ---
 
@@ -24,7 +35,6 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs \
   --repo-root . \
-  --docs-root docs/project \
   --strict
 
 # After the user explicitly approves Stage A:
@@ -34,8 +44,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 ### 2) Stage B: validate blueprint → approve
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate \
-  --repo-root . \
-  --blueprint docs/project/project-blueprint.json
+  --repo-root .
 
 # After the user explicitly approves Stage B:
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage B --repo-root .
@@ -45,14 +54,12 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs apply \
   --repo-root . \
-  --blueprint docs/project/project-blueprint.json \
   --providers both
 
 # Optional: verify add-ons after installation (fail-fast by default).
 # Use --non-blocking-addons to continue despite verify failures.
 # node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs apply \
 #   --repo-root . \
-#   --blueprint docs/project/project-blueprint.json \
 #   --providers both \
 #   --verify-addons
 
@@ -71,18 +78,30 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
   --i-understand
 ```
 
-**Option B: Remove `init/` + prune unused add-ons** (recommended for minimal final repo)
+**Option B: Archive to docs/project/ then remove `init/`** (recommended)
 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
   --repo-root . \
   --apply \
   --i-understand \
-  --cleanup-addons \
-  --blueprint docs/project/project-blueprint.json
+  --archive
 ```
 
-This removes the `init/` directory and deletes add-on source directories under `addons/` that were not enabled in the blueprint.
+This archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
+
+**Option C: Archive + prune unused add-ons**
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
+  --repo-root . \
+  --apply \
+  --i-understand \
+  --archive \
+  --cleanup-addons
+```
+
+This archives to `docs/project/`, removes `init/`, and deletes add-on source directories under `addons/` that were not enabled in the blueprint.
 
 ---
 
@@ -106,7 +125,7 @@ The module-first template ships these capabilities **by default** (they are not 
 | `release` | `addons/release/` | Version/changelog tooling | `releasectl.js` |
 | `observability` | `addons/observability/` | Metrics/logs/traces contracts | `obsctl.js` |
 
-Add-ons are installed non-destructively (copy-if-missing) during Stage C `apply`. See `ADDONS_DIRECTORY.md`.
+Add-ons are installed non-destructively (copy-if-missing) during Stage C `apply`. See `addon-docs/convention.md`.
 
 Example blueprint snippet:
 
@@ -121,42 +140,41 @@ Example blueprint snippet:
 }
 ```
 
+## LLM-guided initialization (optional)
 
-## LLM 引导式初始化 (LLM-Guided Initialization)
+This init kit supports an AI assistant guiding a user through the entire initialization flow.
 
-本 init kit 支持 AI 助手引导用户完成整个初始化流程。
-
-### 引导流程
+### Flow
 
 ```
-需求访谈 → 技术栈选择 → Blueprint 生成 → Add-ons 推荐 → 配置文件生成 → apply
+Requirements interview → Tech stack selection → Blueprint generation → Add-on recommendations → Config generation → apply
 ```
 
-### 支持的语言
+### Supported languages
 
-| 语言 | 模板支持 | 配置生成方式 |
-|------|---------|-------------|
-| TypeScript/JavaScript | ✅ | 预置模板 |
-| Go | ✅ | 预置模板 |
-| C/C++ (xmake) | ✅ | 预置模板 |
-| React Native | ✅ | 预置模板 |
-| Python | ❌ | LLM 生成 |
-| Java/Kotlin | ❌ | LLM 生成 |
-| .NET (C#) | ❌ | LLM 生成 |
-| Rust | ❌ | LLM 生成 |
-| 其他 | ❌ | LLM 生成 |
+| Language | Template support | Config generation |
+|----------|------------------|------------------|
+| TypeScript/JavaScript | ✅ | Built-in templates |
+| Go | ✅ | Built-in templates |
+| C/C++ (xmake) | ✅ | Built-in templates |
+| React Native | ✅ | Built-in templates |
+| Python | ❌ | LLM-generated |
+| Java/Kotlin | ❌ | LLM-generated |
+| .NET (C#) | ❌ | LLM-generated |
+| Rust | ❌ | LLM-generated |
+| Other | ❌ | LLM-generated |
 
-### 引导文档
+### Guidance docs
 
-- `skills/initialize-project-from-requirements/templates/llm-init-guide.md` – LLM 完整引导指南
-- `skills/initialize-project-from-requirements/templates/conversation-prompts.md` – 对话问题库
+- `skills/initialize-project-from-requirements/templates/llm-init-guide.md` – Complete LLM guide
+- `skills/initialize-project-from-requirements/templates/conversation-prompts.md` – Conversation question bank
 
-### 无模板语言的处理
+### Handling languages without templates
 
-当用户选择没有预置模板的语言时：
-1. `scaffold-configs.cjs` 会输出提示信息和配置文件建议
-2. LLM 根据 `llm-init-guide.md` 中的规则生成配置文件
-3. 用户确认后继续执行 `apply` 命令
+When the user selects a language without a built-in template:
+1. `scaffold-configs.cjs` prints guidance and suggests config files
+2. The LLM generates the config files based on `llm-init-guide.md`
+3. Continue running the `apply` command after user confirmation
 
 ---
 
@@ -177,9 +195,15 @@ When add-ons are enabled, they provide more complete implementations with manage
 - `skills/initialize-project-from-requirements/` – the skill definition and scripts
   - `templates/project-blueprint.example.json` – full example (all add-ons enabled)
   - `templates/project-blueprint.min.example.json` – minimal example (backend only)
-  - `templates/llm-init-guide.md` – LLM 初始化引导指南
-  - `templates/conversation-prompts.md` – 对话问题库和分支模块
-- `reference.md` – end-to-end reference
-- `ADDON_*.md` – individual add-on documentation
-- `ADDONS_DIRECTORY.md` – add-on conventions
+  - `templates/llm-init-guide.md` – LLM initialization guide
+  - `templates/conversation-prompts.md` – Conversation question bank and branch modules
+  - `reference.md` – technical reference (SSOT for init behavior)
+- `addon-docs/` – core capability and add-on documentation (including conventions)
 - `.init-kit` – marker file
+
+## References
+
+- **SSOT for init behavior**: `skills/initialize-project-from-requirements/reference.md`
+- **Stage guidance**: `stages/01-stage-a-requirements.md`, `stages/02-stage-b-blueprint.md`, `stages/03-stage-c-scaffold-and-skills.md`
+- **LLM-guided initialization**: `skills/initialize-project-from-requirements/templates/llm-init-guide.md`, `skills/initialize-project-from-requirements/templates/conversation-prompts.md`
+- **Core/Add-on docs**: `addon-docs/`

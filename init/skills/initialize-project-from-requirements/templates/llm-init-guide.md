@@ -1,108 +1,109 @@
-# LLM 初始化引导指南
+# LLM Initialization Guide
 
-本文档为 AI 助手提供分步引导，帮助用户完成项目初始化流程。
-
----
-
-## 目录
-
-1. [引导流程概览](#引导流程概览)
-2. [Phase 1: 需求访谈](#phase-1-需求访谈)
-3. [Phase 2: 技术栈选择](#phase-2-技术栈选择)
-4. [Phase 3: Blueprint 生成](#phase-3-blueprint-生成)
-5. [Phase 4: Add-ons 推荐](#phase-4-add-ons-推荐)
-6. [Phase 5: 配置文件生成](#phase-5-配置文件生成)
-7. [决策树参考](#决策树参考)
+This document provides step-by-step guidance for an AI assistant to help a user complete the project initialization workflow.
 
 ---
 
-## 引导流程概览
+## Contents
+
+1. [Workflow overview](#workflow-overview)
+2. [Phase 1: Requirements interview](#phase-1-requirements-interview)
+3. [Phase 2: Tech stack selection](#phase-2-tech-stack-selection)
+4. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
+5. [Phase 4: Add-on recommendations](#phase-4-add-on-recommendations)
+6. [Phase 5: Config generation](#phase-5-config-generation)
+7. [Decision tree reference](#decision-tree-reference)
+
+---
+
+## Workflow overview
 
 ```
-用户开始初始化
+User starts initialization
        │
        ▼
-┌──────────────────┐
-│ Phase 1: 需求访谈 │  ← 使用 conversation-prompts.md A/B 模块
-└────────┬─────────┘
+┌─────────────────────────────┐
+│ Phase 1: Requirements        │  ← use conversation-prompts.md modules A/B
+│ interview                    │
+└────────┬────────────────────┘
          │
          ▼
-┌──────────────────────┐
-│ Phase 2: 技术栈选择   │  ← 确定语言/框架/包管理器
-└────────┬─────────────┘
+┌─────────────────────────────┐
+│ Phase 2: Tech stack selection│  ← choose language/framework/package manager
+└────────┬────────────────────┘
          │
          ▼
-┌──────────────────────┐
-│ Phase 3: Blueprint   │  ← 生成 project-blueprint.json
-└────────┬─────────────┘
+┌─────────────────────────────┐
+│ Phase 3: Blueprint generation│  ← generate project-blueprint.json
+└────────┬────────────────────┘
          │
          ▼
-┌──────────────────────┐
-│ Phase 4: Add-ons     │  ← 根据能力推荐 add-ons
-└────────┬─────────────┘
+┌─────────────────────────────┐
+│ Phase 4: Add-on recommendations│ ← recommend add-ons based on capabilities
+└────────┬────────────────────┘
          │
          ▼
-┌──────────────────────┐
-│ Phase 5: 配置文件     │  ← 模板或 LLM 生成
-└────────┬─────────────┘
+┌─────────────────────────────┐
+│ Phase 5: Config generation   │  ← templates or LLM-generated
+└────────┬────────────────────┘
          │
          ▼
-    执行 apply 命令
+      Run apply
 ```
 
 ---
 
-## Phase 1: 需求访谈
+## Phase 1: Requirements interview
 
-### 必问问题清单
+### Must-ask checklist
 
-按顺序询问以下问题（参考 `conversation-prompts.md` A 模块）：
+Ask these questions in order (see module A in `conversation-prompts.md`):
 
-1. **一句话目的**: "用一句话描述这个项目要解决什么问题，为谁解决，主要成果是什么？"
-2. **主要用户角色**: "主要用户有哪些（2-5个角色）？哪些人不是用户？"
-3. **必须功能**: "列出3-10个必须实现的功能，每个功能应该是可测试的"
-4. **明确排除**: "这个版本明确不做什么？"
-5. **用户旅程**: "描述2-5个核心用户旅程，每个旅程的验收标准是什么？"
-6. **约束条件**: "有哪些硬性约束（合规、安全、平台、截止日期、预算、集成）？"
-7. **成功指标**: "如何衡量成功（业务+产品+可靠性指标）？"
+1. **One-line purpose**: "In one sentence, what problem does this project solve, for whom, and what is the main outcome?"
+2. **Primary user roles**: "Who are the primary users (2–5 roles)? Who is NOT a user?"
+3. **Must-have capabilities**: "List 3–10 MUST-have capabilities. Each MUST should be testable."
+4. **Explicit OUT-of-scope**: "What will we explicitly NOT do in this version?"
+5. **User journeys**: "Describe 2–5 core user journeys end-to-end. What is the acceptance criterion (AC) for each?"
+6. **Constraints**: "Any hard constraints (compliance, security, platforms, deadlines, budget, integrations)? Any non-negotiable tech constraints?"
+7. **Success metrics**: "How do we measure success (business + product + reliability)?"
 
-### 输出要求
+### Output requirements
 
-将回答写入以下文件：
-- `docs/project/requirements.md` - 主要需求
-- `docs/project/non-functional-requirements.md` - 非功能需求
-- `docs/project/domain-glossary.md` - 领域术语
-- `docs/project/risk-open-questions.md` - 待定事项
+Write answers to the following files:
+- `docs/project/requirements.md` - primary requirements
+- `docs/project/non-functional-requirements.md` - NFRs
+- `docs/project/domain-glossary.md` - glossary
+- `docs/project/risk-open-questions.md` - TBDs / risks / open questions
 
 ---
 
-## Phase 2: 技术栈选择
+## Phase 2: Tech stack selection
 
-### 2.1 开发语言选择
+### 2.1 Programming language
 
-**询问**: "这个项目的主要开发语言是什么？"
+**Ask**: "What is the primary programming language for this project?"
 
-| 语言 | 有预置模板 | 包管理器选项 |
-|------|-----------|-------------|
+| Language | Has template | Package manager options |
+|----------|--------------|-------------------------|
 | TypeScript | ✅ | pnpm, npm, yarn |
 | JavaScript | ✅ | pnpm, npm, yarn |
 | Go | ✅ | go |
 | C/C++ | ✅ | xmake |
-| Python | ❌ (LLM生成) | pip, poetry, pipenv, uv |
-| Java | ❌ (LLM生成) | maven, gradle |
-| Kotlin | ❌ (LLM生成) | maven, gradle |
-| .NET (C#) | ❌ (LLM生成) | dotnet |
-| Rust | ❌ (LLM生成) | cargo |
-| Ruby | ❌ (LLM生成) | bundler |
-| PHP | ❌ (LLM生成) | composer |
+| Python | ❌ (LLM-generated) | pip, poetry, pipenv, uv |
+| Java | ❌ (LLM-generated) | maven, gradle |
+| Kotlin | ❌ (LLM-generated) | maven, gradle |
+| .NET (C#) | ❌ (LLM-generated) | dotnet |
+| Rust | ❌ (LLM-generated) | cargo |
+| Ruby | ❌ (LLM-generated) | bundler |
+| PHP | ❌ (LLM-generated) | composer |
 
-### 2.2 框架选择（根据语言）
+### 2.2 Framework selection (based on language)
 
-**TypeScript/JavaScript 前端**:
+**TypeScript/JavaScript frontend**:
 - React, Vue, Svelte, Angular, Solid
 - Next.js, Nuxt, Remix, Astro
 
-**TypeScript/JavaScript 后端**:
+**TypeScript/JavaScript backend**:
 - Express, Fastify, Hono, NestJS, Koa
 
 **Python**:
@@ -114,38 +115,38 @@
 **Java/Kotlin**:
 - Spring Boot, Quarkus, Micronaut
 
-### 2.3 Repo 布局选择
+### 2.3 Repo layout
 
-**询问**: "项目是单一应用还是多应用？"
+**Ask**: "Is this repo a single app or a monorepo?"
 
-- `single` - 单一应用（src/ 结构）
-- `monorepo` - 多应用/多包（apps/ + packages/ 结构）
+- `single` - single app (`src/` structure)
+- `monorepo` - multi-app/multi-package (`apps/` + `packages/` structure)
 
 ---
 
-## Phase 3: Blueprint 生成
+## Phase 3: Blueprint generation
 
-根据前两个阶段的信息，生成 `docs/project/project-blueprint.json`。
+Based on information from Phase 1 and Phase 2, generate `docs/project/project-blueprint.json`.
 
-### 最小 Blueprint 模板
+### Minimal blueprint template
 
 ```json
 {
   "version": 1,
   "project": {
-    "name": "<项目名称，kebab-case>",
-    "description": "<项目描述>"
+    "name": "<project name, kebab-case>",
+    "description": "<project description>"
   },
   "repo": {
     "layout": "<single|monorepo>",
-    "language": "<语言>",
-    "packageManager": "<包管理器>"
+    "language": "<language>",
+    "packageManager": "<package manager>"
   },
   "capabilities": {
-    "frontend": { "enabled": <true|false>, "framework": "<框架>" },
-    "backend": { "enabled": <true|false>, "framework": "<框架>" },
-    "api": { "style": "<rest|graphql|rpc|none>", "auth": "<认证方式>" },
-    "database": { "enabled": <true|false>, "kind": "<数据库类型>" }
+    "frontend": { "enabled": <true|false>, "framework": "<framework>" },
+    "backend": { "enabled": <true|false>, "framework": "<framework>" },
+    "api": { "style": "<rest|graphql|rpc|none>", "auth": "<auth method>" },
+    "database": { "enabled": <true|false>, "kind": "<database kind>" }
   },
   "quality": {
     "testing": { "unit": true },
@@ -158,61 +159,61 @@
 }
 ```
 
-### skills.packs 自动推荐规则
+### `skills.packs` auto-recommendation rules
 
-| 条件 | 推荐 Pack |
-|------|-----------|
-| 总是 | `workflows` |
+| Condition | Recommended pack |
+|----------|-------------------|
+| Always | `workflows` |
 | `capabilities.backend.enabled: true` | `backend` |
 | `capabilities.frontend.enabled: true` | `frontend` |
-| 需要代码规范 | `standards` |
-| `addons.contextAwareness: true` | `context-core` (由 addon 提供) |
+| Code conventions needed | `standards` |
+| `addons.contextAwareness: true` | `context-core` (provided by add-on) |
 
 ---
 
-## Phase 4: Add-ons 推荐
+## Phase 4: Add-on recommendations
 
-### 推荐决策规则
+### Recommendation rules
 
-根据 Blueprint 中的 capabilities 自动推荐 add-ons：
+Recommend add-ons based on capabilities in the blueprint:
 
-| 条件 | 推荐 Add-on |
-|------|------------|
-| `api.style != "none"` 或 `database.enabled` 或 `bpmn.enabled` | `contextAwareness` |
+| Condition | Recommended add-on |
+|----------|---------------------|
+| `api.style != "none"` or `database.enabled` or `bpmn.enabled` | `contextAwareness` |
 | `database.enabled: true` | `dbMirror` |
 | `quality.ci.enabled: true` | `ciTemplates` |
-| 需要容器化 | `packaging` |
-| 需要多环境部署 | `deployment` |
-| 需要版本管理 | `release` |
-| 需要监控/日志 | `observability` |
+| Containerization needed | `packaging` |
+| Multi-environment deployments needed | `deployment` |
+| Release/version tooling needed | `release` |
+| Metrics/logs/tracing needed | `observability` |
 
-### 询问示例
+### Example prompt
 
 ```
-根据您的项目需求，我推荐以下 add-ons：
+Based on your requirements, I recommend the following add-ons:
 
-1. ✅ context-awareness - 您的项目有 API 和数据库，这个 add-on 可以帮助 LLM 理解项目的 API 契约和数据库结构
-2. ✅ db-mirror - 数据库 schema 管理和迁移支持
-3. ❓ ci-templates - 是否需要 CI/CD 配置？
+1. ✅ context-awareness - Your project has APIs and a database; this add-on helps LLM assistants understand API contracts and database structure
+2. ✅ db-mirror - database schema management and migration support
+3. ❓ ci-templates - do you need CI/CD configuration?
 
-是否启用这些 add-ons？
+Do you want to enable these add-ons?
 ```
 
 ---
 
-## Phase 5: 配置文件生成
+## Phase 5: Config generation
 
-### 5.1 有预置模板的语言
+### 5.1 Languages with built-in templates
 
-对于 TypeScript、Go、C/C++ 等有预置模板的语言，`scaffold-configs.cjs` 会自动生成配置文件。
+For languages with built-in templates (TypeScript, Go, C/C++, etc.), `scaffold-configs.cjs` generates config files automatically.
 
-### 5.2 无预置模板的语言（LLM 生成）
+### 5.2 Languages without templates (LLM-generated)
 
-当用户选择的语言没有预置模板时，LLM 应根据以下规则生成配置文件。
+When the selected language does not have a built-in template, the LLM should generate config files using the rules below.
 
-#### Python 项目
+#### Python projects
 
-**必须生成的文件**:
+**Must-generate files**:
 
 ```toml
 # pyproject.toml
@@ -234,12 +235,12 @@ python_version = "3.11"
 strict = true
 ```
 
-**可选文件** (根据包管理器):
+**Optional files** (based on the package manager):
 - `requirements.txt` (pip)
 - `Pipfile` (pipenv)
-- Poetry: 在 `pyproject.toml` 中添加 `[tool.poetry]` 节
+- Poetry: add a `[tool.poetry]` section to `pyproject.toml`
 
-**目录结构**:
+**Directory structure**:
 ```
 src/
   {{project.name.replace('-', '_')}}/
@@ -249,9 +250,9 @@ tests/
   test_placeholder.py
 ```
 
-#### Java 项目 (Maven)
+#### Java projects (Maven)
 
-**必须生成的文件**:
+**Must-generate files**:
 
 ```xml
 <!-- pom.xml -->
@@ -271,7 +272,7 @@ tests/
 </project>
 ```
 
-**目录结构**:
+**Directory structure**:
 ```
 src/
   main/
@@ -283,9 +284,9 @@ src/
     java/
 ```
 
-#### Java 项目 (Gradle)
+#### Java projects (Gradle)
 
-**必须生成的文件**:
+**Must-generate files**:
 
 ```kotlin
 // build.gradle.kts
@@ -321,9 +322,9 @@ tasks.test {
 rootProject.name = "{{project.name}}"
 ```
 
-#### .NET 项目
+#### .NET projects
 
-**必须生成的文件**:
+**Must-generate files**:
 
 ```xml
 <!-- {{project.name}}.csproj -->
@@ -346,9 +347,9 @@ rootProject.name = "{{project.name}}"
 }
 ```
 
-#### Rust 项目
+#### Rust projects
 
-**必须生成的文件**:
+**Must-generate files**:
 
 ```toml
 # Cargo.toml
@@ -362,101 +363,100 @@ edition = "2021"
 [dev-dependencies]
 ```
 
-**目录结构**:
+**Directory structure**:
 ```
 src/
-  main.rs  # 或 lib.rs
+  main.rs  # or lib.rs
 ```
 
 ---
 
-## 决策树参考
+## Decision tree reference
 
-### 语言 → 包管理器决策树
+### Language → package manager decision tree
 
 ```
-选择语言
+Choose language
 ├── TypeScript/JavaScript
-│   └── 推荐: pnpm > yarn > npm
+│   └── Recommended: pnpm > yarn > npm
 ├── Python
-│   └── 推荐: poetry > pip > uv
+│   └── Recommended: poetry > pip > uv
 ├── Go
-│   └── 固定: go
+│   └── Fixed: go
 ├── Java/Kotlin
-│   └── 推荐: gradle > maven
+│   └── Recommended: gradle > maven
 ├── .NET
-│   └── 固定: dotnet
+│   └── Fixed: dotnet
 ├── Rust
-│   └── 固定: cargo
+│   └── Fixed: cargo
 └── C/C++
-    └── 推荐: xmake > cmake
+    └── Recommended: xmake > cmake
 ```
 
-### 能力 → Add-on 决策树
+### Capabilities → add-on decision tree
 
 ```
-检查 capabilities
+Check capabilities
 ├── api.style != "none"
-│   └── 推荐: contextAwareness
+│   └── Recommend: contextAwareness
 ├── database.enabled
-│   ├── 推荐: contextAwareness
-│   └── 推荐: dbMirror
+│   ├── Recommend: contextAwareness
+│   └── Recommend: dbMirror
 ├── bpmn.enabled
-│   └── 推荐: contextAwareness
+│   └── Recommend: contextAwareness
 ├── quality.ci.enabled
-│   └── 推荐: ciTemplates
-└── devops 需求
-    ├── 容器化 → packaging
-    ├── 多环境 → deployment
-    └── 版本管理 → release
+│   └── Recommend: ciTemplates
+└── DevOps needs
+    ├── Containerization → packaging
+    ├── Multi-environment → deployment
+    └── Release management → release
 ```
 
 ---
 
-## 完整引导对话示例
+## Complete guided conversation example
 
 ```
-AI: 让我们开始初始化您的项目。首先，用一句话描述这个项目要解决什么问题，为谁解决？
+AI: Let's start initializing your project. First, in one sentence: what problem does the project solve, and for whom?
 
-User: 这是一个面向小型企业的库存管理系统，帮助他们跟踪商品和订单。
+User: This is an inventory management system for small businesses to track products and orders.
 
-AI: 明白了。接下来几个问题：
-1. 主要用户有哪些？
-2. 必须实现的核心功能有哪些？
-3. 这个版本不做什么？
+AI: Got it. A few follow-up questions:
+1. Who are the primary users?
+2. What are the must-have capabilities?
+3. What will we explicitly NOT do in this version?
 
-User: 用户是仓库管理员和采购员。核心功能：商品入库、出库、库存查询、低库存预警。不做：财务模块、供应商管理。
+User: Warehouse managers and buyers. Must-have: inbound, outbound, inventory lookup, low-stock alerts. Not included: accounting, supplier management.
 
-AI: 了解。现在让我们确定技术栈：
-1. 首选开发语言是什么？
-2. 需要 Web 前端吗？
-3. 数据库类型偏好？
+AI: Great. Now let's determine the tech stack:
+1. What's the preferred programming language?
+2. Do you need a web frontend?
+3. Any database preference?
 
-User: 用 TypeScript，需要前端用 React，数据库用 PostgreSQL。
+User: TypeScript, React for the frontend, and PostgreSQL for the database.
 
-AI: 好的，我来生成项目蓝图。根据您的需求，我推荐以下配置：
+AI: Thanks. I'll generate the project blueprint. Based on your answers, I recommend:
 
-- 语言: TypeScript + pnpm
-- 布局: single (单一应用)
-- 前端: React
-- 后端: Express
+- Language: TypeScript + pnpm
+- Layout: single
+- Frontend: React
+- Backend: Express
 - API: REST + JWT
-- 数据库: PostgreSQL
+- Database: PostgreSQL
 
-推荐的 Add-ons:
-- ✅ context-awareness (API/数据库契约管理)
-- ✅ db-mirror (数据库 schema 管理)
-- ❓ ci-templates (CI/CD 配置)
+Recommended add-ons:
+- ✅ context-awareness (API/DB contract management)
+- ✅ db-mirror (database schema management)
+- ❓ ci-templates (CI/CD configuration)
 
-是否确认这个配置？
+Do you confirm this configuration?
 ```
 
 ---
 
-## 注意事项
+## Notes
 
-1. **不要跳过阶段**: 按顺序完成每个 Phase
-2. **记录到文件**: 所有决策和回答都要写入对应的文档文件
-3. **验证输入**: 使用 `check-docs` 和 `validate` 命令验证输出
-4. **用户确认**: 每个阶段完成后需要用户明确确认再推进
-
+1. **Do not skip phases**: complete each phase in order
+2. **Write to files**: record every decision and answer in the corresponding docs
+3. **Validate outputs**: use `check-docs` and `validate` to validate artifacts
+4. **Get explicit approval**: the user must explicitly approve each stage before advancing

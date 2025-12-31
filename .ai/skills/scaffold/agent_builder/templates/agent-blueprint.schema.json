@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Agent Blueprint",
-  "description": "Single source of truth for scaffolding a production-embedded agent (API + worker/sdk/cron/pipeline).",
+  "description": "Single source of truth for scaffolding a module-embedded agent component (API + optional worker/sdk/cron/pipeline) with module-first SSOT integration.",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -23,6 +23,7 @@
     "observability",
     "security",
     "acceptance",
+    "modular",
     "deliverables"
   ],
   "properties": {
@@ -1119,7 +1120,6 @@
       "required": [
         "agent_module_path",
         "docs_path",
-        "registry_path",
         "core_adapter_separation"
       ],
       "properties": {
@@ -1133,7 +1133,8 @@
         },
         "registry_path": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "DEPRECATED: global agent registry is not used in module-embedded mode."
         },
         "module_ids": {
           "type": "array",
@@ -1147,6 +1148,11 @@
           "enum": [
             "required"
           ]
+        },
+        "interact_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repo-relative path to module-local agent interact dir (default: modules/<module_id>/interact/agents/<agent_id>)."
         }
       }
     },
@@ -1517,6 +1523,58 @@
     "lifecycle": {
       "type": "object",
       "additionalProperties": true
+    },
+    "modular": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "host_module_id",
+        "flow_node"
+      ],
+      "properties": {
+        "host_module_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Existing module instance id (modules/<module_id>/MANIFEST.yaml)."
+        },
+        "agent_subpath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path inside module dir where the agent component will be scaffolded (default: src/agents/<agent_id>)."
+        },
+        "docs_subpath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path inside module dir for local workdocs (default: workdocs/active/agent-<agent_id>)."
+        },
+        "interact_subpath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path inside module dir for module-local interact artifacts (default: interact/agents/<agent_id>)."
+        },
+        "flow_node": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "flow_id",
+            "node_id"
+          ],
+          "properties": {
+            "flow_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "node_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "variant": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {

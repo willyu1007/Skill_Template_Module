@@ -28,7 +28,7 @@
       "Direct destructive actions without approval.",
       "Persisting PII without redaction and retention controls."
     ],
-    "definition_of_done": "All P0 acceptance scenarios pass; docs and registry entry are complete; kill switch works; schemas are versioned."
+    "definition_of_done": "All P0 acceptance scenarios pass; module MANIFEST.yaml + module interact registry are updated; kill switch works; schemas are versioned."
   },
   "integration": {
     "primary": "api",
@@ -612,7 +612,7 @@
   },
   "prompting": {
     "complexity_tier": "tier2",
-    "examples_strategy": "Include 3\u20136 examples covering common success and failure branches.",
+    "examples_strategy": "Include 3–6 examples covering common success and failure branches.",
     "prompt_modules": [
       "base",
       "safety",
@@ -746,12 +746,9 @@
     ]
   },
   "deliverables": {
-    "agent_module_path": "agents/example-agent",
-    "docs_path": "agents/example-agent/workdocs",
-    "registry_path": "agents/registry.json",
-    "module_ids": [
-      "agent.example-agent"
-    ],
+    "agent_module_path": "modules/example.module/src/agents/example-agent",
+    "docs_path": "modules/example.module/workdocs/active/agent-example-agent",
+    "interact_path": "modules/example.module/interact/agents/example-agent",
     "core_adapter_separation": "required"
   },
   "worker": {
@@ -812,5 +809,16 @@
     "input_channel": "stdin",
     "output_channel": "stdout",
     "notes": "Used as a pipeline step; non-zero exit on error."
+  },
+  "modular": {
+    "host_module_id": "example.module",
+    "agent_subpath": "src/agents/example-agent",
+    "docs_subpath": "workdocs/active/agent-example-agent",
+    "interact_subpath": "interact/agents/example-agent",
+    "flow_node": {
+      "flow_id": "example_flow",
+      "node_id": "example_node",
+      "variant": "default"
+    }
   }
 }

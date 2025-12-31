@@ -49,7 +49,7 @@ These are kept as payloads under `addons/` and can be installed during project i
 | `release` | Version and changelog management | `releasectl.js` |
 | `observability` | Metrics/logs/traces contracts | `obsctl.js` |
 
-See `init/ADDONS_DIRECTORY.md` for conventions.
+See `init/addon-docs/convention.md` for conventions.
 
 ## Common Tasks
 

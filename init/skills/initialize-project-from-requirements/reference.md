@@ -110,5 +110,5 @@ Default behavior:
 - enabling context implies enabling the `context-core` pack (and scaffold packs)
 
 Relevant docs:
-- `init/ADDON_CONTEXT_AWARENESS.md` (core note)
+- `init/addon-docs/context-awareness.md` (core note)
 - `docs/context/INDEX.md`

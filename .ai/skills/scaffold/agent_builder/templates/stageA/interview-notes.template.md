@@ -7,6 +7,18 @@
 - Proposed `agent.name`:
 - Summary (1–3 sentences):
 
+## Modular integration (Decision Checklist #3)
+Fill these fields if the agent will be integrated into the Modular system.
+
+- host_module_id: (existing module ID; ensure `modules/<id>/MANIFEST.yaml` exists)
+- agent_subpath: (relative to module root, e.g. `src/agents/<agent-id>`)
+- docs_subpath: (relative to module root, e.g. `workdocs/active/agent-<agent-id>`)
+- interact_subpath: (relative to module root, e.g. `interact/agents/<agent-id>`)
+- flow binding (must already exist in `.system/modular/flow_graph.yaml`; agent_builder will not edit it):
+  - flow_id:
+  - node_id:
+  - variant: (optional)
+
 ## Problem framing (Decision Checklist #1)
 - Goal / user value:
 - In-scope:
