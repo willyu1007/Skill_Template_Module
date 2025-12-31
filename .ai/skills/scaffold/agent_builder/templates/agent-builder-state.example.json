@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "run_id": "RUN_EXAMPLE",
+  "created_at": "2025-12-30T02:50:20.342346Z",
+  "stage": "A",
+  "workdir": "/tmp/agent_builder/RUN_EXAMPLE",
+  "repo_root": "",
+  "approvals": {
+    "A": false,
+    "B": false,
+    "C": false,
+    "D": false,
+    "E": false
+  },
+  "stageA": {
+    "interview_notes_path": "stageA/interview-notes.md",
+    "integration_decision_path": "stageA/integration-decision.md"
+  },
+  "stageB": {
+    "blueprint_path": "stageB/agent-blueprint.json",
+    "validated": false
+  },
+  "stageC": {
+    "planned": false,
+    "applied": false,
+    "generated_paths": [],
+    "skipped_paths": []
+  },
+  "history": [
+    {
+      "timestamp": "2025-12-30T02:50:20.342356Z",
+      "event": "created",
+      "details": {
+        "note": "Example state file."
+      }
+    }
+  ]
+}

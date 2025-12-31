@@ -218,12 +218,35 @@ function loadSkills(skillsRoot) {
   return { skills, byName };
 }
 
-function buildStub(skillName, sourceRelDirFromRepoRoot, sourceContent) {
-  const frontmatter = readFrontmatter(sourceContent)
-    || `---\nname: ${skillName}\ndescription: See ${sourceRelDirFromRepoRoot}/SKILL.md\n---\n\n`;
-  const frontmatterBlock = frontmatter.trimEnd();
-  const displayName = extractName(frontmatterBlock, skillName);
+function buildStub(skillName, sourceRelDirFromRepoRoot, sourceContent, relFromSkillsRoot) {
+  const originalFrontmatter = readFrontmatter(sourceContent);
   const canonicalDir = sourceRelDirFromRepoRoot.replace(/\/$/, '');
+
+  // 计算 category（从 relFromSkillsRoot 中移除最后的技能目录名）
+  const pathParts = relFromSkillsRoot.split('/');
+  const category = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : '';
+
+  // 构建增强的 frontmatter，添加 category 和 ssot_path
+  let frontmatterBlock;
+  if (originalFrontmatter) {
+    // 移除原有 frontmatter 的结束 ---
+    const frontmatterContent = originalFrontmatter.replace(/^---\r?\n/, '').replace(/\r?\n---\r?\n\r?\n$/, '');
+    const newFields = [];
+    if (category) {
+      newFields.push(`category: ${category}`);
+    }
+    newFields.push(`ssot_path: ${canonicalDir}`);
+    frontmatterBlock = `---\n${frontmatterContent}\n${newFields.join('\n')}\n---`;
+  } else {
+    const newFields = [`name: ${skillName}`, `description: See ${canonicalDir}/SKILL.md`];
+    if (category) {
+      newFields.push(`category: ${category}`);
+    }
+    newFields.push(`ssot_path: ${canonicalDir}`);
+    frontmatterBlock = `---\n${newFields.join('\n')}\n---`;
+  }
+
+  const displayName = extractName(frontmatterBlock, skillName);
 
   return [
     frontmatterBlock,
@@ -398,7 +421,54 @@ function selectSkills(args, allSkills) {
   process.exit(1);
 }
 
-function deleteWrappers({ providers, skillNames, dryRun }) {
+/**
+ * 递归查找 wrapper 目录中所有包含 SKILL.md 的目录
+ * 返回 Map<skillName, relPath>，其中 relPath 是相对于 targetRoot 的路径
+ */
+function findWrapperDirs(targetRoot) {
+  const result = new Map();
+  if (!fs.existsSync(targetRoot)) {
+    return result;
+  }
+
+  const ignoreDirNames = new Set(['.git', '.hg', '.svn', '__pycache__', 'node_modules', '_meta']);
+  const stack = [targetRoot];
+
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    const hasSkillMd = entries.some((e) => e.isFile() && e.name === SKILL_MD);
+    if (hasSkillMd) {
+      const relPath = toPosix(path.relative(targetRoot, dir));
+      // 从 SKILL.md 中读取 name
+      const skillMdPath = path.join(dir, SKILL_MD);
+      try {
+        const content = fs.readFileSync(skillMdPath, 'utf8');
+        const name = extractName(content, path.basename(dir));
+        result.set(name, relPath);
+      } catch {
+        result.set(path.basename(dir), relPath);
+      }
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (ignoreDirNames.has(entry.name)) continue;
+      stack.push(path.join(dir, entry.name));
+    }
+  }
+
+  return result;
+}
+
+function deleteWrappers({ providers, skillIdentifiers, dryRun, allSkillsByName }) {
   console.log(colors.cyan('========================================'));
   console.log(colors.cyan('  Deleting skill stubs'));
   console.log(colors.cyan('========================================'));
@@ -408,20 +478,42 @@ function deleteWrappers({ providers, skillNames, dryRun }) {
     console.log('');
     console.log(colors.green(`Provider: ${provider}`));
 
-    for (const name of skillNames) {
-      const targetDir = path.join(targetRoot, name);
+    // 获取当前 wrapper 目录中的所有 skill 映射
+    const wrapperMap = findWrapperDirs(targetRoot);
+
+    for (const identifier of skillIdentifiers) {
+      // identifier 可以是 skill name 或者 relPath
+      let targetDir;
+      let displayName = identifier;
+
+      // 首先检查是否是已知的 SSOT skill（按 name 查找）
+      if (allSkillsByName && allSkillsByName.has(identifier)) {
+        const skill = allSkillsByName.get(identifier);
+        targetDir = path.join(targetRoot, skill.relFromSkillsRoot);
+        displayName = `${identifier} (${skill.relFromSkillsRoot})`;
+      } else if (wrapperMap.has(identifier)) {
+        // 在 wrapper 中按 name 查找
+        const relPath = wrapperMap.get(identifier);
+        targetDir = path.join(targetRoot, relPath);
+        displayName = `${identifier} (${relPath})`;
+      } else {
+        // 直接作为路径尝试
+        targetDir = path.join(targetRoot, identifier);
+        displayName = identifier;
+      }
+
       if (!fs.existsSync(targetDir)) {
-        console.log(colors.gray(`  [-] ${name} (not present)`));
+        console.log(colors.gray(`  [-] ${displayName} (not present)`));
         continue;
       }
 
       if (dryRun) {
-        console.log(colors.gray(`  [~] ${name} (dry-run delete)`));
+        console.log(colors.gray(`  [~] ${displayName} (dry-run delete)`));
         continue;
       }
 
       fs.rmSync(targetDir, { recursive: true, force: true });
-      console.log(colors.gray(`  [-] ${name}`));
+      console.log(colors.gray(`  [-] ${displayName}`));
     }
   }
 }
@@ -451,7 +543,13 @@ function sync() {
   }
 
   if (args.deleteSkills.length > 0) {
-    deleteWrappers({ providers, skillNames: args.deleteSkills, dryRun: args.dryRun });
+    const { byName } = loadSkills(args.skillsRoot);
+    deleteWrappers({
+      providers,
+      skillIdentifiers: args.deleteSkills,
+      dryRun: args.dryRun,
+      allSkillsByName: byName,
+    });
     return;
   }
 
@@ -464,8 +562,9 @@ function sync() {
   console.log(colors.gray(`  mode: ${mode}${mode === 'update' && args.prune ? ' + prune' : ''}`));
   console.log(colors.gray(`  selected_skills: ${selectedSkills.length}`));
 
-  const allNames = new Set(allSkills.map((s) => s.name));
-  const selectedNames = new Set(selectedSkills.map((s) => s.name));
+  // 使用 relFromSkillsRoot 作为唯一标识（层次化路径）
+  const allPaths = new Set(allSkills.map((s) => s.relFromSkillsRoot));
+  const selectedPaths = new Set(selectedSkills.map((s) => s.relFromSkillsRoot));
 
   for (const provider of providers) {
     const targetRoot = providerDefaults[provider];
@@ -487,27 +586,30 @@ function sync() {
     }
 
     if (mode === 'update' && args.prune) {
-      const entries = fs.existsSync(targetRoot)
-        ? fs.readdirSync(targetRoot, { withFileTypes: true })
-        : [];
-      for (const e of entries) {
-        if (!e.isDirectory()) continue;
-        if (!allNames.has(e.name)) continue;
-        if (selectedNames.has(e.name)) continue;
-        const targetDir = path.join(targetRoot, e.name);
+      // 使用层次化的 wrapper 查找，获取 name -> relPath 的映射
+      const wrapperMap = findWrapperDirs(targetRoot);
+
+      for (const [wrapperName, wrapperRelPath] of wrapperMap) {
+        // 检查这个 wrapper 是否对应一个 SSOT skill
+        if (!allPaths.has(wrapperRelPath)) continue;
+        // 检查是否在选中的 skill 集合中
+        if (selectedPaths.has(wrapperRelPath)) continue;
+
+        const targetDir = path.join(targetRoot, wrapperRelPath);
         if (args.dryRun) {
-          console.log(colors.gray(`  [~] prune ${e.name} (dry-run)`));
+          console.log(colors.gray(`  [~] prune ${wrapperRelPath} (dry-run)`));
         } else {
           fs.rmSync(targetDir, { recursive: true, force: true });
-          console.log(colors.gray(`  [-] ${e.name} (pruned)`));
+          console.log(colors.gray(`  [-] ${wrapperRelPath} (pruned)`));
         }
       }
     }
 
     for (const skill of selectedSkills) {
       const sourceRelDir = toPosix(path.relative(repoRoot, skill.dir));
-      const stub = buildStub(skill.name, sourceRelDir, skill.content);
-      const targetDir = path.join(targetRoot, skill.name);
+      const stub = buildStub(skill.name, sourceRelDir, skill.content, skill.relFromSkillsRoot);
+      // 使用 relFromSkillsRoot 保留层次结构，而非扁平的 skill.name
+      const targetDir = path.join(targetRoot, skill.relFromSkillsRoot);
       const targetSkillMd = path.join(targetDir, SKILL_MD);
 
       if (args.dryRun) {
