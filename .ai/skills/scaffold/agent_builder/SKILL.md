@@ -15,7 +15,8 @@ This skill is designed for **actual workflows** (not demos). The generated agent
 - runnable (not just a scaffold — tools and prompts are implemented),
 - configurable without secrets committed to the repo,
 - testable and maintainable (docs + registry entry + verification evidence),
-- structured with **Core vs Adapters** separation.
+- structured with **Core vs Adapters** separation,
+- **integrated into the modular system** (flow graph, instance registry).
 
 ---
 
@@ -44,7 +45,7 @@ When a user requests "I want an Agent with X capability", execute the following 
 ### Phase 1: Stage A — Interview
 
 **Actions**:
-1. Run: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js start`
+1. Run: `node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js start`
 2. Note the temporary workdir path returned.
 3. Walk through `reference/decision_checklist.md` with the user:
    - For each decision point, ask clarifying questions if needed
@@ -136,6 +137,42 @@ Type "approve B" to proceed to scaffolding.
 
 **Output**: Verification report and final delivery summary.
 
+### Phase 6: Stage F — Module System Integration (Module-First repos)
+
+> **Critical for module-first repositories.** This step ensures the agent is properly integrated into the modular system.
+
+**Actions**:
+1. **Ensure `agents/registry.json` includes `agent_module_map`** for LLM scope alignment (agent_id -> module_ids; one agent can map to multiple modules).
+2. **Update `modules/<module_id>/MANIFEST.yaml`** for each mapped module (if not auto-generated):
+   - Add interface entries for HTTP routes (`run`, `health`)
+   - Add `implements` entries linking to flow graph nodes (if applicable)
+
+3. **Update flow SSOT if needed**:
+   - Add new nodes/edges in `.system/modular/flow_graph.yaml`
+   - Update `.system/modular/flow_bindings.yaml` when multiple implementations exist
+
+4. **Run integration commands**:
+   ```bash
+   # Rebuild instance registry
+   node .ai/scripts/modulectl.js registry-build
+   
+   # Update flow implementation index
+   node .ai/scripts/flowctl.js update-from-manifests
+   
+   # Validate flow graph
+   node .ai/scripts/flowctl.js lint
+   
+   # Rebuild project context
+   node .ai/scripts/contextctl.js build
+   ```
+
+5. **Verify integration**:
+   - Check `.system/modular/instance_registry.yaml` includes the new module
+   - Check `.system/modular/flow_impl_index.yaml` (if flow_id/node_id specified)
+   - Check `.system/modular/graphs/*.mmd` for updated diagrams
+
+**Output**: Confirmation that module is registered and flow graph is consistent.
+
 ---
 
 ## Non-negotiable Constraints
@@ -149,14 +186,15 @@ Type "approve B" to proceed to scaffolding.
 - API routes must include **fixed names**: `run` and `health`.
 - `integration.failure_contract.mode` must NOT include any suppression mode (no `suppress_and_alert`).
 - **Kill switch** is mandatory (`AGENT_ENABLED` required in `configuration.env_vars`).
-- **Registry update** is mandatory (`deliverables.registry_path` must be created/updated).
+- **Registry update** is mandatory (`deliverables.registry_path` must be created/updated with `agent_module_map` entries).
 - **Core / Adapters separation** is mandatory.
 - **Tools must be implemented** (not left as TODO stubs).
 - **Verification evidence must be generated** (JSON + Markdown).
+- **Module system integration** is mandatory for module-first repos (Stage F).
 
 ---
 
-## Workflow Stages (A–E)
+## Workflow Stages (A–F)
 
 ### Stage A — Interview (temporary workdir only)
 
@@ -176,9 +214,9 @@ Type "approve B" to proceed to scaffolding.
 
 ### Stage C — Scaffold (repo writes)
 
-1. Generate the complete agent module under `agents/<agent_id>/`.
-2. Generate docs under `agents/<agent_id>/doc/`.
-3. Create/update registry at `agents/registry.json`.
+1. Generate the complete agent module under `agents/<agent_id>/` (SSOT for agent assets).
+2. Generate docs under `agents/<agent_id>/workdocs/`.
+3. Create/update registry at `agents/registry.json` (include `agent_module_map` for LLM scope).
 4. Do not overwrite existing files; skip and report.
 
 ### Stage D — Implement (manual / LLM-assisted)
@@ -199,6 +237,16 @@ Type "approve B" to proceed to scaffolding.
 5. Ensure registry entry is correct.
 6. Delete the temporary workdir via `finish --apply`.
 
+### Stage F — Module System Integration
+
+1. Ensure `agents/registry.json` includes `agent_module_map` (agent_id -> module_ids).
+2. Ensure `modules/<module_id>/MANIFEST.yaml` is complete with interface declarations (`run`, `health`) for each mapped module.
+3. If new nodes/edges were introduced, update `.system/modular/flow_graph.yaml` and `.system/modular/flow_bindings.yaml`.
+4. Run `modulectl.js registry-build` to update instance registry.
+5. Run `flowctl.js update-from-manifests` to link interfaces to flows.
+6. Run `flowctl.js lint` to validate consistency.
+7. Run `contextctl.js build` to update project context.
+
 ---
 
 ## Helper Tool Commands
@@ -206,7 +254,7 @@ Type "approve B" to proceed to scaffolding.
 Use the dependency-free helper script:
 
 ```
-.ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js
+.ai/skills/scaffold/agent_builder/scripts/agent-builder.js
 ```
 
 | Command | Purpose |
@@ -222,11 +270,31 @@ Use the dependency-free helper script:
 
 ---
 
+## Module System Integration Commands
+
+For module-first repos, run these after Stage E:
+
+```bash
+node .ai/scripts/modulectl.js registry-build
+node .ai/scripts/flowctl.js update-from-manifests
+node .ai/scripts/flowctl.js lint
+node .ai/scripts/contextctl.js build
+```
+
+| Command | Purpose |
+|---------|---------|
+| `modulectl.js registry-build` | Update `.system/modular/instance_registry.yaml` |
+| `flowctl.js update-from-manifests` | Build flow implementation index |
+| `flowctl.js lint` | Validate flow graph and bindings |
+| `contextctl.js build` | Rebuild project context registry |
+
+---
+
 ## Reference Documents
 
 | Document | Purpose |
 |----------|---------|
-| `reference/decision_checklist.md` | 15 decision points to capture during interview |
+| `reference/decision_checklist.md` | 16 decision points to capture during interview |
 | `reference/agent_builder_handbook.md` | Design principles, decision trees, boundary conditions |
 | `reference/stage_d_implementation_guide.md` | Tool, prompt, and test implementation patterns |
 | `templates/agent-blueprint.schema.json` | Blueprint JSON Schema (canonical) |
@@ -243,6 +311,7 @@ When executing this skill, always produce:
 3. **Stage C**: Scaffold plan (file list) before applying, then apply summary.
 4. **Stage D**: Implemented tools, prompt pack, and test cases (in repo).
 5. **Stage E**: Verification evidence (JSON + Markdown) and delivery summary.
+6. **Stage F**: Module system integration confirmation (for module-first repos).
 
 ### Final Delivery Summary Template
 
@@ -252,7 +321,8 @@ When executing this skill, always produce:
 ### Agent
 - ID: {{agent_id}}
 - Name: {{agent_name}}
-- Module Path: {{agent_module_path}}
+- Agent Path: {{agent_module_path}}
+- Module IDs: {{module_ids}}
 
 ### Interfaces
 | Type | Entrypoint | Response Mode |
@@ -264,7 +334,12 @@ When executing this skill, always produce:
 
 ### Verification
 - Scenarios: {{passed}}/{{total}} passed
-- Evidence: agents/{{agent_id}}/doc/verification-report.md
+- Evidence: agents/{{agent_id}}/workdocs/verification-report.md
+
+### Module Integration
+- Instance Registry: ✅ Updated
+- Flow Implementation Index: ✅ Updated
+- Flow Lint: ✅ Passed
 
 ### Next Steps
 - [ ] Configure environment variables (see .env.example)

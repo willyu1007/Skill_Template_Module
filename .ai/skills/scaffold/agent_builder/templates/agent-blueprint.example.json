@@ -83,7 +83,7 @@
     },
     {
       "type": "sdk",
-      "entrypoint": "require('agents/example-agent').runAgent",
+      "entrypoint": "require('./src').runAgent",
       "request_schema_ref": "#/schemas/RunRequest",
       "response_schema_ref": "#/schemas/RunResponse",
       "error_schema_ref": "#/schemas/AgentError",
@@ -747,8 +747,11 @@
   },
   "deliverables": {
     "agent_module_path": "agents/example-agent",
-    "docs_path": "agents/example-agent/doc",
+    "docs_path": "agents/example-agent/workdocs",
     "registry_path": "agents/registry.json",
+    "module_ids": [
+      "agent.example-agent"
+    ],
     "core_adapter_separation": "required"
   },
   "worker": {

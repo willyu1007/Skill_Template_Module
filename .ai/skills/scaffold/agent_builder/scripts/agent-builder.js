@@ -70,7 +70,7 @@ Commands:
     --apply                       Actually delete the workdir (otherwise dry-run)
 
 Examples:
-  node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js start
+  node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js start
   node .../agent-builder.js approve --workdir <WORKDIR> --stage A
   node .../agent-builder.js validate-blueprint --workdir <WORKDIR>
   node .../agent-builder.js approve --workdir <WORKDIR> --stage B
@@ -1459,7 +1459,6 @@ function applyScaffold(bp, repoRoot, apply) {
   const registryDir = path.dirname(registryPath);
   const relAgentModule = bp.deliverables.agent_module_path;
   const relDocs = bp.deliverables.docs_path;
-
   const entry = {
     id: bp.agent.id,
     name: bp.agent.name,
@@ -1485,6 +1484,15 @@ function applyScaffold(bp, repoRoot, apply) {
     const idx = reg.agents.findIndex(a => a && a.id === entry.id);
     if (idx >= 0) reg.agents[idx] = { ...reg.agents[idx], ...entry };
     else reg.agents.push(entry);
+
+    const moduleIds = Array.isArray(bp.deliverables.module_ids)
+      ? [...new Set(bp.deliverables.module_ids.map((id) => String(id || '').trim()).filter(Boolean))]
+      : [];
+    if (!Array.isArray(reg.agent_module_map)) reg.agent_module_map = [];
+    const mapEntry = { agent_id: bp.agent.id, module_ids: moduleIds };
+    const mapIdx = reg.agent_module_map.findIndex((a) => a && a.agent_id === mapEntry.agent_id);
+    if (mapIdx >= 0) reg.agent_module_map[mapIdx] = mapEntry;
+    else reg.agent_module_map.push(mapEntry);
     writeJson(registryPath, reg);
   }
 

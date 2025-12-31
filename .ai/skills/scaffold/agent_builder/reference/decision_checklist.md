@@ -9,7 +9,7 @@ Human operator or LLM running `agent_builder` for a real feature request.
 ## How to use
 1) Capture decisions in temporary Stage A notes under `stageA/interview-notes.md` and `stageA/integration-decision.md`.
 2) Encode decisions in `stageB/agent-blueprint.json` (schema: `templates/agent-blueprint.schema.json`).
-3) Validate with `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js validate-blueprint --workdir <WORKDIR>`.
+3) Validate with `node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js validate-blueprint --workdir <WORKDIR>`.
 
 ## Decision Inventory
 
@@ -90,17 +90,38 @@ Record in: `stageA/interview-notes.md`, `stageB/agent-blueprint.json` (`acceptan
 
 ### 14) Deliverables and registry
 - MUST define `deliverables.agent_module_path`, `deliverables.docs_path`, `deliverables.registry_path`.
+- SHOULD define `deliverables.module_ids` (one or more) to map agent -> module scope.
 - MUST ensure core/adapters separation is `required`.
+- **For module-first repos**: Use `agents/<agent_id>/` as the base path; use `module_ids` for LLM scope.
 Record in: `stageB/agent-blueprint.json` (`deliverables.*`).
 
 ### 15) Lifecycle and versioning
 - SHOULD define versioning, migration notes, and deprecation policy for the agent.
 Record in: `stageA/interview-notes.md`, `stageB/agent-blueprint.json` (`lifecycle.*`).
 
+### 16) Module system integration (Module-First repos only)
+- MUST run post-scaffold integration commands after Stage C/E.
+- SHOULD define which flow_id/node_id the agent implements (if applicable).
+- SHOULD update MANIFEST.yaml with proper interfaces declaration.
+- SHOULD update `.system/modular/flow_graph.yaml` (and `flow_bindings.yaml` if needed) when introducing new nodes/edges.
+- SHOULD ensure `agents/registry.json` includes `agent_module_map` entries (agent_id -> module_ids).
+Record in: `stageA/interview-notes.md`, run integration commands post-scaffold.
+
 ## Verification
 - `stageA` artifacts exist only in the temporary workdir (not in the repo).
 - `stageB/agent-blueprint.json` passes `validate-blueprint` with no errors.
 - All required decisions above are represented in `stageB/agent-blueprint.json`.
+
+## Post-Scaffold Integration (Module-First repos)
+
+After `apply --apply`, run:
+
+```bash
+node .ai/scripts/modulectl.js registry-build
+node .ai/scripts/flowctl.js update-from-manifests
+node .ai/scripts/flowctl.js lint
+node .ai/scripts/contextctl.js build
+```
 
 ## Prompt Template
 ```

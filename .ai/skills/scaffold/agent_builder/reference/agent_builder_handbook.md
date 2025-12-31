@@ -36,6 +36,8 @@ agents/<agent_id>/
 
 **Enforcement**: `deliverables.core_adapter_separation` must be `"required"` in blueprint.
 
+**Module scope**: Agent assets live under `agents/`, while `module_id` mappings define the LLM working scope for semantic consistency. Record mappings in `agents/registry.json` under `agent_module_map` so automation and reviewers can see which module contexts apply.
+
 ### 1.2 Blueprint as Single Source of Truth
 
 **Principle**: The blueprint JSON captures all architectural decisions and drives code generation.
