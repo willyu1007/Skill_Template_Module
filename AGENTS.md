@@ -20,6 +20,7 @@ Read `init/AGENTS.md` for project initialization instructions.
 | `docs/context/` | Context registries (project SSOT + derived aggregated view) |
 | `.ai/skills/` | Skill SSOT (workflows + scaffolding) |
 | `.ai/scripts/` | Control scripts (module/init/context/flow/integration) |
+| `.ai/llm/` | LLM engineering governance entry (see `.ai/llm/AGENTS.md`) |
 | `.codex/` | Codex wrapper stubs (generated) |
 | `.claude/` | Claude wrapper stubs (generated) |
 | `init/` | Project initialization kit (optional to delete after init) |
@@ -81,7 +82,7 @@ node .ai/scripts/integrationctl.js run --execute   # optional; requires runtime 
 ```
 
 ## Rules
-
+- For LLM engineering tasks, open `.ai/llm/AGENTS.md`
 - Treat `.system/modular/*` SSOT files as **manual but validated**.
 - Treat derived artifacts as **overwritable**.
 - Keep module documentation local: `modules/<module_id>/workdocs/`.

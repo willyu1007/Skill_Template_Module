@@ -1,0 +1,60 @@
+---
+name: llm_engineering
+description: Entry workflow for LLM engineering tasks (provider integration, calling wrapper, routing profiles, prompt templates, cost/telemetry, credentials/config keys). Routes to one procedure and enforces required verification.
+---
+
+# LLM Engineering (workflow)
+
+## Operating mode (token-efficient)
+- Treat this skill as a **router + governor**.
+- Do **not** load multiple procedures. Select exactly **one** procedure below and follow it end-to-end.
+- Use `.ai/llm/registry/*` as the SSOT for identifiers and allowed config keys.
+
+## Routing (pick one procedure)
+
+| Task | Open this procedure |
+|---|---|
+| Add / integrate a provider | `reference/procedures/add-provider.md` |
+| Standardize or introduce a single calling wrapper | `reference/procedures/standardize-calling-wrapper.md` |
+| Add / change model routing profiles | `reference/procedures/add-model-profile.md` |
+| Add / change prompt templates (versioned) | `reference/procedures/update-prompt-template.md` |
+| Release / major change review | `reference/procedures/release-check.md` |
+
+## Shared non-negotiables (apply to all procedures)
+1) **No secrets in repo**
+   - Use non-secret references (e.g., `credential_ref`).
+
+2) **Registry-first configuration**
+   - Never introduce new LLM env/config keys ad-hoc.
+   - Register in `.ai/llm/registry/config_keys.yaml`.
+
+3) **Single calling surface**
+   - Feature code must not import provider SDKs directly.
+   - Route all calls through one wrapper/gateway client.
+
+4) **Versioned prompts**
+   - Prompt references are `prompt_template_id` + immutable `version`.
+
+## Minimal inputs you should capture before changing code
+- Intended user-facing capability (what feature needs LLM?)
+- Required modalities/APIs (chat, embeddings, streaming)
+- Routing intent (quality vs cost vs latency)
+- Credential strategy (`credential_ref`; no secrets)
+- Budget constraints (tokens/$) and telemetry fields
+
+## Verification
+- If you changed **skills**:
+  - `node .ai/scripts/lint-skills.cjs --strict`
+  - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+
+- If you changed **LLM config/env keys** (or introduced new ones):
+  - `node .ai/scripts/check-llm-config-keys.cjs`
+
+- If the host repo has tests/lint:
+  - run the smallest relevant test suite for the modified area (wrapper/adapter/registry).
+
+## Boundaries
+- Do not edit `.codex/skills/` or `.claude/skills/` directly (generated).
+- Do not add MCP-related content (out of scope for this workflow).
+- Do not create new top-level directories for LLM work; keep assets under existing conventions (`.ai/`, `.system/`).
+- Do not add provider SDK calls directly into product/feature code.
