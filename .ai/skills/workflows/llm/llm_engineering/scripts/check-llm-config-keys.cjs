@@ -3,22 +3,21 @@
 /**
  * LLM Config Key Registry Check
  *
- * Enforces that LLM-related env/config keys referenced in code are registered in:
+ * Enforces that in-scope LLM env/config keys referenced in code are registered in:
  *   .ai/llm/registry/config_keys.yaml
  *
  * Why:
  * - prevents ad-hoc / duplicated configuration keys
- * - reduces drift and “magic strings” across the codebase
+ * - reduces drift and "magic strings" across the codebase
  * - makes reviews and rollbacks safer
  *
- * This script is intentionally dependency-free (no npm installs required).
+ * Notes:
+ * - Dependency-free (no npm installs required)
+ * - Ignores Markdown to avoid doc false-positives
  */
 
 const fs = require('fs');
 const path = require('path');
-
-const repoRoot = path.resolve(__dirname, '..', '..');
-const registryPath = path.join(repoRoot, '.ai', 'llm', 'registry', 'config_keys.yaml');
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -36,7 +35,7 @@ function die(msg) {
 function readFileSafe(p) {
   try {
     return fs.readFileSync(p, 'utf8');
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -48,11 +47,28 @@ function stripInlineComment(line) {
 }
 
 function unquote(s) {
-  const t = s.trim();
+  const t = String(s || '').trim();
   if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
     return t.slice(1, -1);
   }
   return t;
+}
+
+function uniqueList(list) {
+  return Array.from(new Set(list));
+}
+
+function findRepoRoot(startDir) {
+  // Walk up until we find the expected registry path.
+  let dir = startDir;
+  for (let i = 0; i < 50; i++) {
+    const candidate = path.join(dir, '.ai', 'llm', 'registry', 'config_keys.yaml');
+    if (fs.existsSync(candidate)) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
 }
 
 function parseConfigKeysYaml(raw) {
@@ -101,10 +117,6 @@ function hasAnyPrefix(key, prefixes) {
   return false;
 }
 
-function uniqueList(list) {
-  return Array.from(new Set(list));
-}
-
 function walkFiles(rootDir) {
   const ignoreDirs = new Set([
     '.git',
@@ -117,6 +129,7 @@ function walkFiles(rootDir) {
 
   const includeExt = new Set([
     '.js', '.jsx', '.ts', '.tsx',
+    '.cjs', '.mjs',
     '.py', '.go', '.java', '.kt', '.cs',
     '.rb', '.php',
     '.sh', '.bash', '.zsh',
@@ -209,6 +222,12 @@ function main() {
   console.log(colors.cyan('========================================'));
   console.log('');
 
+  const repoRoot = findRepoRoot(__dirname);
+  if (!repoRoot) {
+    die('Unable to locate repo root: expected `.ai/llm/registry/config_keys.yaml` in an ancestor directory.');
+  }
+
+  const registryPath = path.join(repoRoot, '.ai', 'llm', 'registry', 'config_keys.yaml');
   if (!fs.existsSync(registryPath)) {
     die(`Missing registry: ${registryPath}`);
   }
@@ -238,7 +257,7 @@ function main() {
   console.log('');
 
   const files = walkFiles(repoRoot);
-  const seen = new Map(); // key -> { files: Set<string> }
+  const seen = new Map(); // key -> Set<file>
 
   for (const f of files) {
     const content = readFileSafe(f);
@@ -274,7 +293,7 @@ function main() {
       }
     }
     console.log('');
-    console.log('Fix: add these keys to `.ai/llm/registry/config_keys.yaml` and re-run this check.');
+    console.log('Fix: register keys in `.ai/llm/registry/config_keys.yaml` and re-run this check.');
     process.exit(1);
   }
 
@@ -282,3 +301,4 @@ function main() {
 }
 
 main();
+

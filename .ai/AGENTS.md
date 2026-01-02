@@ -1,35 +1,41 @@
-# `.ai/` Directory Guide (LLM-first)
+# `.ai/` (LLM-facing)
 
-## Conclusions (read first)
+## Purpose
 
-- `.ai/` stores AI/LLM workflow source content: skills, commands, templates, and maintenance scripts.
-- AI/LLM MUST treat `.ai/skills/` as the Single Source of Truth (SSOT). `.codex/` and `.claude/` are synced wrappers/entry stubs and MUST NOT be edited directly.
-- AI/LLM MUST NOT traverse any `.ai/` subdirectories (no recursive listing/grepping). Context loading is allowed only via guided, path-driven progressive disclosure (see "Context Loading").
-- Documentation under `.ai/` MUST follow `.ai/skills/standards/documentation-guidelines/SKILL.md`.
+`.ai/` stores **LLM-facing** assets for repo governance:
+- Skills (SSOT)
+- Maintenance scripts (lint/sync/checks)
+- LLM engineering governance entry points
 
-## Directory Overview
+## Non-negotiables
 
-- `.ai/skills/`: SSOT for skills and workflows (entry point is each skill's `SKILL.md`).
-- `.ai/scripts/`: maintenance scripts (for example `node .ai/scripts/sync-skills.cjs`).
-- `.ai/AGENTS.md`: this file; defines `.ai/` navigation and constraints.
+- **SSOT**: edit skills only under `.ai/skills/`.
+- **Generated stubs**: do not edit `.codex/skills/` or `.claude/skills/` directly. Regenerate via sync.
+- **Progressive disclosure**: do not recursively enumerate `.ai/` to "discover" content.
 
-## Context Loading (guided; no traversal)
+## Routing
+
+- If the task is **LLM engineering** (provider integration, calling wrappers, profiles, prompts, cost/telemetry, credentials/config keys):
+  - Open: `.ai/llm/AGENTS.md`
+  - Invoke workflow skill: `llm_engineering`
+- If the task is **skill authoring/maintenance**:
+  - Open: `.ai/skills/standards/documentation-guidelines/SKILL.md`
+  - Run:
+    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+
+## Context loading rules (token-efficient)
 
 AI/LLM MUST:
-- Read `.ai/AGENTS.md` first, then open a single target file using an explicitly provided path.
-- Open files in subdirectories only when the user specifies the path, or when an already-opened doc references the path explicitly.
+- Read only the **single** file it is routed to.
+- Open additional files only when an already-opened doc provides an explicit path.
 
 AI/LLM MUST NOT:
-- Use recursive enumeration/search to "discover" content, for example `Get-ChildItem -Recurse .ai`, `rg --files .ai`, or `tree .ai`.
-- Bulk-open many files to "scan the folder"; if paths are missing, ask the user for the exact relative path first.
+- Run recursive listing/grep over `.ai/` (e.g., `tree .ai`, `rg --files .ai`).
 
-AI/LLM SHOULD:
-- When the user provides intent but no path, request a repo-relative path (for example `.ai/skills/.../SKILL.md` before proceeding.
+## Verification (repo maintenance)
 
-## Verification (How to verify)
-
-- Inspect the `.ai/` top-level structure (non-recursive): `Get-ChildItem .ai` (PowerShell) or `ls .ai` (POSIX shell).
-- Sync provider wrappers (overwrites generated artifacts): `node .ai/scripts/sync-skills.cjs`.
-  - Blast radius: `.codex/skills/` and `.claude/skills/` are regenerated.
-  - Idempotency: repeated runs with the same `.ai/skills/` input should produce the same stubs.
-  - Rollback: restore `.codex/` / `.claude/` from VCS, or fix `.ai/skills/` and re-run the sync script.
+- Lint skills: `node .ai/scripts/lint-skills.cjs --strict`
+- Sync stubs: `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+- LLM config key gate: `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
+- LLM registry sanity: `node .ai/skills/workflows/llm/llm_engineering/scripts/validate-llm-registry.cjs`

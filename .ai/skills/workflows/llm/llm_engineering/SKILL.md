@@ -20,6 +20,15 @@ description: Entry workflow for LLM engineering tasks (provider integration, cal
 | Add / change prompt templates (versioned) | `reference/procedures/update-prompt-template.md` |
 | Release / major change review | `reference/procedures/release-check.md` |
 
+## Examples (end-to-end)
+Open **one** example only if you need a concrete template.
+
+| Example | Open |
+|---|---|
+| Add a provider (OpenAI-style) | `reference/examples/e2e-01-add-provider-openai.md` |
+| Update a prompt template (versioned) | `reference/examples/e2e-02-update-prompt-template.md` |
+| Add a model routing profile | `reference/examples/e2e-03-add-model-profile.md` |
+
 ## Shared non-negotiables (apply to all procedures)
 1) **No secrets in repo**
    - Use non-secret references (e.g., `credential_ref`).
@@ -47,8 +56,12 @@ description: Entry workflow for LLM engineering tasks (provider integration, cal
   - `node .ai/scripts/lint-skills.cjs --strict`
   - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
 
+- Registry sanity (recommended; run before release):
+  - `node .ai/skills/workflows/llm/llm_engineering/scripts/validate-llm-registry.cjs`
+  - In real (non-template) repos, run with `--strict` in CI.
+
 - If you changed **LLM config/env keys** (or introduced new ones):
-  - `node .ai/scripts/check-llm-config-keys.cjs`
+  - `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 
 - If the host repo has tests/lint:
   - run the smallest relevant test suite for the modified area (wrapper/adapter/registry).
