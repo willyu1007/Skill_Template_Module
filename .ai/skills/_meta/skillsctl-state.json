@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "enabledPacks": [
+    "context-core",
+    "workflows",
+    "standards",
+    "scaffold-core"
+  ],
+  "lastSync": null
+}

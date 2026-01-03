@@ -3,7 +3,9 @@
   "includePrefixes": [
     "workflows/",
     "standards/",
-    "scaffold/"
+    "scaffold/",
+    "context/",
+    "scaffold/context"
   ],
   "includeSkills": [],
   "excludeSkills": []
