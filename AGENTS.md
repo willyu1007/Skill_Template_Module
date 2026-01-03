@@ -81,6 +81,27 @@ node .ai/scripts/integrationctl.js compile
 node .ai/scripts/integrationctl.js run --execute   # optional; requires runtime endpoints config
 ```
 
+## Task Protocol (for complex tasks)
+
+For tasks that involve multiple steps, span multiple files, or require decisions:
+
+1. **Check existing workdocs**: Look for active plans at `modules/<module_id>/workdocs/active/`
+2. **Create a plan** (if needed): Use skill `create-dev-docs-plan`
+3. **Execute with tracking**: Update `plan.md` as you progress
+4. **Handoff**: Use skill `update-dev-docs-for-handoff` before context switch
+
+**When to use workdocs:**
+- Task spans multiple files (>3)
+- Task requires multiple steps (>5)
+- Task involves architectural decisions
+- Task may be interrupted/handed off
+- Task has unclear scope requiring exploration
+
+**Skip workdocs when:**
+- Single file fix
+- Simple refactor (rename, move)
+- Well-defined, quick task (<30 min)
+
 ## Rules
 - For LLM engineering tasks, open `.ai/llm/AGENTS.md`
 - Treat `.system/modular/*` SSOT files as **manual but validated**.

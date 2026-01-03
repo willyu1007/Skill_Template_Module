@@ -27,6 +27,7 @@ Use this skill when:
 - A dependency map (what imports what) for files being moved/renamed
 - A sequence of changes that keeps the codebase buildable
 - Verification notes (what was run and passed)
+- (Optional) Workdocs plan at `modules/<module_id>/workdocs/active/<task-slug>/` for complex refactors
 
 ## Core rules
 - Before moving/renaming, you MUST identify all import sites.
@@ -36,20 +37,21 @@ Use this skill when:
 
 ## Steps
 1. Define the refactor objective and boundaries.
-2. Inventory dependencies:
+2. (Optional) For multi-session refactors: Create workdocs at `modules/<module_id>/workdocs/active/<task-slug>/` using `create-dev-docs-plan` skill.
+3. Inventory dependencies:
    - incoming imports (who depends on this file/module)
    - outgoing imports (what it depends on)
-3. Choose a target structure:
+4. Choose a target structure:
    - feature-based, layer-based, or hybrid (match codebase conventions)
-4. Apply changes incrementally:
+5. Apply changes incrementally:
    - move one module at a time
    - update imports
    - run build/tests
-5. Extract repeated patterns carefully:
+6. Extract repeated patterns carefully:
    - introduce a new abstraction
    - migrate call sites gradually
    - keep behavior stable
-6. Final verification:
+7. Final verification:
    - build clean
    - tests pass
    - no circular deps introduced
@@ -62,6 +64,12 @@ Use this skill when:
 - [ ] Tests pass after refactor completion
 - [ ] Behavior is unchanged (no functional regressions)
 - [ ] Refactor plan milestones are documented and tracked
+
+## Notes
+
+- For multi-session or complex refactors, use `create-dev-docs-plan` skill to track progress in workdocs.
+- Before handing off an incomplete refactor, use `update-dev-docs-for-handoff` skill to document the current state.
+- See `.ai/skills/workflows/dev-docs/create-dev-docs-plan/reference.md` for workdocs usage guidelines.
 
 ## Boundaries
 

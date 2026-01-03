@@ -16,12 +16,14 @@ This repository is **module-first**.
 When working on a specific module:
 
 1. Prefer reading the module's `AGENTS.md` and `MANIFEST.yaml` first.
-2. Treat the module directory as the default write scope.
-3. If a change impacts business flows, update `.system/modular/flow_graph.yaml` via `flowctl`.
-4. After changing manifests, regenerate derived artifacts:
+2. **For multi-step tasks**: Check `workdocs/active/` for existing plans or create one via `create-dev-docs-plan` skill.
+3. Treat the module directory as the default write scope.
+4. If a change impacts business flows, update `.system/modular/flow_graph.yaml` via `flowctl`.
+5. After changing manifests, regenerate derived artifacts:
    - `node .ai/scripts/modulectl.js registry-build`
    - `node .ai/scripts/flowctl.js update-from-manifests`
    - `node .ai/scripts/flowctl.js lint`
+6. **Before handoff**: Update workdocs via `update-dev-docs-for-handoff` skill if a plan exists.
 
 ## Directory skeleton (recommended)
 

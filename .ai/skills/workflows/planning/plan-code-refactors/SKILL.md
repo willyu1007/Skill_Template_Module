@@ -26,24 +26,26 @@ Use this skill when:
 - A dependency map for the refactor scope
 - A risk register with mitigations
 - Clear acceptance criteria and verification actions per phase
+- (Recommended) Workdocs plan at `modules/<module_id>/workdocs/active/<task-slug>/` for tracking
 
 ## Steps
 1. Define goals and non-goals.
-2. Inventory the scope:
+2. Create workdocs plan at `modules/<module_id>/workdocs/active/<task-slug>/` using `create-dev-docs-plan` skill.
+3. Inventory the scope:
    - files/modules involved
    - external callers
-3. Identify refactor strategy:
+4. Identify refactor strategy:
    - extract modules
    - rename/restructure
    - introduce new abstractions
-4. Sequence steps:
+5. Sequence steps:
    - small, buildable increments
    - define rollback points
-5. Define verification for each step:
+6. Define verification for each step:
    - typecheck
    - unit tests
    - integration tests
-6. Define rollout/backout (if user-facing behavior changes).
+7. Define rollout/backout (if user-facing behavior changes).
 
 ## Verification
 
@@ -53,6 +55,12 @@ Use this skill when:
 - [ ] Each phase has defined verification actions
 - [ ] Risk register includes mitigations
 - [ ] Rollback points are defined for each phase
+
+## Notes
+
+- Refactor plans should be persisted in workdocs for multi-session or team-based refactors.
+- Update the workdocs plan as you progress; use `update-dev-docs-for-handoff` before context switches.
+- See `.ai/skills/workflows/dev-docs/create-dev-docs-plan/reference.md` for workdocs usage guidelines.
 
 ## Boundaries
 
