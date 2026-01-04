@@ -30,6 +30,6 @@ Schema design decisions, migration planning, data model proposals.
 
 ## Skills
 
-- Create: `create-dev-docs-plan`
-- Handoff: `update-dev-docs-for-handoff`
+- Create: `create-workdocs-plan`
+- Handoff: `update-workdocs-for-handoff`
 

@@ -29,6 +29,6 @@ CI pipeline planning, workflow customization, platform-specific configuration.
 
 ## Skills
 
-- Create: `create-dev-docs-plan`
-- Handoff: `update-dev-docs-for-handoff`
+- Create: `create-workdocs-plan`
+- Handoff: `update-workdocs-for-handoff`
 

@@ -20,9 +20,12 @@ Cross-module integration work: debugging, scenario planning, multi-module coordi
 
 ```
 active/<task-slug>/
-  plan.md        # Goal, checklist, validation
-  context.md     # Relevant modules, flows, scenarios
-  decisions.md   # Cross-module decisions
+  00-overview.md              # Goal, non-goals, acceptance criteria
+  01-plan.md                  # Milestones and step-by-step checklist
+  02-architecture.md          # Cross-module boundaries, contracts, rollout notes
+  03-implementation-notes.md  # Current status + TODOs (future work)
+  04-verification.md          # Commands/checks + results (or blockers)
+  05-pitfalls.md              # "Do not repeat" pitfalls and dead ends
 ```
 
 ## Related SSOT
@@ -30,8 +33,13 @@ active/<task-slug>/
 - Scenarios: `modules/integration/scenarios.yaml`
 - Flow graph: `.system/modular/flow_graph.yaml`
 
+## Resume checklist (before changes)
+
+- Read `03-implementation-notes.md` and `05-pitfalls.md` first.
+- Update `01-plan.md` and `04-verification.md` as you work.
+
 ## Skills
 
-- Create: `create-dev-docs-plan` (scope: integration)
-- Handoff: `update-dev-docs-for-handoff`
+- Create: `create-workdocs-plan` (scope: integration)
+- Handoff: `update-workdocs-for-handoff`
 

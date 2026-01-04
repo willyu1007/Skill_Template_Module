@@ -1,6 +1,6 @@
 ---
 name: plan-code-refactors
-description: Plan code refactors by defining goals, mapping dependencies, sequencing steps, and defining verification/rollback checkpoints.
+description: Plan code refactors by defining goals/non-goals, mapping dependencies, sequencing phases, and specifying verification and rollback checkpoints.
 ---
 
 # Plan Code Refactors
@@ -19,57 +19,55 @@ Use this skill when:
 - The refactor motivation (what pain it addresses)
 - Current structure and known pain points
 - Constraints (time, risk tolerance, compatibility requirements)
-- Verification tools (build, tests, lint, e2e)
+- Verification tools (build, typecheck, tests, lint, e2e)
 
 ## Outputs
-- A phased refactor plan with checkpoints
+- A phased refactor plan with explicit checkpoints
 - A dependency map for the refactor scope
 - A risk register with mitigations
-- Clear acceptance criteria and verification actions per phase
-- (Recommended) Workdocs plan at `modules/<module_id>/workdocs/active/<task-slug>/` for tracking
+- Acceptance criteria and verification actions per phase
+- Rollback strategy (what to revert to if a phase fails)
 
 ## Steps
 1. Define goals and non-goals.
-2. Create workdocs plan at `modules/<module_id>/workdocs/active/<task-slug>/` using `create-dev-docs-plan` skill.
-3. Inventory the scope:
+2. Inventory the scope:
    - files/modules involved
    - external callers
-4. Identify refactor strategy:
+   - integration points
+3. Map dependencies and constraints:
+   - which modules import/own what
+   - build/test constraints
+   - naming/boundary conventions to preserve
+4. Choose a refactor strategy:
    - extract modules
    - rename/restructure
    - introduce new abstractions
-5. Sequence steps:
+5. Sequence phases:
    - small, buildable increments
-   - define rollback points
-6. Define verification for each step:
-   - typecheck
-   - unit tests
-   - integration tests
-7. Define rollout/backout (if user-facing behavior changes).
+   - explicit checkpoints where the codebase is “green”
+6. Define verification per phase:
+   - commands to run
+   - expected outcomes
+   - manual smoke checks if needed
+7. Define rollback points:
+   - last known-green commit
+   - what to revert if a phase fails
 
 ## Verification
-
-- [ ] Refactor goals and non-goals are explicitly defined
-- [ ] All affected dependencies are identified
-- [ ] Plan includes buildable checkpoints between phases
-- [ ] Each phase has defined verification actions
-- [ ] Risk register includes mitigations
-- [ ] Rollback points are defined for each phase
-
-## Notes
-
-- Refactor plans should be persisted in workdocs for multi-session or team-based refactors.
-- Update the workdocs plan as you progress; use `update-dev-docs-for-handoff` before context switches.
-- See `.ai/skills/workflows/dev-docs/create-dev-docs-plan/reference.md` for workdocs usage guidelines.
+- [ ] Goals and non-goals are explicit
+- [ ] Scope and dependencies are documented
+- [ ] Plan is phased with buildable increments and checkpoints
+- [ ] Verification actions per phase are concrete and reproducible
+- [ ] Risks are listed with mitigations
+- [ ] Rollback strategy is defined
 
 ## Boundaries
-
-- MUST NOT plan refactors without identifying all affected dependencies first
-- MUST NOT plan changes that leave the codebase in a non-buildable state
-- MUST NOT mix behavior changes with structural refactors in the same phase
-- MUST NOT skip verification checkpoints between phases
-- SHOULD NOT plan "big bang" refactors; prefer incremental, reversible steps
-- SHOULD NOT skip rollback/backout planning for user-facing changes
+- MUST NOT produce a plan without acceptance criteria and verification
+- MUST NOT plan a large refactor as a single undifferentiated step
+- MUST include rollback points for risky phases
+- SHOULD keep the plan portable (avoid hard-coded paths unless required)
+- SHOULD separate structural refactors from behavior changes
 
 ## Included assets
-- Templates: `./templates/` includes a phased refactor plan outline.
+- Templates: `./templates/phased-refactor-plan.md` provides a phase structure.
+- Examples: `./examples/` includes a sample phased plan.

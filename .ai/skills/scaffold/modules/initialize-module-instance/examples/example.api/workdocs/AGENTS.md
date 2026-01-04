@@ -20,17 +20,19 @@ Long-running task tracking, design decisions, and handoff documentation for this
 
 ```
 active/<task-slug>/
-  plan.md        # Goal, checklist, validation plan
-  context.md     # Relevant files, scripts, open questions
-  decisions.md   # Key decisions and rationale
-  risks.md       # (optional) Risks and mitigations
+  00-overview.md              # Goal, non-goals, acceptance criteria
+  01-plan.md                  # Milestones and step-by-step checklist
+  02-architecture.md          # Boundaries, contracts, migration notes
+  03-implementation-notes.md  # Current status + TODOs (future work)
+  04-verification.md          # Commands/checks + results (or blockers)
+  05-pitfalls.md              # "Do not repeat" pitfalls and dead ends
 ```
 
 ## Workflow
 
-1. Create task dir via `create-dev-docs-plan` skill
-2. Update `plan.md` as work progresses (check off items)
-3. Before handoff: use `update-dev-docs-for-handoff` skill
+1. Create task dir via `create-workdocs-plan` skill
+2. Update `01-plan.md` as work progresses (check off items)
+3. Before handoff: use `update-workdocs-for-handoff` skill
 4. On completion: move to `archive/`
 
 ## Naming

@@ -86,9 +86,9 @@ node .ai/scripts/integrationctl.js run --execute   # optional; requires runtime 
 For tasks that involve multiple steps, span multiple files, or require decisions:
 
 1. **Check existing workdocs**: Look for active plans at `modules/<module_id>/workdocs/active/`
-2. **Create a plan** (if needed): Use skill `create-dev-docs-plan`
-3. **Execute with tracking**: Update `plan.md` as you progress
-4. **Handoff**: Use skill `update-dev-docs-for-handoff` before context switch
+2. **Create a plan** (if needed): Use skill `create-workdocs-plan`
+3. **Execute with tracking**: Keep `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, and `05-pitfalls.md` current
+4. **Handoff**: Use skill `update-workdocs-for-handoff` before context switch
 
 **When to use workdocs:**
 - Task spans multiple files (>3)

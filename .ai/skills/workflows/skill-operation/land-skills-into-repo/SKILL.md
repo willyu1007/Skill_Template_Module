@@ -111,6 +111,7 @@ This generates lightweight wrapper stubs in `.codex/skills/` and `.claude/skills
 ## Boundaries
 
 - MUST NOT apply without reviewing dry-run plan first
+- MUST obtain explicit approval before applying changes to a shared or protected repository
 - MUST NOT delete or prune anything unless `--prune` is explicitly set
 - MUST NOT skip verification after apply
 - SHOULD create backups before overwriting (`--backup`)

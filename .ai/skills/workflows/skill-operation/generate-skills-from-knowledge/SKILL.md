@@ -29,7 +29,7 @@ You MUST provide:
 - **Portability constraints**:
   - whether to remove provider-specific terms,
   - whether project paths/scripts should be generalized,
-  - any allowed exceptions (for example, "dev-docs may keep repo-specific layout").
+  - any allowed exceptions (for example, "workdocs may keep repo-specific layout").
 
 You SHOULD provide:
 - Desired **taxonomy** (optional): up to two tiers (e.g., `backend/common`, `frontend/components`, `workflows/common`).
@@ -60,17 +60,21 @@ The expected outputs are:
    - define the skills to create,
    - map each skill to its source docs,
    - define which examples/templates to extract.
-4. Run:
+4. Review the plan and obtain approval before writing files:
+   - confirm the skill taxonomy and naming
+   - confirm portability constraints (remove provider/project specifics)
+   - confirm what will be created vs updated
+5. Run:
    - `python ./scripts/skillgen.py apply --plan <plan.json>` to scaffold the skill directories.
-5. For each generated skill:
+6. For each generated skill:
    - rewrite `SKILL.md` to be **high-signal and short**,
    - move large examples into `examples/`,
    - move reusable snippets into `templates/`,
    - put deep rationale into `reference.md`,
    - remove cross-skill links ("See also", "Related docs").
-6. Run:
+7. Run:
    - `python ./scripts/skillgen.py lint --skills-root <skills_root>` and fix issues until clean.
-7. Package the bundle (optional):
+8. Package the bundle (optional):
    - `python ./scripts/skillgen.py package --skills-root <skills_root> --out <bundle.zip>`
 
 ### Scenario B: Convert docs directly into a repository skills root
@@ -81,11 +85,12 @@ If your repo has additional syncing rules (provider stubs, monorepo layouts), tr
 ## Boundaries
 - You MUST NOT include secrets, credentials, or internal-only URLs in generated skills.
 - You MUST NOT copy large logs or whole source documents verbatim into `SKILL.md`.
-- You SHOULD avoid hard-coded repository paths unless the target is explicitly "dev-docs" with a known layout.
+- You SHOULD avoid hard-coded repository paths unless the target is explicitly "workdocs" with a known layout.
 - You MUST keep each `SKILL.md` <= 500 lines by moving detail into `reference.md`, `examples/`, and `templates/`.
 
 ## Verification
 Run the linter and confirm:
+- the conversion plan was reviewed and approved before applying
 - every skill directory contains `SKILL.md` with valid YAML frontmatter
 - `name` matches the directory name
 - no `resources/` directories exist

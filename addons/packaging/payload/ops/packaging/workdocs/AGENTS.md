@@ -30,6 +30,6 @@ Container image planning, base image decisions, build optimization, registry con
 
 ## Skills
 
-- Create: `create-dev-docs-plan`
-- Handoff: `update-dev-docs-for-handoff`
+- Create: `create-workdocs-plan`
+- Handoff: `update-workdocs-for-handoff`
 

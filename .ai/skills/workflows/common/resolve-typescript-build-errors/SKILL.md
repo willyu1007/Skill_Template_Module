@@ -1,6 +1,6 @@
 ---
 name: resolve-typescript-build-errors
-description: Resolve TypeScript compilation errors by triaging diagnostics, fixing root causes, and verifying via a clean compile.
+description: Resolve TypeScript compilation errors by grouping diagnostics, fixing root causes first, applying safe fix patterns, and verifying via a clean compile.
 ---
 
 # Resolve TypeScript Build Errors
@@ -24,7 +24,7 @@ Use this skill when:
 ## Outputs
 - A prioritized error list grouped by root cause
 - Code changes that resolve the errors with minimal collateral changes
-- Verification notes: which command(s) now pass
+- Verification evidence: which command(s) now pass
 
 ## Core rules
 - You MUST fix root causes before chasing downstream errors.
@@ -32,51 +32,50 @@ Use this skill when:
 - You MUST verify by re-running the TypeScript check until it is clean.
 
 ## Steps
-1. **Collect diagnostics**
+1. **Collect diagnostics (complete, not partial)**
    - Capture the full error output (not just the first error).
-   - Identify which compilation target is failing (app, server, library).
+   - Identify which build target is failing (app, server, library).
+   - Record the reproduction command.
 
-2. **Group errors**
+2. **Group errors by root cause**
    - missing exports/imports
-   - incompatible types (assignment/signature mismatch)
-   - property does not exist (shape mismatch)
-   - `unknown`/`any` escapes
-   - generic constraints failures
+   - signature/assignment incompatibilities
+   - property/shape mismatches
+   - `undefined`/`null` strictness
+   - `unknown` flows
+   - generic constraint failures
+   - module resolution/tsconfig issues
 
-3. **Prioritize root causes**
-   - start with missing types/exports
-   - then address broad interface/type definition mismatches
-   - then address local typing issues
+3. **Prioritize the highest-leverage fixes**
+   - Start with missing exports/paths (often unlocks many errors).
+   - Then fix shared types/interfaces used widely.
+   - Then fix local call sites.
 
-4. **Apply minimal fixes**
-   - align interfaces and function signatures
-   - correct imports and module exports
-   - improve type narrowing for `unknown`
-   - add explicit return types at boundaries if inference becomes ambiguous
+4. **Apply minimal, safe fix patterns**
+   - Use the triage worksheet to track groups and progress.
+   - Use the common fix patterns reference for typical error categories.
+   - After each group fix, re-run the reproduction command to confirm you are reducing errors.
 
-5. **Verify**
-   - re-run the same TypeScript check
-   - repeat until there are no errors
-   - optionally run unit tests if changes were non-trivial
+5. **Verify to clean**
+   - Re-run the same TypeScript check until it produces zero errors.
+   - If changes touched runtime logic or boundaries, run the relevant tests.
 
 ## Verification
-
 - [ ] TypeScript build completes with zero errors
-- [ ] No `@ts-ignore` or unsafe casts introduced without justification
 - [ ] Root cause errors are fixed (not just downstream symptoms)
-- [ ] Unit tests pass after fixes (if applicable)
-- [ ] CI TypeScript checks pass
-- [ ] Changes are minimal and targeted (no unrelated refactors)
+- [ ] No suppressions introduced without justification (`@ts-ignore`, `as any`)
+- [ ] Reproduction command now passes consistently
+- [ ] Tests pass after fixes (if applicable)
 
 ## Boundaries
-
-- MUST NOT use `@ts-ignore` without explicit justification
-- MUST NOT use `as any` to silence errors
+- MUST NOT use `@ts-ignore` to silence errors (use `@ts-expect-error` only as a justified last resort)
+- MUST NOT use `as any` to force compilation
 - MUST NOT fix downstream errors before root causes
-- MUST NOT introduce new type unsafety to resolve errors
-- SHOULD NOT refactor unrelated code while fixing type errors
+- MUST NOT refactor unrelated code while fixing type errors
 - SHOULD NOT skip verification after each batch of fixes
 
 ## Included assets
-- Templates: `./templates/` includes a triage worksheet and common fix patterns.
+- Templates:
+  - `./templates/triage-worksheet.md`
+  - `./templates/common-fix-patterns.md`
 - Examples: `./examples/` includes a sample error-to-fix mapping.

@@ -1,6 +1,6 @@
 ---
 name: review-code-architecture
-description: Review code for architectural consistency, best practices, and integration risks across backend and frontend changes.
+description: Review code changes for architectural consistency, correctness risks, security/performance concerns, and verification gaps; produce a prioritized, actionable review report.
 ---
 
 # Review Code Architecture
@@ -71,26 +71,28 @@ Use this skill when:
    - contracts and boundaries first
    - then implementation details
 3. Identify risks and failure modes.
-4. Recommend minimal changes to mitigate risks.
-5. Provide a verification checklist.
+4. Produce a structured report:
+   - use the review report template
+   - include evidence pointers (file/line or behavior)
+5. Provide verification actions per critical issue.
 
 ## Verification
-
 - [ ] All changed files have been reviewed
 - [ ] Critical issues are identified and prioritized
 - [ ] Recommendations include concrete, actionable steps
 - [ ] Security implications are assessed for auth/permission changes
 - [ ] Verification actions are defined for each critical issue
-- [ ] Review feedback is clear and constructive
+- [ ] Review output is structured and reusable
 
 ## Boundaries
-
-- MUST NOT approve code without actually reading and understanding the changes
+- MUST NOT approve code without reading and understanding the changes
 - MUST NOT skip security review for auth/permission changes
 - MUST NOT leave vague feedback without actionable suggestions
-- SHOULD NOT block on personal style preferences that aren't established team standards
-- SHOULD NOT nitpick trivial issues when critical problems exist
-- SHOULD NOT skip testing recommendations for critical changes
+- SHOULD NOT block on personal style preferences that are not established standards
+- SHOULD focus on correctness and risk before cosmetics
 
 ## Included assets
-- Templates: `./templates/` includes a review checklist you can paste into PR comments.
+- Templates:
+  - `./templates/review-checklist.md`
+  - `./templates/review-report.template.md`
+- Examples: `./examples/` includes a sample review report.

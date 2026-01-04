@@ -1,6 +1,6 @@
 ---
 name: perform-web-research
-description: Perform targeted web research by defining questions, finding primary sources, extracting evidence, and producing a cited, decision-oriented summary.
+description: Perform targeted web research by defining the question, prioritizing primary sources, capturing evidence in a table, and producing a cited, decision-oriented summary.
 ---
 
 # Perform Web Research
@@ -22,6 +22,7 @@ Use this skill when:
 
 ## Outputs
 - A cited summary answering the question
+- An evidence table mapping key claims to sources
 - A short list of recommended actions or options (if applicable)
 - A log of key sources and why they were trusted
 
@@ -29,38 +30,45 @@ Use this skill when:
 - Prefer primary sources:
   - official documentation
   - standards bodies
-  - release notes
-  - peer-reviewed papers
-- Use reputable secondary sources only when needed to interpret.
+  - release notes / changelogs
+  - peer-reviewed papers (when applicable)
+- Use reputable secondary sources only when needed to interpret or compare primary sources.
 - Treat low-quality sources as last resort and label them clearly.
+- Prefer sources that are current enough for the decision and specific to the claim.
 
 ## Steps
-1. Clarify the question and required freshness.
-2. Identify 3–5 primary sources as anchors.
-3. Extract facts and constraints; avoid assumptions.
-4. Cross-check conflicting claims across multiple sources.
-5. Produce a decision-oriented write-up:
-   - what is true
-   - what is uncertain
-   - what to do next
+1. Write a short research brief (question, why it matters, recency requirements).
+2. Identify 3-5 primary sources as anchors.
+3. Add secondary sources only as needed for interpretation.
+4. Extract facts and constraints:
+   - capture the version/date context
+   - record only the minimal supporting excerpt
+5. Populate an evidence table (claim -> source -> why trust -> notes).
+6. Produce the decision-oriented summary:
+   - answer the question directly
+   - list tradeoffs and risks
+   - propose next actions
+7. Sanity check:
+   - citations support the key claims
+   - uncertainties and conflicts are called out explicitly
 
 ## Verification
-
-- [ ] Research question is clearly defined
-- [ ] At least 3 primary sources are identified
-- [ ] Facts are cross-checked across multiple sources
-- [ ] Citations are accurate and verifiable
-- [ ] Summary distinguishes facts from uncertainties
-- [ ] Recommendations are actionable and evidence-backed
+- [ ] Primary sources back the most important claims
+- [ ] Evidence table exists and supports the summary
+- [ ] Dates/versions are included where they matter
+- [ ] Claims are cited and not overstated
+- [ ] Output includes actionable next steps (if a decision is implied)
 
 ## Boundaries
-
-- MUST NOT fabricate or hallucinate sources and citations
-- MUST NOT present opinions as facts; always cite sources
-- MUST NOT rely solely on a single source for critical decisions
-- SHOULD NOT use outdated information without noting the recency risk
-- SHOULD NOT use low-quality sources (forums, outdated blogs) as primary evidence
-- SHOULD NOT skip cross-checking conflicting claims
+- MUST NOT fabricate sources or citations
+- MUST NOT rely solely on low-quality sources for critical claims
+- MUST NOT present speculation as fact
+- MUST NOT omit dates/versions when they materially affect correctness
+- SHOULD prefer official docs/standards/release notes over blogs
+- SHOULD call out uncertainty and conflicting sources explicitly
 
 ## Included assets
-- Templates: `./templates/` includes a research brief and evidence table format.
+- Templates:
+  - `./templates/research-brief.md`
+  - `./templates/evidence-table.md`
+- Examples: `./examples/` includes a sample research output format.
