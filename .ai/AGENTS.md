@@ -16,7 +16,7 @@
 ## Routing
 
 - If the task is **LLM engineering** (provider integration, calling wrappers, profiles, prompts, cost/telemetry, credentials/config keys):
-  - Open: `.ai/llm/AGENTS.md`
+  - Open: `.ai/llm-config/AGENTS.md`
   - Invoke workflow skill: `llm_engineering`
 - If the task is **skill authoring/maintenance**:
   - Open: `.ai/skills/standards/documentation-guidelines/SKILL.md`

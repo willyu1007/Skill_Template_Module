@@ -195,6 +195,33 @@ function uniq(arr) {
 const SCRIPT_DIR = __dirname;
 const TEMPLATES_DIR = path.join(SCRIPT_DIR, '..', 'templates');
 
+const STAGE_BLOCK_KEYS = Object.freeze({
+  A: 'stage-a',
+  B: 'stage-b',
+  C: 'stage-c'
+});
+
+function blockKeyForStage(stage) {
+  const key = STAGE_BLOCK_KEYS[stage];
+  if (!key) die(`[error] Unknown stage: ${stage}`);
+  return key;
+}
+
+function normalizeState(state) {
+  if (!state || typeof state !== 'object') return state;
+
+  for (const stage of Object.keys(STAGE_BLOCK_KEYS)) {
+    const oldKey = `stage${stage}`;
+    const newKey = blockKeyForStage(stage);
+    if (state[oldKey] !== undefined && state[newKey] === undefined) {
+      state[newKey] = state[oldKey];
+    }
+    if (state[oldKey] !== undefined) delete state[oldKey];
+  }
+
+  return state;
+}
+
 function getStatePath(repoRoot) {
   return path.join(repoRoot, 'init', '.init-state.json');
 }
@@ -204,7 +231,7 @@ function createInitialState() {
     version: 1,
     stage: 'A',
     createdAt: new Date().toISOString(),
-    stageA: {
+    'stage-a': {
       mustAsk: {
         onePurpose: { asked: false, answered: false, writtenTo: null },
         userRoles: { asked: false, answered: false, writtenTo: null },
@@ -223,13 +250,13 @@ function createInitialState() {
       validated: false,
       userApproved: false
     },
-    stageB: {
+    'stage-b': {
       drafted: false,
       validated: false,
       packsReviewed: false,
       userApproved: false
     },
-    stageC: {
+    'stage-c': {
       scaffoldApplied: false,
       configsGenerated: false,
       manifestUpdated: false,
@@ -246,7 +273,7 @@ function loadState(repoRoot) {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    return normalizeState(JSON.parse(fs.readFileSync(statePath, 'utf8')));
   } catch (e) {
     console.error(`[warn] Failed to parse state file: ${e.message}`);
     return null;
@@ -256,7 +283,7 @@ function loadState(repoRoot) {
 function saveState(repoRoot, state) {
   const statePath = getStatePath(repoRoot);
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(statePath, JSON.stringify(normalizeState(state), null, 2) + '\n', 'utf8');
 }
 
 function addHistoryEvent(state, event, details) {
@@ -269,101 +296,101 @@ function addHistoryEvent(state, event, details) {
 }
 
 function getStageProgress(state) {
-  const stageA = state.stageA || {};
-  const stageB = state.stageB || {};
-  const stageC = state.stageC || {};
+  const requirements = state['stage-a'] || {};
+  const blueprint = state['stage-b'] || {};
+  const scaffold = state['stage-c'] || {};
 
-  const mustAskKeys = Object.keys(stageA.mustAsk || {});
-  const mustAskAnswered = mustAskKeys.filter(k => stageA.mustAsk[k]?.answered).length;
+  const mustAskKeys = Object.keys(requirements.mustAsk || {});
+  const mustAskAnswered = mustAskKeys.filter(k => requirements.mustAsk[k]?.answered).length;
 
   const docsKeys = ['requirements', 'nfr', 'glossary', 'riskQuestions'];
-  const docsWritten = docsKeys.filter(k => stageA.docsWritten?.[k]).length;
+  const docsWritten = docsKeys.filter(k => requirements.docsWritten?.[k]).length;
 
   return {
     stage: state.stage,
-    stageA: {
+    'stage-a': {
       mustAskTotal: mustAskKeys.length,
       mustAskAnswered,
       docsTotal: docsKeys.length,
       docsWritten,
-      validated: !!stageA.validated,
-      userApproved: !!stageA.userApproved
+      validated: !!requirements.validated,
+      userApproved: !!requirements.userApproved
     },
-    stageB: {
-      drafted: !!stageB.drafted,
-      validated: !!stageB.validated,
-      packsReviewed: !!stageB.packsReviewed,
-      userApproved: !!stageB.userApproved
+    'stage-b': {
+      drafted: !!blueprint.drafted,
+      validated: !!blueprint.validated,
+      packsReviewed: !!blueprint.packsReviewed,
+      userApproved: !!blueprint.userApproved
     },
-    stageC: {
-      scaffoldApplied: !!stageC.scaffoldApplied,
-      configsGenerated: !!stageC.configsGenerated,
-      manifestUpdated: !!stageC.manifestUpdated,
-      wrappersSynced: !!stageC.wrappersSynced,
-      userApproved: !!stageC.userApproved
+    'stage-c': {
+      scaffoldApplied: !!scaffold.scaffoldApplied,
+      configsGenerated: !!scaffold.configsGenerated,
+      manifestUpdated: !!scaffold.manifestUpdated,
+      wrappersSynced: !!scaffold.wrappersSynced,
+      userApproved: !!scaffold.userApproved
     }
   };
 }
 
 function printStatus(state, repoRoot) {
   const progress = getStageProgress(state);
-  const stageNames = { A: 'Requirements', B: 'Blueprint', C: 'Scaffold', complete: 'Complete' };
+  const labelsByStage = { A: 'Requirements', B: 'Blueprint', C: 'Scaffold', complete: 'Complete' };
 
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────┐');
   console.log('│  Init State                                              │');
   console.log('├─────────────────────────────────────────────────────────┤');
-  console.log(`│  Current stage: Stage ${progress.stage} - ${stageNames[progress.stage] || progress.stage}`);
+  console.log(`│  Current stage: Stage ${progress.stage} - ${labelsByStage[progress.stage] || progress.stage}`);
   console.log('│');
 
   if (progress.stage === 'A' || progress.stage === 'B' || progress.stage === 'C') {
     console.log('│  Stage A progress:');
-    console.log(`│    Must-ask: ${progress.stageA.mustAskAnswered}/${progress.stageA.mustAskTotal} completed`);
-    console.log(`│    Docs written: ${progress.stageA.docsWritten}/${progress.stageA.docsTotal} completed`);
-    console.log(`│    Validation: ${progress.stageA.validated ? '✓ validated' : '✗ not validated'}`);
-    console.log(`│    User approval: ${progress.stageA.userApproved ? '✓ approved' : '✗ not approved'}`);
+    console.log(`│    Must-ask: ${progress['stage-a'].mustAskAnswered}/${progress['stage-a'].mustAskTotal} completed`);
+    console.log(`│    Docs written: ${progress['stage-a'].docsWritten}/${progress['stage-a'].docsTotal} completed`);
+    console.log(`│    Validation: ${progress['stage-a'].validated ? '✓ validated' : '✗ not validated'}`);
+    console.log(`│    User approval: ${progress['stage-a'].userApproved ? '✓ approved' : '✗ not approved'}`);
   }
 
   if (progress.stage === 'B' || progress.stage === 'C') {
     console.log('│');
     console.log('│  Stage B progress:');
-    console.log(`│    Drafted: ${progress.stageB.drafted ? '✓' : '✗'}`);
-    console.log(`│    Validated: ${progress.stageB.validated ? '✓' : '✗'}`);
-    console.log(`│    Packs reviewed: ${progress.stageB.packsReviewed ? '✓' : '✗'}`);
-    console.log(`│    User approval: ${progress.stageB.userApproved ? '✓' : '✗'}`);
+    console.log(`│    Drafted: ${progress['stage-b'].drafted ? '✓' : '✗'}`);
+    console.log(`│    Validated: ${progress['stage-b'].validated ? '✓' : '✗'}`);
+    console.log(`│    Packs reviewed: ${progress['stage-b'].packsReviewed ? '✓' : '✗'}`);
+    console.log(`│    User approval: ${progress['stage-b'].userApproved ? '✓' : '✗'}`);
   }
 
   if (progress.stage === 'C' || progress.stage === 'complete') {
     console.log('│');
     console.log('│  Stage C progress:');
-    console.log(`│    Scaffold: ${progress.stageC.scaffoldApplied ? '✓' : '✗'}`);
-    console.log(`│    Configs: ${progress.stageC.configsGenerated ? '✓' : '✗'}`);
-    console.log(`│    Manifest: ${progress.stageC.manifestUpdated ? '✓' : '✗'}`);
-    console.log(`│    Wrappers synced: ${progress.stageC.wrappersSynced ? '✓' : '✗'}`);
+    console.log(`│    Scaffold: ${progress['stage-c'].scaffoldApplied ? '✓' : '✗'}`);
+    console.log(`│    Configs: ${progress['stage-c'].configsGenerated ? '✓' : '✗'}`);
+    console.log(`│    Manifest: ${progress['stage-c'].manifestUpdated ? '✓' : '✗'}`);
+    console.log(`│    Wrappers synced: ${progress['stage-c'].wrappersSynced ? '✓' : '✗'}`);
   }
 
   console.log('│');
   console.log('│  Next steps:');
   if (progress.stage === 'A') {
-    if (!progress.stageA.validated) {
+    if (!progress['stage-a'].validated) {
       console.log('│    1. Complete the requirements interview and write docs (init/stage-a-docs/*.md)');
       console.log('│    2. Run: check-docs --strict');
-    } else if (!progress.stageA.userApproved) {
+    } else if (!progress['stage-a'].userApproved) {
       console.log('│    Have the user review and approve Stage A docs');
       console.log('│    After approval, run: approve --stage A');
     }
   } else if (progress.stage === 'B') {
-    if (!progress.stageB.validated) {
+    if (!progress['stage-b'].validated) {
       console.log('│    1. Edit init/project-blueprint.json');
       console.log('│    2. Run: validate');
-    } else if (!progress.stageB.userApproved) {
+    } else if (!progress['stage-b'].userApproved) {
       console.log('│    Have the user review and approve the blueprint');
       console.log('│    After approval, run: approve --stage B');
     }
   } else if (progress.stage === 'C') {
-    if (!progress.stageC.wrappersSynced) {
+    if (!progress['stage-c'].wrappersSynced) {
       console.log('│    Run: apply --providers both');
-    } else if (!progress.stageC.userApproved) {
+    } else if (!progress['stage-c'].userApproved) {
       console.log('│    Initialization is nearly complete; have the user confirm');
       console.log('│    After confirmation, run: cleanup-init --apply --i-understand [--archive]');
     }
@@ -1472,25 +1499,25 @@ function main() {
     }
 
     // Create Stage A docs directory and templates
-    const stageADocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
+    const requirementsDocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
     const templatesDir = path.join(path.dirname(__filename), '..', 'templates');
     
-    if (!fs.existsSync(stageADocsDir)) {
-      fs.mkdirSync(stageADocsDir, { recursive: true });
+    if (!fs.existsSync(requirementsDocsDir)) {
+      fs.mkdirSync(requirementsDocsDir, { recursive: true });
       console.log('[ok] Created directory: init/stage-a-docs/');
     }
 
     // Copy Stage A doc templates
-    const stageATemplates = [
+    const requirementsDocTemplates = [
       { src: 'requirements.template.md', dst: 'requirements.md' },
       { src: 'non-functional-requirements.template.md', dst: 'non-functional-requirements.md' },
       { src: 'domain-glossary.template.md', dst: 'domain-glossary.md' },
       { src: 'risk-open-questions.template.md', dst: 'risk-open-questions.md' }
     ];
 
-    for (const tpl of stageATemplates) {
+    for (const tpl of requirementsDocTemplates) {
       const srcPath = path.join(templatesDir, tpl.src);
-      const dstPath = path.join(stageADocsDir, tpl.dst);
+      const dstPath = path.join(requirementsDocsDir, tpl.dst);
       if (!fs.existsSync(dstPath) && fs.existsSync(srcPath)) {
         fs.copyFileSync(srcPath, dstPath);
         console.log(`[ok] Created template: init/stage-a-docs/${tpl.dst}`);
@@ -1553,7 +1580,7 @@ function main() {
     const bpRel = blueprintPath ? path.relative(repoRoot, blueprintPath) : 'init/project-blueprint.json';
 
     if (progress.stage === 'A') {
-      if (!progress.stageA.validated) {
+      if (!progress['stage-a'].validated) {
         console.log('[info] Stage A requirements docs have not passed structural validation.');
         console.log('Run first:');
         console.log(`  node ${self} check-docs --docs-root ${docsRel} --strict`);
@@ -1567,7 +1594,7 @@ function main() {
     }
 
     if (progress.stage === 'B') {
-      if (!progress.stageB.validated) {
+      if (!progress['stage-b'].validated) {
         console.log('[info] Stage B blueprint has not been validated.');
         console.log('Run first:');
         console.log(`  node ${self} validate --blueprint ${bpRel}`);
@@ -1581,7 +1608,7 @@ function main() {
     }
 
     if (progress.stage === 'C') {
-      if (!progress.stageC.wrappersSynced) {
+      if (!progress['stage-c'].wrappersSynced) {
         console.log('[info] Stage C is not complete (wrappers not synced).');
         console.log('Run first:');
         console.log(`  node ${self} apply --blueprint ${bpRel}`);
@@ -1623,10 +1650,10 @@ function main() {
     }
 
     if (desired === 'A') {
-      if (!state.stageA.validated) {
+      if (!state['stage-a'].validated) {
         die('[error] Stage A is not validated. Run check-docs first.');
       }
-      state.stageA.userApproved = true;
+      state['stage-a'].userApproved = true;
       state.stage = 'B';
       addHistoryEvent(state, 'stage_a_approved', note || 'Stage A approved by user');
       saveState(repoRoot, state);
@@ -1635,10 +1662,10 @@ function main() {
     }
 
     if (desired === 'B') {
-      if (!state.stageB.validated) {
+      if (!state['stage-b'].validated) {
         die('[error] Stage B is not validated. Run validate first.');
       }
-      state.stageB.userApproved = true;
+      state['stage-b'].userApproved = true;
       state.stage = 'C';
       addHistoryEvent(state, 'stage_b_approved', note || 'Stage B approved by user');
       saveState(repoRoot, state);
@@ -1647,10 +1674,10 @@ function main() {
     }
 
     if (desired === 'C') {
-      if (!state.stageC.wrappersSynced) {
+      if (!state['stage-c'].wrappersSynced) {
         die('[error] Stage C is not complete. Run apply first.');
       }
-      state.stageC.userApproved = true;
+      state['stage-c'].userApproved = true;
       state.stage = 'complete';
       addHistoryEvent(state, 'init_completed', note || 'Initialization completed');
       saveState(repoRoot, state);
@@ -1671,11 +1698,11 @@ if (command === 'validate') {
     if (v.ok) {
       const state = loadState(repoRoot);
       if (state && state.stage === 'B') {
-        state.stageB.drafted = true;
-        state.stageB.validated = true;
+        state['stage-b'].drafted = true;
+        state['stage-b'].validated = true;
         addHistoryEvent(state, 'stage_b_validated', 'Stage B blueprint validated');
         saveState(repoRoot, state);
-        console.log('[auto] State updated: stageB.validated = true');
+        console.log('[auto] State updated: stage-b.validated = true');
       }
     }
 
@@ -1705,8 +1732,8 @@ if (command === 'validate') {
     if (ok) {
       const state = loadState(repoRoot);
       if (state && state.stage === 'A') {
-        state.stageA.validated = true;
-        state.stageA.docsWritten = {
+        state['stage-a'].validated = true;
+        state['stage-a'].docsWritten = {
           requirements: fs.existsSync(path.join(docsRoot, 'requirements.md')),
           nfr: fs.existsSync(path.join(docsRoot, 'non-functional-requirements.md')),
           glossary: fs.existsSync(path.join(docsRoot, 'domain-glossary.md')),
@@ -1714,7 +1741,7 @@ if (command === 'validate') {
         };
         addHistoryEvent(state, 'stage_a_validated', 'Stage A docs validated');
         saveState(repoRoot, state);
-        console.log('[auto] State updated: stageA.validated = true');
+        console.log('[auto] State updated: stage-a.validated = true');
       }
     }
 
@@ -1736,7 +1763,7 @@ if (command === 'validate') {
     const state = loadState(repoRoot);
     if (!state) die('[error] No init state detected; run the \"start\" command first');
 
-    const mustAsk = state.stageA && state.stageA.mustAsk;
+    const mustAsk = state['stage-a'] && state['stage-a'].mustAsk;
     if (!mustAsk || !mustAsk[key]) {
       const available = mustAsk ? Object.keys(mustAsk).join(', ') : '';
       die(`[error] Unknown must-ask key "${key}". Available keys: ${available}`);
@@ -1757,11 +1784,11 @@ if (command === 'validate') {
     const state = loadState(repoRoot);
     if (!state) die('[error] No init state detected; run the \"start\" command first');
 
-    if (!state.stageB) state.stageB = {};
-    state.stageB.packsReviewed = true;
+    if (!state['stage-b']) state['stage-b'] = {};
+    state['stage-b'].packsReviewed = true;
     addHistoryEvent(state, 'packs_reviewed', note || 'Packs reviewed');
     saveState(repoRoot, state);
-    console.log('[ok] stageB.packsReviewed = true');
+    console.log('[ok] stage-b.packsReviewed = true');
     process.exit(0);
   }
 
@@ -1894,9 +1921,9 @@ if (command === 'validate') {
     if (!v.ok) die('[error] Blueprint validation failed. Fix errors and re-run.');
 
     // Stage A docs check (strict only when explicitly required)
-    const stageARes = checkDocs(docsRoot);
+    const requirementsDocsCheck = checkDocs(docsRoot);
     if (requireStageA) {
-      const strictOk = stageARes.ok && stageARes.warnings.length === 0;
+      const strictOk = requirementsDocsCheck.ok && requirementsDocsCheck.warnings.length === 0;
       if (!strictOk) die('[error] Stage A docs check failed in strict mode. Fix docs and re-run.');
     }
 
@@ -2073,13 +2100,13 @@ if (command === 'validate') {
     // Auto-update state
     const state = loadState(repoRoot);
     if (state) {
-      state.stageC.scaffoldApplied = true;
-      state.stageC.configsGenerated = !skipConfigs;
-      state.stageC.manifestUpdated = true;
-      state.stageC.wrappersSynced = syncResult.mode === 'applied';
+      state['stage-c'].scaffoldApplied = true;
+      state['stage-c'].configsGenerated = !skipConfigs;
+      state['stage-c'].manifestUpdated = true;
+      state['stage-c'].wrappersSynced = syncResult.mode === 'applied';
       addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
       saveState(repoRoot, state);
-      console.log('[auto] State updated: stageC.* = true');
+      console.log('[auto] State updated: stage-c.* = true');
     }
 
     // Optional cleanup
@@ -2102,12 +2129,12 @@ if (command === 'validate') {
 
     if (format === 'json') {
       console.log(JSON.stringify({
-        ok: true,
-        blueprint: path.relative(repoRoot, blueprintPath),
-        docsRoot: path.relative(repoRoot, docsRoot),
-        stageA: stageARes,
-        contextAddon: contextAddon,
-        addons: addonResults,
+	        ok: true,
+	        blueprint: path.relative(repoRoot, blueprintPath),
+	        docsRoot: path.relative(repoRoot, docsRoot),
+	        'stage-a': requirementsDocsCheck,
+	        contextAddon: contextAddon,
+	        addons: addonResults,
         scaffold: scaffoldPlan,
         configs: configResults,
         readme: readmeResult,
@@ -2134,8 +2161,8 @@ if (command === 'validate') {
           console.log(`- Add-ons verified: yes`);
         }
       }
-      if (!stageARes.ok) console.log('[warn] Stage A docs check had errors; consider re-running with --require-stage-a.');
-      if (stageARes.warnings.length > 0) console.log('[warn] Stage A docs check has warnings; ensure TBD/TODO items are tracked.');
+      if (!requirementsDocsCheck.ok) console.log('[warn] Stage A docs check had errors; consider re-running with --require-stage-a.');
+      if (requirementsDocsCheck.warnings.length > 0) console.log('[warn] Stage A docs check has warnings; ensure TBD/TODO items are tracked.');
       console.log(`- Manifest updated: ${path.relative(repoRoot, manifestResult.path)}`);
       console.log(`- Wrappers synced via: ${syncResult.cmd || '(skipped)'}`);
       console.log(`- Modular core build: ${modularResults.some(r => r.mode === 'failed') ? 'failed' : 'completed'}`);
@@ -2173,16 +2200,16 @@ if (command === 'validate') {
       }
     }
 
-    // Archive Stage A docs
-    if (archiveDocs) {
-      const stageADocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
-      if (fs.existsSync(stageADocsDir)) {
-        const files = fs.readdirSync(stageADocsDir);
-        for (const file of files) {
-          const srcFile = path.join(stageADocsDir, file);
-          const dstFile = path.join(archiveTarget, file);
-          if (fs.statSync(srcFile).isFile()) {
-            if (apply) {
+	    // Archive Stage A docs
+	    if (archiveDocs) {
+	      const requirementsDocsDir = path.join(repoRoot, 'init', 'stage-a-docs');
+	      if (fs.existsSync(requirementsDocsDir)) {
+	        const files = fs.readdirSync(requirementsDocsDir);
+	        for (const file of files) {
+	          const srcFile = path.join(requirementsDocsDir, file);
+	          const dstFile = path.join(archiveTarget, file);
+	          if (fs.statSync(srcFile).isFile()) {
+	            if (apply) {
               fs.copyFileSync(srcFile, dstFile);
               console.log(`[ok] Archived: init/stage-a-docs/${file} → docs/project/${file}`);
             } else {

@@ -17,7 +17,7 @@ Goals:
 
 ## When to use
 
-Use this skill when:
+Use git-commit-conventions when:
 - Writing commit messages
 - Creating branches
 - Opening pull requests / merge requests
@@ -164,7 +164,7 @@ Follow commit message format:
 
 ```markdown
 ## Summary
-Brief description of what this PR does.
+Brief description of what the PR does.
 
 ## Changes
 - Change 1
@@ -232,7 +232,7 @@ Commit quality checklist:
 - Message follows conventional format
 - Type accurately describes the change
 - Subject is clear and imperative
-- Related issues are referenced
+- Linked issues are referenced
 - No sensitive data included
 
 ## Included assets

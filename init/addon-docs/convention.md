@@ -86,9 +86,9 @@ When an add-on is enabled, Stage C `apply` will:
 
 - copy files from `payload/` into `<repoRoot>/`
 - **only when the destination file does not exist** (copy-if-missing)
-- it will not overwrite existing files
+- the copy process will not overwrite existing files
 
-This design is intentional for robustness:
+The design is intentional for robustness:
 - you can safely re-run `apply` without clobbering local modifications
 - add-ons can be shipped as capability payloads without making upgrades destructive by default
 

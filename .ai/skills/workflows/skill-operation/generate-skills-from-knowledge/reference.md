@@ -3,7 +3,7 @@
 ## Goal
 Turn “knowledge documents” (guides, runbooks, standards, architecture notes) into **capability-oriented** skills that an agent can select via the `description` signal and execute via the `Steps` section.
 
-## Key decisions (apply in this order)
+## Key decisions (apply in the listed order)
 1. **Discovery-first**: the first sentence (`description`) must help an agent decide “use me now”.
 2. **One intent per skill**: if a user can reasonably ask for two different things, split into two skills.
 3. **Progressive disclosure**: keep `SKILL.md` short; move depth into `reference.md`, `examples/`, `templates/`.
@@ -30,7 +30,7 @@ The description should:
 - start with an action verb (“Generate…”, “Convert…”, “Debug…”, “Validate…”)
 - include a discriminating noun phrase (“skills bundle”, “API route”, “deployment manifest”)
 - include at least one trigger phrase that a user might say
-- avoid internal jargon unless it is stable and shared
+- avoid internal jargon unless the terminology is stable and shared
 
 Examples (style, not content):
 - “Generate an API smoke-test plan for authenticated routes.”
@@ -79,7 +79,7 @@ Principles:
 - the plan explicitly records split/merge decisions and rationale
 
 ## Minimal prompt template (for any LLM)
-Use this when asking an LLM to generate or refine a plan:
+Use the template when asking an LLM to generate or refine a plan:
 
 Goal:
 - Convert the provided knowledge docs into a provider-agnostic Agent Skills bundle.
@@ -111,7 +111,7 @@ Acceptance criteria:
 
 # Skill Authoring Standards
 
-This section defines the skill authoring standard for this repository.
+The section defines the skill authoring standard for the repository.
 
 ## Source of Truth (SSOT)
 
@@ -152,7 +152,7 @@ Forbidden:
 ```yaml
 ---
 name: skill-name
-description: One sentence that helps the agent choose this skill.
+description: One sentence that helps the agent choose the skill.
 ---
 ```
 

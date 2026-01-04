@@ -30,7 +30,7 @@ You SHOULD have:
 - Existing conventions in the codebase (framework, validation library, ORM/query layer)
 
 ## Outputs
-This skill produces one or more of:
+The skill produces one or more of:
 - A clear layering plan: **route → controller → service → repository**
 - Implementation scaffolding (controller/service/repository skeletons)
 - A validation schema and error contract

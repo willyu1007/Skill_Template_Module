@@ -720,14 +720,45 @@ function statePath(workdir) {
   return path.join(workdir, '.agent-builder-state.json');
 }
 
+const STAGE_BLOCK_KEYS = Object.freeze({
+  A: 'stage-a',
+  B: 'stage-b',
+  C: 'stage-c',
+  D: 'stage-d',
+  E: 'stage-e',
+  F: 'stage-f'
+});
+
+function blockKeyForStage(stage) {
+  const key = STAGE_BLOCK_KEYS[stage];
+  if (!key) die(`Unknown stage: ${stage}`);
+  return key;
+}
+
+function normalizeState(state) {
+  if (!state || typeof state !== 'object') return state;
+
+  for (const stage of Object.keys(STAGE_BLOCK_KEYS)) {
+    const oldKey = `stage${stage}`;
+    const newKey = blockKeyForStage(stage);
+    if (state[oldKey] !== undefined && state[newKey] === undefined) {
+      state[newKey] = state[oldKey];
+    }
+    if (state[oldKey] !== undefined) delete state[oldKey];
+  }
+
+  if (state.approvals && state.approvals.F === undefined) state.approvals.F = false;
+  return state;
+}
+
 function loadState(workdir) {
   const p = statePath(workdir);
   if (!exists(p)) die(`State not found: ${p}`);
-  return readJson(p);
+  return normalizeState(readJson(p));
 }
 
 function saveState(workdir, state) {
-  writeJson(statePath(workdir), state);
+  writeJson(statePath(workdir), normalizeState(state));
 }
 
 function addHistory(state, event, details) {
@@ -1718,7 +1749,7 @@ function applyScaffold(bp, repoRoot, apply) {
 
 function commandStart(args) {
   const templatesRoot = loadTemplatesRoot();
-  const stageATemplatesDir = path.join(templatesRoot, 'stageA');
+  const templatesDirA = path.join(templatesRoot, 'stage-a');
 
   const repoRoot = args['repo-root'] ? path.resolve(args['repo-root']) : process.cwd();
   const runId = randomId();
@@ -1727,18 +1758,18 @@ function commandStart(args) {
   fs.mkdirSync(workdir, { recursive: true });
 
   // Stage A + Stage B dirs
-  fs.mkdirSync(path.join(workdir, 'stageA'), { recursive: true });
-  fs.mkdirSync(path.join(workdir, 'stageB'), { recursive: true });
+  fs.mkdirSync(path.join(workdir, 'stage-a'), { recursive: true });
+  fs.mkdirSync(path.join(workdir, 'stage-b'), { recursive: true });
 
   // Write Stage A docs
-  const interviewTpl = readText(path.join(stageATemplatesDir, 'interview-notes.template.md'));
-  const integTpl = readText(path.join(stageATemplatesDir, 'integration-decision.template.md'));
-  writeText(path.join(workdir, 'stageA', 'interview-notes.md'), interviewTpl);
-  writeText(path.join(workdir, 'stageA', 'integration-decision.md'), integTpl);
+  const interviewTpl = readText(path.join(templatesDirA, 'interview-notes.template.md'));
+  const integTpl = readText(path.join(templatesDirA, 'integration-decision.template.md'));
+  writeText(path.join(workdir, 'stage-a', 'interview-notes.md'), interviewTpl);
+  writeText(path.join(workdir, 'stage-a', 'integration-decision.md'), integTpl);
 
   // Write blueprint example
   const bpExample = readText(path.join(templatesRoot, 'agent-blueprint.example.json'));
-  writeText(path.join(workdir, 'stageB', 'agent-blueprint.json'), bpExample);
+  writeText(path.join(workdir, 'stage-b', 'agent-blueprint.json'), bpExample);
 
   const state = {
     version: 1,
@@ -1748,15 +1779,15 @@ function commandStart(args) {
     workdir,
     repo_root: repoRoot,
     approvals: { A: false, B: false, C: false, D: false, E: false, F: false },
-    stageA: {
-      interview_notes_path: 'stageA/interview-notes.md',
-      integration_decision_path: 'stageA/integration-decision.md'
+    'stage-a': {
+      interview_notes_path: 'stage-a/interview-notes.md',
+      integration_decision_path: 'stage-a/integration-decision.md'
     },
-    stageB: {
-      blueprint_path: 'stageB/agent-blueprint.json',
+    'stage-b': {
+      blueprint_path: 'stage-b/agent-blueprint.json',
       validated: false
     },
-    stageC: {
+    'stage-c': {
       planned: false,
       applied: false,
       generated_paths: [],
@@ -1780,27 +1811,28 @@ function commandStatus(args) {
 
   console.log(`workdir: ${state.workdir}`);
   console.log(`run_id: ${state.run_id}`);
-  console.log(`stage: ${state.stage}`);
-  console.log(`approvals: A=${state.approvals.A} B=${state.approvals.B}`);
-  console.log(`Stage A docs:`);
-  console.log(`  - ${path.join(workdir, state.stageA.interview_notes_path)}`);
-  console.log(`  - ${path.join(workdir, state.stageA.integration_decision_path)}`);
-  console.log(`Stage B blueprint:`);
-  console.log(`  - ${path.join(workdir, state.stageB.blueprint_path)} (validated=${state.stageB.validated})`);
-  console.log(`Stage C: planned=${state.stageC.planned} applied=${state.stageC.applied}`);
-}
+	  console.log(`stage: ${state.stage}`);
+	  console.log(`approvals: A=${state.approvals.A} B=${state.approvals.B}`);
+	  console.log(`Stage A docs:`);
+	  console.log(`  - ${path.join(workdir, state['stage-a'].interview_notes_path)}`);
+	  console.log(`  - ${path.join(workdir, state['stage-a'].integration_decision_path)}`);
+	  console.log(`Stage B blueprint:`);
+	  console.log(`  - ${path.join(workdir, state['stage-b'].blueprint_path)} (validated=${state['stage-b'].validated})`);
+	  console.log(`Stage C: planned=${state['stage-c'].planned} applied=${state['stage-c'].applied}`);
+	}
 
 function commandApprove(args) {
   const workdir = getWorkdir(args);
   ensureWorkdir(workdir);
 
   const stage = args.stage;
-  if (!stage || !['A','B','C','D','E','F'].includes(stage)) die('approve requires --stage <A|B|C|D|E>');
+  if (!stage || !['A','B','C','D','E','F'].includes(stage)) die('approve requires --stage <A|B|C|D|E|F>');
 
   const state = loadState(workdir);
   state.approvals[stage] = true;
-  state[`stage${stage}`] = state[`stage${stage}`] || {};
-  state[`stage${stage}`].approved_at = nowIso();
+  const key = blockKeyForStage(stage);
+  state[key] = state[key] || {};
+  state[key].approved_at = nowIso();
 
   // Stage transitions (best-effort)
   if (stage === 'A') state.stage = 'B';
@@ -1818,14 +1850,14 @@ function commandValidateBlueprint(args) {
   const fmt = args.format || 'text';
 
   const state = loadState(workdir);
-  const bpPath = path.join(workdir, state.stageB.blueprint_path);
+  const bpPath = path.join(workdir, state['stage-b'].blueprint_path);
   if (!exists(bpPath)) die(`Blueprint not found: ${bpPath}`);
   const bp = readJson(bpPath);
 
   const result = validateBlueprint(bp);
 
-  state.stageB.validated = result.ok;
-  state.stageB.validated_at = nowIso();
+  state['stage-b'].validated = result.ok;
+  state['stage-b'].validated_at = nowIso();
   addHistory(state, 'validate-blueprint', { ok: result.ok, errors: result.errors.length, warnings: result.warnings.length });
   saveState(workdir, state);
 
@@ -1853,7 +1885,7 @@ function commandPlan(args) {
   const repoRoot = args['repo-root'] ? path.resolve(args['repo-root']) : process.cwd();
 
   const state = loadState(workdir);
-  const bpPath = path.join(workdir, state.stageB.blueprint_path);
+  const bpPath = path.join(workdir, state['stage-b'].blueprint_path);
   const bp = readJson(bpPath);
 
   const val = validateBlueprint(bp);
@@ -1861,8 +1893,8 @@ function commandPlan(args) {
 
   const { plan } = planScaffold(bp, repoRoot);
 
-  state.stageC.planned = true;
-  state.stageC.planned_at = nowIso();
+  state['stage-c'].planned = true;
+  state['stage-c'].planned_at = nowIso();
   addHistory(state, 'plan', { repo_root: repoRoot, items: plan.length });
   saveState(workdir, state);
 
@@ -1882,7 +1914,7 @@ function commandApply(args) {
   if (!state.approvals.A) die('Refusing to apply: Stage A is not approved. Run approve --stage A first.');
   if (!state.approvals.B) die('Refusing to apply: Stage B is not approved. Run approve --stage B first.');
 
-  const bpPath = path.join(workdir, state.stageB.blueprint_path);
+  const bpPath = path.join(workdir, state['stage-b'].blueprint_path);
   const bp = readJson(bpPath);
 
   const val = validateBlueprint(bp);
@@ -1890,12 +1922,12 @@ function commandApply(args) {
 
   const result = applyScaffold(bp, repoRoot, apply);
 
-  state.stageC.applied = apply;
-  state.stageC.applied_at = nowIso();
-  state.stageC.created_paths = result.created;
-  state.stageC.updated_paths = result.updated;
-  state.stageC.generated_paths = result.created.concat(result.updated);
-  state.stageC.skipped_paths = result.skipped;
+  state['stage-c'].applied = apply;
+  state['stage-c'].applied_at = nowIso();
+  state['stage-c'].created_paths = result.created;
+  state['stage-c'].updated_paths = result.updated;
+  state['stage-c'].generated_paths = result.created.concat(result.updated);
+  state['stage-c'].skipped_paths = result.skipped;
   addHistory(state, 'apply', {
     repo_root: repoRoot,
     apply,
@@ -2034,13 +2066,13 @@ async function commandIntegrateModular(args) {
   if (!state.approvals?.A || !state.approvals?.B) {
     die('Refusing to integrate: approvals for stages A and B are required.');
   }
-  if (!state.stageC?.applied) {
+  if (!state['stage-c']?.applied) {
     die('Refusing to integrate: Stage C scaffold has not been applied. Run apply --apply first.');
   }
 
-  const blueprintPath = state.stageB?.blueprint_path ? path.join(workdir, state.stageB.blueprint_path) : null;
+  const blueprintPath = state['stage-b']?.blueprint_path ? path.join(workdir, state['stage-b'].blueprint_path) : null;
   if (!blueprintPath || !exists(blueprintPath)) {
-    die('Blueprint not found: approve stage B first (stageB.blueprint_path missing).');
+    die('Blueprint not found: approve stage B first (stage-b.blueprint_path missing).');
   }
   const bp = readJson(blueprintPath);
   const validation = validateBlueprint(bp);
@@ -2207,9 +2239,9 @@ async function commandIntegrateModular(args) {
   runNodeScript(repoRoot, path.join('.ai', 'scripts', 'integrationctl.js'), ['validate', '--strict']);
   runNodeScript(repoRoot, path.join('.ai', 'scripts', 'integrationctl.js'), ['compile']);
 
-  state.stageF = state.stageF || {};
-  state.stageF.integrated = true;
-  state.stageF.integrated_at = nowIso();
+  state['stage-f'] = state['stage-f'] || {};
+  state['stage-f'].integrated = true;
+  state['stage-f'].integrated_at = nowIso();
   state.stage = 'F';
   addHistory(state, 'integrate-modular', {
     repo_root: repoRoot,
@@ -2229,11 +2261,11 @@ async function commandVerify(args) {
   const skipHttp = !!args['skip-http']; // Skip HTTP server-based scenarios (for sandbox/CI)
 
   const state = loadState(workdir);
-  if (!state.stageC.applied) {
+  if (!state['stage-c'].applied) {
     die('Refusing to verify: Stage C (scaffold) has not been applied yet.');
   }
 
-  const bpPath = path.join(workdir, state.stageB.blueprint_path);
+  const bpPath = path.join(workdir, state['stage-b'].blueprint_path);
   const bp = readJson(bpPath);
 
   const agentDir = safeResolve(repoRoot, bp.deliverables.agent_module_path);
@@ -2251,8 +2283,8 @@ async function commandVerify(args) {
   const results = [];
 
   // Workdir for verification artifacts
-  const stageEDir = path.join(workdir, 'stageE');
-  fs.mkdirSync(stageEDir, { recursive: true });
+  const artifactsDirE = path.join(workdir, 'stage-e');
+  fs.mkdirSync(artifactsDirE, { recursive: true });
 
   // Provider env vars (from manifest; fallback to defaults)
   const primaryProvider = manifest?.model?.primary?.provider || {};
@@ -2469,7 +2501,7 @@ async function commandVerify(args) {
       }
 
       // Ensure temp dirs for this scenario
-      const scenarioDir = path.join(stageEDir, `scenario-${randomId()}`);
+      const scenarioDir = path.join(artifactsDirE, `scenario-${randomId()}`);
       fs.mkdirSync(scenarioDir, { recursive: true });
 
       // Route selection: if unsupported, skip (unless structural failures already marked failed).
@@ -3212,7 +3244,7 @@ const path = require('path');
   };
 
   // Write JSON evidence
-  const evidencePath = path.join(stageEDir, 'verification-evidence.json');
+  const evidencePath = path.join(artifactsDirE, 'verification-evidence.json');
   writeJson(evidencePath, evidence);
 
   // Generate Markdown report
@@ -3258,7 +3290,7 @@ const path = require('path');
   reportLines.push('');
   reportLines.push('*Generated by agent-builder.js verify command*');
 
-  const reportPath = path.join(stageEDir, 'verification-report.md');
+  const reportPath = path.join(artifactsDirE, 'verification-report.md');
   writeText(reportPath, reportLines.join('\n'));
 
   // Also copy to docs directory if it exists
@@ -3268,12 +3300,12 @@ const path = require('path');
   }
 
   // Update state
-  state.stageE = state.stageE || {};
-  state.stageE.verified = true;
-  state.stageE.verified_at = verifiedAt;
-  state.stageE.evidence_path = evidencePath;
-  state.stageE.report_path = reportPath;
-  state.stageE.summary = summary;
+  state['stage-e'] = state['stage-e'] || {};
+  state['stage-e'].verified = true;
+  state['stage-e'].verified_at = verifiedAt;
+  state['stage-e'].evidence_path = evidencePath;
+  state['stage-e'].report_path = reportPath;
+  state['stage-e'].summary = summary;
   state.stage = 'E';
   addHistory(state, 'verify', {
     total: summary.total,

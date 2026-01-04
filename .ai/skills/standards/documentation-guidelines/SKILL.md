@@ -16,7 +16,7 @@ Goals:
 
 ## When to use
 
-Use this skill when:
+Use documentation-guidelines when:
 - Writing or reviewing `README.md`, `AGENTS.md`, `CLAUDE.md`
 - Creating specs, ADRs, design notes
 - Authoring SSOT content under `.ai/skills/`
@@ -35,7 +35,7 @@ Use this skill when:
 
 
 ## Steps
-1. Confirm the document’s purpose and target reader (who will use it, and for what decision or task).
+1. Confirm the document's purpose and target reader (who will use the document, and for what decision or task).
 2. Write the main path first (the smallest set of steps or facts needed to succeed) and defer deep detail to later sections.
 3. Add explicit inputs/outputs, and include verification criteria whenever the document describes a process or checklist.
 4. Run a readability pass: short paragraphs, scannable headings, consistent terminology, and minimal jargon.
@@ -87,7 +87,7 @@ Use this skill when:
 
 ### Skill/Command Docs (SSOT)
 
-- **Purpose (1-2 sentences)**: what problem it solves
+- **Purpose (1-2 sentences)**: what problem the skill/component solves
 - **Trigger/usage**: when to use; required inputs; expected outputs
 - **Steps**: bullet list; minimal examples only
 - **Notes**: boundaries, forbidden actions, failure handling

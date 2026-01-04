@@ -26,7 +26,7 @@ Before writing code:
 
 Update:
 
-- `.ai/llm/registry/providers.yaml`
+- `.ai/llm-config/registry/providers.yaml`
 
 Guidelines:
 
@@ -45,12 +45,12 @@ Instead:
 
 Register any new configuration keys (if required) in:
 
-- `.ai/llm/registry/config_keys.yaml`
+- `.ai/llm-config/registry/config_keys.yaml`
 
 Then run:
 
 ```bash
-node .ai/scripts/check-llm-config-keys.cjs
+node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs
 ```
 
 ### 3) Implement a provider adapter

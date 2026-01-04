@@ -3,7 +3,7 @@
   "title": "Init State",
   "description": "Tracks the progress of the 3-stage initialization conversation",
   "type": "object",
-  "required": ["version", "stage", "stageA"],
+  "required": ["version", "stage", "stage-a"],
   "properties": {
     "version": {
       "type": "integer",
@@ -14,7 +14,7 @@
       "enum": ["A", "B", "C", "complete"],
       "description": "Current stage of initialization"
     },
-    "stageA": {
+    "stage-a": {
       "type": "object",
       "description": "Stage A: Requirements interview progress",
       "properties": {
@@ -62,7 +62,7 @@
         }
       }
     },
-    "stageB": {
+    "stage-b": {
       "type": "object",
       "description": "Stage B: Blueprint generation progress",
       "properties": {
@@ -72,7 +72,7 @@
         "userApproved": { "type": "boolean" }
       }
     },
-    "stageC": {
+    "stage-c": {
       "type": "object",
       "description": "Stage C: Scaffold and skills",
       "properties": {

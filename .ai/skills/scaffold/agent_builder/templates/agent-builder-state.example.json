@@ -10,17 +10,18 @@
     "B": false,
     "C": false,
     "D": false,
-    "E": false
+    "E": false,
+    "F": false
   },
-  "stageA": {
-    "interview_notes_path": "stageA/interview-notes.md",
-    "integration_decision_path": "stageA/integration-decision.md"
+  "stage-a": {
+    "interview_notes_path": "stage-a/interview-notes.md",
+    "integration_decision_path": "stage-a/integration-decision.md"
   },
-  "stageB": {
-    "blueprint_path": "stageB/agent-blueprint.json",
+  "stage-b": {
+    "blueprint_path": "stage-b/agent-blueprint.json",
     "validated": false
   },
-  "stageC": {
+  "stage-c": {
     "planned": false,
     "applied": false,
     "generated_paths": [],

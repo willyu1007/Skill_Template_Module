@@ -14,10 +14,10 @@ You want feature code to request a **business intent** (profile) instead of a ha
 
 ## End-to-end steps
 1) **Ensure provider(s) exist in SSOT**
-   - Verify `.ai/llm/registry/providers.yaml` contains all referenced `provider_id` values.
+   - Verify `.ai/llm-config/registry/providers.yaml` contains all referenced `provider_id` values.
 
 2) **Add the profile (SSOT)**
-   - Edit: `.ai/llm/registry/model_profiles.yaml`
+   - Edit: `.ai/llm-config/registry/model_profiles.yaml`
    - Add an entry like:
 
 ```yaml
@@ -42,7 +42,7 @@ You want feature code to request a **business intent** (profile) instead of a ha
 
 4) **(Optional) Tie the profile to a prompt template**
    - If your design uses profile → prompt mapping:
-     - update `.ai/llm/registry/prompt_templates.yaml` (new version, if changed)
+     - update `.ai/llm-config/registry/prompt_templates.yaml` (new version, if changed)
 
 5) **Add minimal routing tests**
    - Ensure routing picks the expected candidate.

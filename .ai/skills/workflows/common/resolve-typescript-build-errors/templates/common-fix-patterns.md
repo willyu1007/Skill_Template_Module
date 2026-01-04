@@ -1,6 +1,6 @@
 # Template: Common TypeScript fix patterns
 
-This reference lists common TypeScript compile errors and safe, minimal fix strategies.
+The reference lists common TypeScript compile errors and safe, minimal fix strategies.
 
 **Principle:** prefer **root-cause** fixes (types, exports, contracts) over downstream suppression.
 
@@ -19,7 +19,7 @@ This reference lists common TypeScript compile errors and safe, minimal fix stra
 - If the module is JS-only: add types (`@types/...`) or a local `d.ts` shim.
 
 **Avoid**
-- Adding `any` exports to “make it compile”.
+- Adding `any` exports to "make the code compile".
 
 ---
 
@@ -66,7 +66,7 @@ This reference lists common TypeScript compile errors and safe, minimal fix stra
 - Prefer explicit defaults rather than non-null assertions.
 
 **Avoid**
-- Using `!` (non-null assertion) unless you can prove the invariant and it’s local.
+- Using `!` (non-null assertion) unless you can prove the invariant and the invariant is local.
 
 ---
 
@@ -116,4 +116,4 @@ This reference lists common TypeScript compile errors and safe, minimal fix stra
 - `@ts-expect-error` with a comment explaining why and linking to a tracking item.
 - A narrow cast at a boundary (`as SpecificType`) *only* after runtime validation.
 
-If you use any suppression, record it in the triage worksheet and plan a follow-up cleanup.
+If you use any suppression, record the suppression in the triage worksheet and plan a follow-up cleanup.

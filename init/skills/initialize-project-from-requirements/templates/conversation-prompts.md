@@ -2,11 +2,11 @@
 
 ## Conclusions (read first)
 
-- Use this as a **question bank** for Stage A. Ask the **MUST-ask** set first, then use **branch modules** based on the project's capabilities.
+- Use the template as a **question bank** for Stage A. Ask the **MUST-ask** set first, then use **branch modules** based on the project's capabilities.
 - Every answer MUST be written into a file artifact:
   - Stage A docs under `docs/project/` (human-readable SSOT for intent)
   - Stage B blueprint at `docs/project/project-blueprint.json` (machine-readable SSOT for scaffolding / pack selection)
-- If the user cannot decide, record it as **TBD** in `docs/project/risk-open-questions.md` with:
+- If the user cannot decide, record the item as **TBD** in `docs/project/risk-open-questions.md` with:
   - owner, options, and decision due.
 
 ## A. MUST-ask (minimal set)
@@ -98,7 +98,7 @@ Write to:
 
 ## C. Answer → Artifact mapping cheat sheet
 
-Use this mapping to avoid "knowledge floating in chat":
+Use the mapping to avoid "knowledge floating in chat":
 
 - Scope (MUST/OUT) → `docs/project/requirements.md` (`## Goals`, `## Non-goals`)
 - User journeys + AC → `docs/project/requirements.md` (`## Users and user journeys`)

@@ -1,6 +1,6 @@
 # LLM Initialization Guide
 
-This document provides step-by-step guidance for an AI assistant to help a user complete the project initialization workflow.
+The document provides step-by-step guidance for an AI assistant to help a user complete the project initialization workflow.
 
 ---
 

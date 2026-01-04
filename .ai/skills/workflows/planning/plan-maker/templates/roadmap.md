@@ -1,4 +1,4 @@
-# <Task Title> — Implementation Plan
+# <Task Title> — Roadmap
 
 ## Goal
 - <One-sentence goal statement>
@@ -18,9 +18,9 @@
 - Scope: <module|integration>
 - Module id (if scope=module): <module_id>
 - Task slug: <task_slug>
-- Plan path:
-  - Module: `modules/<module_id>/workdocs/active/<task_slug>/01-plan.md`
-  - Integration: `modules/integration/workdocs/active/<task_slug>/01-plan.md`
+- Roadmap path:
+  - Module: `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md`
+  - Integration: `modules/integration/workdocs/active/<task_slug>/roadmap.md`
 
 ## Scope and impact
 - Affected modules: <...>
@@ -43,8 +43,8 @@
    - Deliverable: <...>
    - Acceptance criteria: <...>
 
-## Step-by-step plan (phased)
-> Keep each step small, verifiable, and reversible.
+## Phased execution plan
+> Keep each phase small, verifiable, and reversible.
 
 ### Phase 0 — Discovery (if needed)
 - Objective: <what you need to learn/confirm>
@@ -62,7 +62,7 @@
 - Verification:
   - <tests/checks/acceptance criteria>
 - Rollback:
-  - <how to revert if this phase causes issues>
+  - <how to revert if the phase causes issues>
 
 ### Phase 2 — <name>
 - Objective:
@@ -85,23 +85,25 @@
 |---|---:|---:|---|---|---|
 | <risk> | <low/med/high> | <low/med/high> | <...> | <...> | <...> |
 
-## Optional supporting workdocs (convention)
-If the task benefits from additional workdocs, keep them next to this plan:
+## Companion workdocs (convention)
+The roadmap provides macro-level planning. For implementation details, use `create-workdocs-plan` to generate:
 
 ```
 modules/<module_id>/workdocs/active/<task_slug>/
-  00-overview.md
-  01-plan.md
-  02-architecture.md
-  03-implementation-notes.md
-  04-verification.md
-  05-pitfalls.md
+  roadmap.md              # Macro-level planning (plan-maker)
+  00-overview.md          # Goal, non-goals, acceptance criteria
+  01-plan.md              # Implementation plan (specific steps)
+  02-architecture.md      # Architecture design
+  03-implementation-notes.md  # Current status + TODOs
+  04-verification.md      # Verification commands + results
+  05-pitfalls.md          # "Do not repeat" lessons
 ```
 
 or (integration scope):
 
 ```
 modules/integration/workdocs/active/<task_slug>/
+  roadmap.md              # Macro-level planning
   00-overview.md
   01-plan.md
   02-architecture.md
@@ -110,10 +112,9 @@ modules/integration/workdocs/active/<task_slug>/
   05-pitfalls.md
 ```
 
-This skill produces only `01-plan.md`.
-
 ## To-dos
 - [ ] Confirm open questions
 - [ ] Confirm milestone ordering and DoD
 - [ ] Confirm verification/acceptance criteria
 - [ ] Confirm rollout/rollback strategy
+

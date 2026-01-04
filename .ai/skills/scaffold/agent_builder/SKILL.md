@@ -13,9 +13,9 @@ Scaffold a **production-oriented agent component** (a.k.a. agent proxy) to solve
 - a **business flow node** in `.system/modular/flow_graph.yaml`
 - the module-first SSOT and integration toolchain (MANIFEST, module interact registry, integration scenarios)
 
-This skill is designed for **LLM-first, human support** workflows:
+The skill is designed for **LLM-first, human support** workflows:
 - The agent_builder uses a temporary workdir, explicit approvals, deterministic scaffolding, and script-driven updates.
-- It avoids implicit edits to repository SSOT that the user did not approve.
+- The skill avoids implicit edits to repository SSOT that the user did not approve.
 
 ## Non-negotiable Constraints
 
@@ -62,8 +62,8 @@ When a user requests "I want an Agent with X capability", execute the following 
 **Actions**:
 1. Extract from user request:
    - Functional goal (what the agent should do)
-   - Integration target (where it will be embedded — which module?)
-   - Trigger type (how it will be invoked)
+   - Integration target (where the agent will be embedded — which module?)
+   - Trigger type (how the agent will be invoked)
    - Expected output format
 2. Identify implicit constraints:
    - Data sensitivity (PII, confidential, internal, public)
@@ -81,8 +81,8 @@ When a user requests "I want an Agent with X capability", execute the following 
 1. Run: `node .ai/skills/scaffold/agent_builder/scripts/agent-builder.js start`
 2. Note the temporary workdir path returned.
 3. Walk through `reference/decision_checklist.md` with the user (16 decision points).
-4. Generate `stageA/interview-notes.md` in the workdir.
-5. Generate `stageA/integration-decision.md` in the workdir (use template at `templates/stageA/`).
+4. Generate `stage-a/interview-notes.md` in the workdir.
+5. Generate `stage-a/integration-decision.md` in the workdir (use template at `templates/stage-a/`).
 
 **Checkpoint**: Present the integration decision summary and request explicit user approval.
 
@@ -103,7 +103,7 @@ Type "approve A" to proceed to Blueprint generation.
 ### Phase 2: Stage B — Blueprint
 
 **Actions**:
-1. Encode all decisions into `stageB/agent-blueprint.json` following the schema at `templates/agent-blueprint.schema.json`.
+1. Encode all decisions into `stage-b/agent-blueprint.json` following the schema at `templates/agent-blueprint.schema.json`.
 2. Ensure `modular.host_module_id` matches the target module.
 3. Ensure `modular.flow_node.flow_id` and `modular.flow_node.node_id` are valid.
 4. Run validation: `node .../agent-builder.js validate-blueprint --workdir <WORKDIR>`
@@ -156,8 +156,8 @@ Type "approve B" to proceed to scaffolding.
 **Actions**:
 1. Run verification: `node .../agent-builder.js verify --workdir <WORKDIR>`
 2. Review generated evidence in workdir:
-   - `stageE/verification-evidence.json`
-   - `stageE/verification-report.md`
+   - `stage-e/verification-evidence.json`
+   - `stage-e/verification-report.md`
 3. If any scenario fails, investigate and fix.
 
 **Output**: Verification report.
@@ -166,7 +166,7 @@ Type "approve B" to proceed to scaffolding.
 
 **Actions**:
 1. Run: `node .../agent-builder.js integrate-modular --workdir <WORKDIR> --apply`
-2. This will:
+2. The command will:
    - Verify the target flow/node exists in `.system/modular/flow_graph.yaml`
    - Update `modules/<module_id>/MANIFEST.yaml` with interfaces (health, run) and implements
    - Scaffold an integration scenario (optional)
@@ -213,8 +213,8 @@ See **LLM Execution Protocol** above for detailed step-by-step instructions.
 
 ## Boundaries
 
-- The generated agent is **not** a module instance; it must live under an existing module (`modules/<module_id>/...`).
-- `agent_builder` does **not** edit `.system/modular/flow_graph.yaml`. If flow nodes are missing, it must emit a flow-change-request and stop modular integration.
+- The generated agent is **not** a module instance; the agent must live under an existing module (`modules/<module_id>/...`).
+- `agent_builder` does **not** edit `.system/modular/flow_graph.yaml`. If flow nodes are missing, `agent_builder` must emit a flow-change-request and stop modular integration.
 - Do **not** commit workdir artifacts (Stage A/B templates). Only the scaffolded repo outputs are committed.
 - Do **not** write secrets to the repo. `.env.example` must contain placeholders only.
 - Do **not** edit derived registries/indexes by hand (`docs/context/registry.json`, `.system/modular/*_index.yaml`, `modules/integration/compiled/*`). Use the ctl scripts.
@@ -227,5 +227,5 @@ See **LLM Execution Protocol** above for detailed step-by-step instructions.
 | `reference/agent_builder_handbook.md` | Design principles, decision trees, boundary conditions |
 | `reference/stage_d_implementation_guide.md` | Tool, prompt, and test implementation patterns |
 | `templates/agent-blueprint.schema.json` | Blueprint JSON Schema (canonical) |
-| `templates/stageA/integration-decision.template.md` | Stage A integration decision template |
+| `templates/stage-a/integration-decision.template.md` | Stage A integration decision template |
 | `examples/usage.md` | Operator-oriented quick start guide |

@@ -15,7 +15,7 @@ You need to change a production prompt without breaking callers, and you want pr
 
 ## End-to-end steps
 1) **Add a new prompt version (SSOT)**
-   - Edit: `.ai/llm/registry/prompt_templates.yaml`
+   - Edit: `.ai/llm-config/registry/prompt_templates.yaml`
    - Append a new entry (do not modify old versions):
 
 ```yaml
@@ -41,7 +41,7 @@ You need to change a production prompt without breaking callers, and you want pr
    - Feature code should keep calling by stable ID (or a profile that maps to the new prompt version).
 
 3) **If you introduce new config keys (rare for prompt changes), register them**
-   - Edit: `.ai/llm/registry/config_keys.yaml`
+   - Edit: `.ai/llm-config/registry/config_keys.yaml`
 
 4) **Add regression coverage**
    - Add a minimal golden set:

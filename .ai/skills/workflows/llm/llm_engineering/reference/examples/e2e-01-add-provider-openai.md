@@ -14,7 +14,7 @@ You need to integrate a new LLM provider behind a single calling surface, using 
 
 ## End-to-end steps
 1) **Register provider (SSOT)**
-   - Edit: `.ai/llm/registry/providers.yaml`
+   - Edit: `.ai/llm-config/registry/providers.yaml`
    - Add an entry like:
 
 ```yaml
@@ -31,7 +31,7 @@ You need to integrate a new LLM provider behind a single calling surface, using 
 ```
 
 2) **Register any new in-scope keys (if you introduce them)**
-   - Edit: `.ai/llm/registry/config_keys.yaml`
+   - Edit: `.ai/llm-config/registry/config_keys.yaml`
    - Example keys (only if your wrapper needs them):
      - `OPENAI_API_BASE`
      - `OPENAI_ORG_ID`
@@ -46,7 +46,7 @@ You need to integrate a new LLM provider behind a single calling surface, using 
      - telemetry fields: `provider_id`, `model_id`, `profile_id`, `prompt_template_id`, `prompt_version`, `tenant_id`, `user_id`, `trace_id`
 
 4) **Add a profile that can route to the new provider (optional but recommended)**
-   - Edit: `.ai/llm/registry/model_profiles.yaml`
+   - Edit: `.ai/llm-config/registry/model_profiles.yaml`
    - Example (canary profile):
 
 ```yaml
@@ -59,7 +59,7 @@ You need to integrate a new LLM provider behind a single calling surface, using 
 ```
 
 5) **Add/upgrade a prompt template (optional)**
-   - Edit: `.ai/llm/registry/prompt_templates.yaml`
+   - Edit: `.ai/llm-config/registry/prompt_templates.yaml`
    - Use `(prompt_template_id, version)` (immutable versioning).
 
 ## Verification
@@ -72,7 +72,7 @@ Run from repo root:
 - Run the smallest adapter/wrapper test suite available in your repo.
 
 ## Expected outputs
-- Updated SSOT registries under `.ai/llm/registry/*`
+- Updated SSOT registries under `.ai/llm-config/registry/*`
 - New adapter implementation under your single calling surface
 - Contract tests + telemetry
 

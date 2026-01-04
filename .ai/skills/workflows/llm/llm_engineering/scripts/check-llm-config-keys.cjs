@@ -4,7 +4,7 @@
  * LLM Config Key Registry Check
  *
  * Enforces that in-scope LLM env/config keys referenced in code are registered in:
- *   .ai/llm/registry/config_keys.yaml
+ *   .ai/llm-config/registry/config_keys.yaml
  *
  * Why:
  * - prevents ad-hoc / duplicated configuration keys
@@ -224,7 +224,7 @@ function main() {
 
   const repoRoot = findRepoRoot(__dirname);
   if (!repoRoot) {
-    die('Unable to locate repo root: expected `.ai/llm/registry/config_keys.yaml` in an ancestor directory.');
+    die('Unable to locate repo root: expected `.ai/llm-config/registry/config_keys.yaml` in an ancestor directory.');
   }
 
   const registryPath = path.join(repoRoot, '.ai', 'llm', 'registry', 'config_keys.yaml');
@@ -293,7 +293,7 @@ function main() {
       }
     }
     console.log('');
-    console.log('Fix: register keys in `.ai/llm/registry/config_keys.yaml` and re-run this check.');
+    console.log('Fix: register keys in `.ai/llm-config/registry/config_keys.yaml` and re-run this check.');
     process.exit(1);
   }
 

@@ -1,6 +1,6 @@
 # Modular System Quickstart
 
-This document is an end-to-end quickstart for the **module-first** (modular) system in this repository.
+The document is an end-to-end quickstart for the **module-first** (modular) system in the repository.
 
 ## Table of contents
 
@@ -265,7 +265,7 @@ node .ai/scripts/contextctl.js verify --strict
 
 ## AI-assisted workflows (skills)
 
-If you’re using an AI assistant integrated with this repo, you can ask it to run these workflows interactively via built-in skills:
+If you're using an AI assistant integrated with the repo, you can ask the assistant to run these workflows interactively via built-in skills:
 
 - Module creation: `initialize-module-instance`
 - Flow graph maintenance: `maintain-flow-graph`
@@ -289,6 +289,6 @@ Example prompts you can give the assistant:
 
 Templates / examples (for reference):
 
-- Example module: `.ai/skills/scaffold/modules/initialize-module-instance/examples/example.api/`
+- Example module: `.ai/skills/scaffold/modules/initialize-module-instance/examples/example-api/`
 - Example flow graphs: `.ai/skills/scaffold/flow/maintain-flow-graph/examples/`
 - Example integration scenarios: `.ai/skills/scaffold/integration/manage-integration-scenarios/examples/`

@@ -1,4 +1,4 @@
-# Add Feature Flag for New Checkout — Implementation Plan
+# Add Feature Flag for New Checkout — Roadmap
 
 ## Goal
 - Introduce a feature flag to safely roll out the new checkout flow to a subset of users, with a clean rollback path.
@@ -19,7 +19,7 @@
 - Scope: module
 - Module id: checkout
 - Task slug: add-checkout-feature-flag
-- Plan path: `modules/checkout/workdocs/active/add-checkout-feature-flag/01-plan.md`
+- Roadmap path: `modules/checkout/workdocs/active/add-checkout-feature-flag/roadmap.md`
 
 ## Scope and impact
 - Affected modules: checkout (UI + API entry points)
@@ -41,7 +41,7 @@
    - Deliverable: ramp plan + dashboards/alerts
    - Acceptance criteria: clear rollback procedure; monitoring confirms stability
 
-## Step-by-step plan (phased)
+## Phased execution plan
 
 ### Phase 0 — Discovery
 - Objective: Confirm existing flag provider and integration points
@@ -101,22 +101,22 @@
 | Flag provider not available on backend | medium | high | add backend flag client or proxy | integration test | disable flag / revert |
 | Partial gating causes inconsistent state | low | high | centralize routing decision | e2e tests | disable flag |
 
-## Optional supporting workdocs (convention)
-If the task benefits from additional workdocs, keep them next to this plan:
+## Companion workdocs (convention)
+This roadmap provides macro-level planning. For implementation details, use `create-workdocs-plan` to generate:
 
 ```
 modules/checkout/workdocs/active/add-checkout-feature-flag/
-  00-overview.md
-  01-plan.md
-  02-architecture.md
-  03-implementation-notes.md
-  04-verification.md
-  05-pitfalls.md
+  roadmap.md              # This file (macro-level planning)
+  00-overview.md          # Goal, non-goals, acceptance criteria
+  01-plan.md              # Implementation plan (specific steps)
+  02-architecture.md      # Architecture design
+  03-implementation-notes.md  # Current status + TODOs
+  04-verification.md      # Verification commands + results
+  05-pitfalls.md          # "Do not repeat" lessons
 ```
-
-This skill produces only `01-plan.md`.
 
 ## To-dos
 - [ ] Confirm flag system and rollout capability
 - [ ] Confirm success metrics and dashboards
 - [ ] Confirm rollout schedule and owners
+

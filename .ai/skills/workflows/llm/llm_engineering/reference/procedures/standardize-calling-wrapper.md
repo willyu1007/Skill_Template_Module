@@ -22,8 +22,8 @@ Create (or refactor) a **single calling surface** for LLM usage so feature code 
 
 2) **Centralize routing and defaults**
    - Routing must be driven by SSOT registries:
-     - `.ai/llm/registry/model_profiles.yaml`
-     - `.ai/llm/registry/providers.yaml`
+     - `.ai/llm-config/registry/model_profiles.yaml`
+     - `.ai/llm-config/registry/providers.yaml`
    - Defaults belong in the wrapper (timeouts, retry policy, safety limits), not in feature code.
 
 3) **Normalize errors**
@@ -53,8 +53,8 @@ Create (or refactor) a **single calling surface** for LLM usage so feature code 
 
 ## Required verification
 - If new config/env keys are introduced:
-  - update `.ai/llm/registry/config_keys.yaml`
-  - run `node .ai/scripts/check-llm-config-keys.cjs`
+  - update `.ai/llm-config/registry/config_keys.yaml`
+  - run `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 - Run the smallest relevant test suite for the wrapper layer
 
 ## Optional deep references

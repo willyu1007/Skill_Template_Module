@@ -13,13 +13,13 @@ Ship LLM changes safely: predictable behavior, bounded failure, observable cost/
 
 ## Checklist (minimum)
 1) **Registry consistency**
-   - Providers updated (if applicable): `.ai/llm/registry/providers.yaml`
-   - Profiles updated (if applicable): `.ai/llm/registry/model_profiles.yaml`
-   - Prompts updated (if applicable): `.ai/llm/registry/prompt_templates.yaml`
-   - Config keys registered: `.ai/llm/registry/config_keys.yaml`
+   - Providers updated (if applicable): `.ai/llm-config/registry/providers.yaml`
+   - Profiles updated (if applicable): `.ai/llm-config/registry/model_profiles.yaml`
+   - Prompts updated (if applicable): `.ai/llm-config/registry/prompt_templates.yaml`
+   - Config keys registered: `.ai/llm-config/registry/config_keys.yaml`
 
 2) **Config key gate**
-   - Run: `node .ai/scripts/check-llm-config-keys.cjs`
+   - Run: `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 
 3) **Correctness regression**
    - Contract tests for adapters/wrapper

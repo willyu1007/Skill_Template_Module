@@ -1,21 +1,23 @@
 ---
 name: plan-maker
-description: Create a goal-aligned implementation plan (modules/<module_id>/workdocs/active/<task_slug>/01-plan.md or modules/integration/workdocs/active/<task_slug>/01-plan.md) by asking clarifying questions when needed; planning only (no code changes).
+description: Create a goal-aligned macro-level roadmap (modules/<module_id>/workdocs/active/<task_slug>/roadmap.md or modules/integration/workdocs/active/<task_slug>/roadmap.md) by asking clarifying questions when needed; planning only (no code changes).
 ---
 
 # Plan Maker
 
 ## Purpose
-Produce a single, goal-aligned implementation plan as a Markdown document that can guide execution without modifying the codebase.
+Produce a single, goal-aligned **macro-level roadmap** as a Markdown document that can guide execution without modifying the codebase.
+
+The skill focuses on **strategic planning**: milestones, phased execution, impact scope, acceptance criteria, risk assessment, and rollback strategy. The skill does NOT cover implementation-level details (specific file changes, step-by-step code modifications)—those belong in `01-plan.md` created by `create-workdocs-plan`.
 
 ## When to use
-Use this skill when:
+Use plan-maker when:
 - The user asks for a plan, roadmap, milestones, or an implementation plan before coding
 - The task is large/ambiguous and benefits from staged execution and verification
 - You need a plan artifact saved under module/integration workdocs for collaboration and handoff
 
-Avoid this skill when:
-- The user explicitly wants you to implement changes immediately (this skill is planning-only)
+Avoid plan-maker when:
+- The user explicitly wants you to implement changes immediately (plan-maker is planning-only)
 - A plan already exists and only minor edits are needed (update the existing plan instead)
 
 ## Required inputs
@@ -26,8 +28,8 @@ Avoid this skill when:
 - Task slug (`<task_slug>`, kebab-case), confirmed with the user
 
 ## Outputs
-- Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/01-plan.md`
-- Integration-scoped: `modules/integration/workdocs/active/<task_slug>/01-plan.md`
+- Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md`
+- Integration-scoped: `modules/integration/workdocs/active/<task_slug>/roadmap.md`
 
 ## Steps
 1. Restate the goal in one sentence and confirm direction.
@@ -39,12 +41,12 @@ Avoid this skill when:
    - Integration-scoped: confirm `integration`
 4. Propose a `<task_slug>` and confirm it with the user.
    - Use kebab-case; avoid dates unless requested.
-5. Draft the plan using `./templates/plan.md`.
+5. Draft the roadmap using `./templates/roadmap.md`.
    - Keep it macro-level: phases, milestones, deliverables, verification, risks, rollback.
    - Only include specific file paths/APIs when you have evidence; otherwise add a discovery step.
    - Include an explicit "Open questions / Assumptions" section.
    - Include module-first considerations (affected modules, SSOT touchpoints, derived artifacts to regenerate, integration checks) with discovery steps if unknown.
-6. Save the plan to the scoped workdocs path.
+6. Save the roadmap to the scoped workdocs path.
 7. Return a short handoff message to the user:
    - confirmed goal
    - where the plan was saved
@@ -53,20 +55,32 @@ Avoid this skill when:
 ## Verification
 - [ ] Goal is restated and (where needed) confirmed with the user
 - [ ] Ambiguities are resolved or recorded as explicit open questions/assumptions
-- [ ] Plan includes milestones/phases and per-step deliverables
-- [ ] Plan defines verification/acceptance criteria and a rollback strategy
+- [ ] Roadmap includes milestones/phases and per-step deliverables
+- [ ] Roadmap defines verification/acceptance criteria and a rollback strategy
 - [ ] Scope (`module_id` or `integration`) is explicitly confirmed by the user
-- [ ] Plan is saved to the correct workdocs path
+- [ ] Roadmap is saved to the correct workdocs path as `roadmap.md`
 - [ ] No application/source/config files were modified
 
 ## Boundaries
 - MUST NOT modify application/source code, project configuration, or database state
 - MUST ask clarifying questions when the goal or constraints are ambiguous
 - MUST NOT invent project-specific facts (APIs, file paths, schemas) without evidence
-- SHOULD keep the plan macro-level; deep design details belong in separate documentation artifacts
-- SHOULD NOT include secrets (credentials, tokens, private keys) in the plan
+- SHOULD keep the roadmap macro-level; deep design details belong in `01-plan.md` or `02-architecture.md`
+- SHOULD NOT include secrets (credentials, tokens, private keys) in the roadmap
 
 ## Included assets
-- Template: `./templates/plan.md`
+- Template: `./templates/roadmap.md`
 - Reference: `./reference/detailed-docs-convention.md` (optional file layout convention)
-- Example: `./examples/sample-plan.md`
+- Example: `./examples/sample-roadmap.md`
+
+## Coordination with workdocs skills
+
+| Artifact | Skill | Focus |
+|----------|-------|-------|
+| `roadmap.md` | **plan-maker** | Macro-level: milestones, phases, impact scope, acceptance criteria, risks, rollback |
+| `01-plan.md` | `create-workdocs-plan` | Implementation-level: specific steps, file changes, current status tracking |
+
+Typical workflow:
+1. Use `plan-maker` to create `roadmap.md` for strategic alignment
+2. Use `create-workdocs-plan` to create the implementation bundle (`00-overview.md` through `05-pitfalls.md`)
+3. Both artifacts coexist in the same workdocs directory

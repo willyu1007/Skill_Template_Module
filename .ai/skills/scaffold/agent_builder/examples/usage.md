@@ -41,8 +41,8 @@ When a blueprint is applied, `agent_builder` generates:
 
 | Stage | Purpose | Artifacts | Checkpoint |
 |-------|---------|-----------|------------|
-| **A** | Interview | `stageA/interview-notes.md`, `stageA/integration-decision.md` | User approval required |
-| **B** | Blueprint | `stageB/agent-blueprint.json` | User approval required |
+| **A** | Interview | `stage-a/interview-notes.md`, `stage-a/integration-decision.md` | User approval required |
+| **B** | Blueprint | `stage-b/agent-blueprint.json` | User approval required |
 | **C** | Scaffold | Code + docs + registry in repo | — |
 | **D** | Implement | Real domain logic in `src/core/` | — |
 | **E** | Verify | Acceptance scenarios + cleanup | — |

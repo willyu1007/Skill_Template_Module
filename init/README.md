@@ -1,14 +1,14 @@
 # Init kit (robust 3-stage pipeline)
 
-> Human-facing documentation. If you are an LLM/AI assistant, skip this file to save tokens and follow `init/AGENTS.md` instead.
+> Human-facing documentation. If you are an LLM/AI assistant, skip the file to save tokens and follow `init/AGENTS.md` instead.
 
-This `init/` package provides a 3-stage, checkpointed workflow to bootstrap a repository from requirements:
+The `init/` package provides a 3-stage, checkpointed workflow to bootstrap a repository from requirements:
 
 - **Stage A**: Requirements docs (`init/stage-a-docs/*`)
 - **Stage B**: Blueprint (`init/project-blueprint.json`)
 - **Stage C**: Scaffold + configs + skill packs + add-ons + wrapper sync
 
-It is designed for **robustness and auditability**:
+The workflow is designed for **robustness and auditability**:
 - Each stage has a **validation step** (written into `init/.init-state.json`)
 - Stage transitions require **explicit user approval** (`approve` command)
 - Optional add-ons are installed **only when enabled in the blueprint**
@@ -88,7 +88,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
   --archive
 ```
 
-This archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
+The command archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
 
 **Option C: Archive + prune unused add-ons**
 
@@ -101,7 +101,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
   --cleanup-addons
 ```
 
-This archives to `docs/project/`, removes `init/`, and deletes add-on source directories under `addons/` that were not enabled in the blueprint.
+The command archives to `docs/project/`, removes `init/`, and deletes add-on source directories under `addons/` that were not enabled in the blueprint.
 
 ---
 
@@ -114,7 +114,7 @@ The module-first template ships these capabilities **by default** (they are not 
 - **DB mirror** (`dbctl.js`, `db/`)
 - **CI templates tooling** (`cictl.js`, `ci/`, `.gitlab-ci/`)
 
-> For backward compatibility, some blueprint flags may still mention these features. In this template version, they are already present and do not need to be installed from `addons/`.
+> For backward compatibility, some blueprint flags may still mention these features. In the current template version, the features are already present and do not need to be installed from `addons/`.
 
 ## Available Add-ons (non-core)
 
@@ -142,7 +142,7 @@ Example blueprint snippet:
 
 ## LLM-guided initialization (optional)
 
-This init kit supports an AI assistant guiding a user through the entire initialization flow.
+The init kit supports an AI assistant guiding a user through the entire initialization flow.
 
 ### Flow
 
@@ -189,7 +189,7 @@ When add-ons are enabled, they provide more complete implementations with manage
 
 ---
 
-## Files in this init kit
+## Files in the init kit
 
 - `stages/` – stage guidance docs
 - `skills/initialize-project-from-requirements/` – the skill definition and scripts

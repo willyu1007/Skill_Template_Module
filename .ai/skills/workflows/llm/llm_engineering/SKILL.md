@@ -6,13 +6,13 @@ description: Entry workflow for LLM engineering tasks (provider integration, cal
 # LLM Engineering (workflow)
 
 ## Operating mode (token-efficient)
-- Treat this skill as a **router + governor**.
+- Treat llm_engineering as a **router + governor**.
 - Do **not** load multiple procedures. Select exactly **one** procedure below and follow it end-to-end.
-- Use `.ai/llm/registry/*` as the SSOT for identifiers and allowed config keys.
+- Use `.ai/llm-config/registry/*` as the SSOT for identifiers and allowed config keys.
 
 ## Routing (pick one procedure)
 
-| Task | Open this procedure |
+| Task | Open the procedure |
 |---|---|
 | Add / integrate a provider | `reference/procedures/add-provider.md` |
 | Standardize or introduce a single calling wrapper | `reference/procedures/standardize-calling-wrapper.md` |
@@ -35,7 +35,7 @@ Open **one** example only if you need a concrete template.
 
 2) **Registry-first configuration**
    - Never introduce new LLM env/config keys ad-hoc.
-   - Register in `.ai/llm/registry/config_keys.yaml`.
+   - Register in `.ai/llm-config/registry/config_keys.yaml`.
 
 3) **Single calling surface**
    - Feature code must not import provider SDKs directly.
@@ -68,6 +68,6 @@ Open **one** example only if you need a concrete template.
 
 ## Boundaries
 - Do not edit `.codex/skills/` or `.claude/skills/` directly (generated).
-- Do not add MCP-related content (out of scope for this workflow).
+- Do not add MCP-related content (out of scope for the workflow).
 - Do not create new top-level directories for LLM work; keep assets under existing conventions (`.ai/`, `.system/`).
 - Do not add provider SDK calls directly into product/feature code.

@@ -1,6 +1,6 @@
 # Skill: initialize-project-from-requirements
 
-This skill connects the flow from **requirements docs → project blueprint → scaffold/configs → skill sync**, and records an auditable initialization state so every stage has a clear **validation + user approval** checkpoint.
+The skill connects the flow from **requirements docs → project blueprint → scaffold/configs → skill sync**, and records an auditable initialization state so every stage has a clear **validation + user approval** checkpoint.
 
 Goal: a robust, repeatable, rollback-friendly initialization workflow (not the fastest possible iteration).
 
@@ -23,10 +23,10 @@ Located under `docs/project/` (or the `--docs-root` you provide):
 
 ### Core capability: Context system (built-in)
 
-In the module-first template, the Context system is a **built-in capability** (it is no longer installed from `addons/context-awareness`).
+In the module-first template, the Context system is a **built-in capability** (no longer installed from `addons/context-awareness`).
 
 Default behavior:
-- `contextAwareness` is the enable/disable switch for this core capability. Unless the blueprint explicitly disables `addons.contextAwareness: false`, the built-in steps run:
+- `contextAwareness` is the enable/disable switch for the core capability. Unless the blueprint explicitly disables `addons.contextAwareness: false`, the built-in steps run:
   - `node .ai/scripts/projectctl.js init`
   - `node .ai/scripts/projectctl.js set-context-mode <contract|snapshot>`
   - `node .ai/scripts/contextctl.js init`
@@ -79,8 +79,8 @@ Note: the Context system is not installed from `addons/`. Even if `addons.contex
 2. Do not advance stages without explicit user approval.
 3. Context system (core capability) enable switch:
    - `addons.contextAwareness` is the built-in enable switch; default is enabled unless explicitly `false`.
-   - It does not install anything from `/addons/<addonId>/payload` (Context is not an add-on).
-   - `blueprint.context.*` is configuration-only; it does not trigger installation.
+   - The pipeline does not install anything from `/addons/<addonId>/payload` (Context is not an add-on).
+   - `blueprint.context.*` is configuration-only; the setting does not trigger installation.
 4. The manifest schema MUST be the “flat schema”.
    - Do not use `collections.current` or similar nested structures.
 5. Single source of truth for config generation: `scripts/scaffold-configs.cjs`.
@@ -130,7 +130,7 @@ These are intentionally placeholders (not bound to a specific cloud vendor/CI pl
 
 ## LLM-guided initialization flow
 
-This skill supports an LLM (AI assistant) guiding a user through the entire initialization workflow, without requiring the user to manually edit config files.
+The skill supports an LLM (AI assistant) guiding a user through the entire initialization workflow, without requiring the user to manually edit config files.
 
 ### Guidance docs
 

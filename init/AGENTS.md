@@ -1,6 +1,6 @@
-# Agent guidance for this init kit
+# Agent guidance for the init kit
 
-This repository includes an `init/` bootstrap kit that is intended to be executed in a **checkpointed** manner.
+The repository includes an `init/` bootstrap kit that is intended to be executed in a **checkpointed** manner.
 
 Key principles:
 
@@ -28,7 +28,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs start --repo-root .
 ```
 
-This automatically creates:
+The command automatically creates:
 - `init/stage-a-docs/requirements.md`
 - `init/stage-a-docs/non-functional-requirements.md`
 - `init/stage-a-docs/domain-glossary.md`
@@ -94,7 +94,7 @@ If you explicitly disable context in a blueprint (for unusual use cases), you ca
 }
 ```
 
-This will skip context-related steps, but the files remain present (core capability).
+The setting will skip context-related steps, but the files remain present (core capability).
 
 ## Cleanup
 
@@ -116,7 +116,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
   --archive
 ```
 
-This archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
+The command archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
 
 **Option C: Archive + prune unused add-ons**
 

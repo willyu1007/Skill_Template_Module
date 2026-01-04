@@ -1,7 +1,7 @@
 {
   "version": 1,
   "stage": "A",
-  "stageA": {
+  "stage-a": {
     "mustAsk": {
       "onePurpose": { "asked": false, "answered": false, "writtenTo": null },
       "userRoles": { "asked": false, "answered": false, "writtenTo": null },
@@ -26,13 +26,13 @@
     "validated": false,
     "userApproved": false
   },
-  "stageB": {
+  "stage-b": {
     "drafted": false,
     "validated": false,
     "packsReviewed": false,
     "userApproved": false
   },
-  "stageC": {
+  "stage-c": {
     "scaffoldPreviewed": false,
     "scaffoldApplied": false,
     "manifestUpdated": false,

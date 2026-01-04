@@ -16,7 +16,7 @@ Introduce or modify a `model_profile` / `profile_id` so feature code can request
    - Use a short, descriptive, stable id (snake_case or kebab-case; keep consistent with your registry).
 
 2) **Register/update the profile (SSOT)**
-   - Edit: `.ai/llm/registry/model_profiles.yaml`
+   - Edit: `.ai/llm-config/registry/model_profiles.yaml`
    - Include:
      - candidate list (provider_id + model_id)
      - selection strategy (priority/weights)
@@ -42,7 +42,7 @@ Introduce or modify a `model_profile` / `profile_id` so feature code can request
      - fallback triggers when primary fails
 
 ## Outputs
-- Updated: `.ai/llm/registry/model_profiles.yaml`
+- Updated: `.ai/llm-config/registry/model_profiles.yaml`
 - Wrapper routing behavior aligned with the registry
 
 ## Required verification

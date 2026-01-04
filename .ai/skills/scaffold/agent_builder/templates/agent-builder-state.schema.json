@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Agent Builder State",
-  "description": "Tracks a single agent_builder run across stages A–E.",
+  "description": "Tracks a single agent_builder run across stages A–F.",
   "type": "object",
   "required": [
     "version",
@@ -10,9 +10,9 @@
     "stage",
     "workdir",
     "approvals",
-    "stageA",
-    "stageB",
-    "stageC",
+    "stage-a",
+    "stage-b",
+    "stage-c",
     "history"
   ],
   "properties": {
@@ -34,6 +34,7 @@
         "C",
         "D",
         "E",
+        "F",
         "complete"
       ]
     },
@@ -64,11 +65,14 @@
         },
         "E": {
           "type": "boolean"
+        },
+        "F": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
     },
-    "stageA": {
+    "stage-a": {
       "type": "object",
       "required": [
         "interview_notes_path",
@@ -87,7 +91,7 @@
       },
       "additionalProperties": true
     },
-    "stageB": {
+    "stage-b": {
       "type": "object",
       "required": [
         "blueprint_path",
@@ -109,7 +113,7 @@
       },
       "additionalProperties": true
     },
-    "stageC": {
+    "stage-c": {
       "type": "object",
       "required": [
         "planned"
@@ -142,7 +146,7 @@
       },
       "additionalProperties": true
     },
-    "stageD": {
+    "stage-d": {
       "type": "object",
       "properties": {
         "status": {
@@ -159,7 +163,7 @@
       },
       "additionalProperties": true
     },
-    "stageE": {
+    "stage-e": {
       "type": "object",
       "properties": {
         "status": {
@@ -171,6 +175,18 @@
           ]
         },
         "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "stage-f": {
+      "type": "object",
+      "properties": {
+        "integrated": {
+          "type": "boolean"
+        },
+        "integrated_at": {
           "type": "string"
         }
       },

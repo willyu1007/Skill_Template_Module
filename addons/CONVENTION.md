@@ -1,10 +1,10 @@
 # Add-on Convention
 
-This document defines the standard structure and behavior for all add-ons in this template.
+The document defines the standard structure and behavior for all add-ons in the template.
 
 ## Directory Structure
 
-Every add-on MUST follow this structure:
+Every add-on MUST follow the structure below:
 
 ```
 addons/<addon-id>/

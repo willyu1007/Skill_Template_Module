@@ -12,12 +12,12 @@ The goal is to avoid:
 
 All LLM configuration keys MUST be registered in:
 
-- `.ai/llm/registry/config_keys.yaml`
+- `.ai/llm-config/registry/config_keys.yaml`
 
 This registry is enforced by:
 
 ```bash
-node .ai/scripts/check-llm-config-keys.cjs
+node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs
 ```
 
 ## Key categories
@@ -44,7 +44,7 @@ The runtime resolves the reference to a real secret at call time.
 
 ## How to add a new config key
 
-1. Add the key to `.ai/llm/registry/config_keys.yaml`
+1. Add the key to `.ai/llm-config/registry/config_keys.yaml`
 2. Decide the storage location (env/config service) and default behavior
 3. Update your LLM layer config loader (repo-specific)
 4. Run the check script

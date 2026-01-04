@@ -9,9 +9,9 @@ Example API module demonstrating the module-first template structure.
 
 ## Operating rules
 
-- Read this file first when working inside this module.
-- Keep changes local to this module unless explicitly cross-cutting.
-- If you change this module's manifest, run:
+- Read the file first when working inside the module.
+- Keep changes local to the module unless explicitly cross-cutting.
+- If you change the module's manifest, run:
   - `node .ai/scripts/modulectl.js registry-build`
   - `node .ai/scripts/flowctl.js update-from-manifests`
   - `node .ai/scripts/flowctl.js lint`
@@ -29,7 +29,7 @@ Example API module demonstrating the module-first template structure.
 
 ## Description
 
-This module provides a simple user management HTTP API:
+The module provides a simple user management HTTP API:
 
 - `POST /api/users` - Create a new user
 - `GET /api/users/:id` - Get user by ID
@@ -38,7 +38,7 @@ This module provides a simple user management HTTP API:
 
 ## Business flows
 
-This module participates in the `user_management` flow:
+The module participates in the `user_management` flow:
 
 ```
 create_user → get_user

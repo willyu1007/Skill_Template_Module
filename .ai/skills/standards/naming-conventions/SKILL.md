@@ -1,6 +1,6 @@
 ---
 name: naming-conventions
-description: Apply consistent naming conventions for directories, files, and identifiers - covers kebab-case rules, SSOT layout, and skill naming standards.
+description: Apply consistent naming conventions for directories, files, and identifiers - covers kebab-case rules, SSOT layout, skill naming standards, and script-generated file paths (including temporary files under .ai/.tmp/).
 ---
 
 # Naming Conventions
@@ -19,6 +19,7 @@ Use this skill when:
 - Naming skills, workflows, or commands
 - Reviewing code for naming consistency
 - Setting up CI checks for naming standards
+- Writing scripts that generate files or directories
 
 ## Inputs
 
@@ -71,6 +72,27 @@ Notes:
 - `docs/project/`: project-specific documentation (requirements, blueprints)
 - `scripts/`: script entrypoints (cross-platform can share the same base name with different suffixes)
 - `init/`: bootstrap materials (if present)
+
+## Temporary Files (MUST)
+
+When scripts need to create temporary environments, caches, or intermediate files:
+
+- Use: `.ai/.tmp/`
+- This directory is gitignored and safe for ephemeral artifacts
+- Scripts SHOULD clean up their own subdirectories after completion
+- Use unique subdirectory names to avoid collisions (e.g., `.ai/.tmp/<script-name>-<timestamp>/`)
+
+## Script-Generated Files (MUST)
+
+Scripts that generate files or directories MUST:
+1. Follow the naming conventions defined in this skill
+2. Use kebab-case for generated directory and file names
+3. Place temporary/intermediate files under `.ai/.tmp/`
+4. Document the expected output paths in the script's header or usage info
+
+Scripts SHOULD:
+- Validate generated names against this skill's rules before writing
+- Provide a `--dry-run` flag to preview generated paths
 
 ## Skill Naming (MUST)
 

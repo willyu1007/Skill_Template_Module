@@ -20,14 +20,14 @@ Integrate a new provider **behind a single calling surface** (adapter/gateway/cl
    - Choose `provider_id` (kebab-case). Do not overload an existing ID.
 
 2) **Register provider (SSOT)**
-   - Edit: `.ai/llm/registry/providers.yaml`
+   - Edit: `.ai/llm-config/registry/providers.yaml`
    - Capture: endpoint/regions, supported features, default timeouts, rate limits, notes.
 
 3) **Credentials: reference, don’t store**
    - Use `credential_ref` (non-secret pointer to your secrets manager).
    - If new env/config keys are introduced:
-     - Register them in: `.ai/llm/registry/config_keys.yaml`
-     - Run: `node .ai/scripts/check-llm-config-keys.cjs`
+     - Register them in: `.ai/llm-config/registry/config_keys.yaml`
+     - Run: `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 
 4) **Implement/extend the provider adapter (repo-specific)**
    - The adapter must:
@@ -54,12 +54,12 @@ Integrate a new provider **behind a single calling surface** (adapter/gateway/cl
    - Define fallback provider/model profile behavior.
 
 ## Outputs
-- Updated: `.ai/llm/registry/providers.yaml`
-- Updated (if needed): `.ai/llm/registry/config_keys.yaml`
+- Updated: `.ai/llm-config/registry/providers.yaml`
+- Updated (if needed): `.ai/llm-config/registry/config_keys.yaml`
 - Adapter implementation + tests + telemetry
 
 ## Required verification
-- `node .ai/scripts/check-llm-config-keys.cjs` (if any new key)
+- `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs` (if any new key)
 - Repo tests for the adapter layer (minimum: contract tests)
 
 ## Optional deep references

@@ -9,13 +9,13 @@ description: Execute dependency-aware code refactors (moves, extraction, import 
 Perform non-trivial refactors without breaking builds by planning dependency changes, applying incremental edits, and verifying continuously.
 
 ## When to use
-Use this skill when:
+Use execute-code-refactor when:
 - Reorganizing file/folder structures
 - Breaking large modules/components into smaller units
 - Updating imports after moves
 - Standardizing repeated patterns across the codebase
 
-Avoid using this skill when:
+Avoid using execute-code-refactor when:
 - You only need a refactor plan (use a planning workflow)
 - The task is primarily behavior changes rather than structural refactor
 
@@ -45,8 +45,8 @@ Avoid using this skill when:
 
 ### 2) Inventory dependencies (required)
 - Use the dependency map template to capture:
-  - incoming imports (who depends on this)
-  - outgoing imports (what it depends on)
+  - incoming imports (who depends on the module)
+  - outgoing imports (what the module depends on)
   - exported symbols and any barrel exports
 
 ### 3) Draft an execution plan (required)

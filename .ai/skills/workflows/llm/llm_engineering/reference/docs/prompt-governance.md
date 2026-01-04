@@ -20,7 +20,7 @@ Feature code MUST reference prompts by ID + version, never by copying text.
 
 This template repo provides a simple registry file:
 
-- `.ai/llm/registry/prompt_templates.yaml`
+- `.ai/llm-config/registry/prompt_templates.yaml`
 
 Your production system may store templates in a DB or config service. Keep the same IDs.
 
