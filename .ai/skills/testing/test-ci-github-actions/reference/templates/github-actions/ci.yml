@@ -2,6 +2,8 @@
 # - Uses canonical pnpm scripts for each suite
 # - Uploads suite artifacts even on failure
 #
+# - Optional: run `node .ai/scripts/cictl.js init` to create `ci/config.json` metadata
+#
 # NOTE: Adjust Node version, secrets, and which jobs are PR-gated for your repo.
 
 name: CI

@@ -2,31 +2,26 @@
 /**
  * cictl.js
  *
- * CI/CD configuration management (core capability).
+ * CI configuration helper for skill workflows.
  *
- * SSOT:
- * - ci/config.json
- *
- * Templates:
- * - .gitlab-ci/gitlab-ci.yaml.template (optional; for GitLab CI)
- *
- * Generated (DERIVED):
- * - .gitlab-ci.yml
- * - .github/workflows/ci.yml
+ * Commands:
+ *   init              Initialize CI configuration (idempotent)
+ *   verify            Verify CI configuration
+ *   status            Show current CI status
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { dumpYaml, loadYamlFile } from './lib/yaml.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const SUPPORTED_PLATFORMS = ['github-actions', 'gitlab-ci'];
-const KNOWN_FEATURES = ['lint', 'test', 'build', 'security', 'release', 'deploy'];
-const DEFAULT_FEATURES = ['lint', 'test', 'build'];
-const PLATFORM_SUPPORTED_FEATURES = {
-  'github-actions': ['lint', 'test', 'build'],
-  'gitlab-ci': ['lint', 'test', 'build']
-};
+// ============================================================================
+// CLI Argument Parsing
+// ============================================================================
+
+const SUPPORTED_PROVIDERS = ['github', 'gitlab'];
 
 function usage(exitCode = 0) {
   const msg = `
@@ -35,43 +30,25 @@ Usage:
 
 Commands:
   init
-    --platform <github-actions|gitlab-ci>   Default: github-actions
-    --repo-root <path>                      Default: cwd
-    --dry-run                               Do not write files
-    Initialize the CI config skeleton (idempotent).
-
-  list
-    --format <text|json>                    Default: text
-    List supported platforms and features.
-
-  enable-feature <feature>
-    --repo-root <path>                      Default: cwd
-    Enable a CI feature flag (updates ci/config.json).
-
-  disable-feature <feature>
-    --repo-root <path>                      Default: cwd
-    Disable a CI feature flag (updates ci/config.json).
-
-  generate
-    --platform <github-actions|gitlab-ci>   Override config platform
-    --repo-root <path>                      Default: cwd
-    --dry-run                               Do not write files
-    Generate provider files from templates (DERIVED).
+    --repo-root <path>          Repo root (default: cwd)
+    --provider <github|gitlab>  CI provider to configure (copies starter template)
+    --dry-run                   Show what would be created
+    Initialize CI configuration skeleton.
 
   verify
-    --repo-root <path>                      Default: cwd
-    Verify CI config and generated outputs exist.
+    --repo-root <path>          Repo root (default: cwd)
+    Verify CI configuration.
 
   status
-    --format <text|json>                    Default: text
-    --repo-root <path>                      Default: cwd
+    --repo-root <path>          Repo root (default: cwd)
+    --format <text|json>        Output format (default: text)
     Show current CI status.
 
 Examples:
   node .ai/scripts/cictl.js init
-  node .ai/scripts/cictl.js enable-feature lint
-  node .ai/scripts/cictl.js enable-feature test
-  node .ai/scripts/cictl.js generate
+  node .ai/scripts/cictl.js init --provider github
+  node .ai/scripts/cictl.js init --provider gitlab
+  node .ai/scripts/cictl.js verify
   node .ai/scripts/cictl.js status
 `;
   console.log(msg.trim());
@@ -89,60 +66,60 @@ function parseArgs(argv) {
 
   const command = args.shift();
   const opts = {};
-  const positionals = [];
 
   while (args.length > 0) {
     const token = args.shift();
     if (token === '-h' || token === '--help') usage(0);
     if (token.startsWith('--')) {
       const key = token.slice(2);
-      if (args.length > 0 && !args[0].startsWith('--')) opts[key] = args.shift();
-      else opts[key] = true;
-    } else {
-      positionals.push(token);
+      if (args.length > 0 && !args[0].startsWith('--')) {
+        opts[key] = args.shift();
+      } else {
+        opts[key] = true;
+      }
     }
   }
 
-  return { command, opts, positionals };
+  return { command, opts };
 }
 
-function isoNow() {
-  return new Date().toISOString();
-}
-
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
+// ============================================================================
+// File Utilities
+// ============================================================================
 
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
+  } catch (e) {
     return null;
   }
 }
 
 function writeJson(filePath, data) {
-  ensureDir(path.dirname(filePath));
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
 }
 
-function writeText(filePath, content) {
-  ensureDir(path.dirname(filePath));
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    return { op: 'mkdir', path: dirPath };
+  }
+  return { op: 'skip', path: dirPath, reason: 'exists' };
+}
+
+function writeFileIfMissing(filePath, content) {
+  if (fs.existsSync(filePath)) {
+    return { op: 'skip', path: filePath, reason: 'exists' };
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content, 'utf8');
+  return { op: 'write', path: filePath };
 }
 
-function normalizePlatform(v) {
-  if (typeof v !== 'string') return null;
-  const p = v.trim().toLowerCase();
-  return p.length > 0 ? p : null;
-}
-
-function normalizeFeature(v) {
-  if (typeof v !== 'string') return null;
-  const f = v.trim().toLowerCase();
-  return f.length > 0 ? f : null;
-}
+// ============================================================================
+// CI Management
+// ============================================================================
 
 function getCiDir(repoRoot) {
   return path.join(repoRoot, 'ci');
@@ -153,280 +130,209 @@ function getConfigPath(repoRoot) {
 }
 
 function loadConfig(repoRoot) {
-  const raw = readJson(getConfigPath(repoRoot));
-  return raw && typeof raw === 'object' ? raw : null;
-}
-
-function normalizeConfig(raw, platformOverride = null) {
-  const platform = platformOverride ?? normalizePlatform(raw?.platform) ?? 'github-actions';
-  const features = Array.isArray(raw?.features)
-    ? raw.features.filter(f => typeof f === 'string' && f.trim().length > 0).map(f => f.trim())
-    : [];
-
-  return {
+  return readJson(getConfigPath(repoRoot)) || {
     version: 1,
-    updatedAt: typeof raw?.updatedAt === 'string' ? raw.updatedAt : isoNow(),
-    platform,
-    features: [...new Set(features)],
-    generated: raw?.generated === true
+    provider: null
   };
 }
 
-function requireConfig(repoRoot) {
-  const cfg = loadConfig(repoRoot);
-  if (!cfg) die('[error] ci/config.json not found. Run: node .ai/scripts/cictl.js init');
-  return normalizeConfig(cfg);
+function saveConfig(repoRoot, config) {
+  writeJson(getConfigPath(repoRoot), config);
 }
 
-function saveConfig(repoRoot, cfg) {
-  cfg.updatedAt = isoNow();
-  writeJson(getConfigPath(repoRoot), cfg);
+// ============================================================================
+// Provider Template Paths
+// ============================================================================
+
+function getSkillTemplatePath(provider) {
+  // __dirname is .ai/scripts/, so we go up one level to .ai/ then into skills/
+  const skillsBase = path.join(__dirname, '..', 'skills', 'testing');
+  if (provider === 'github') {
+    return path.join(skillsBase, 'test-ci-github-actions', 'reference', 'templates', 'github-actions', 'ci.yml');
+  } else if (provider === 'gitlab') {
+    return path.join(skillsBase, 'test-ci-gitlab-ci', 'reference', 'templates', 'gitlab-ci', '.gitlab-ci.yml');
+  }
+  return null;
 }
 
-function effectiveFeatures(list) {
-  const features = Array.isArray(list) ? list : [];
-  return features.length > 0 ? [...new Set(features)] : DEFAULT_FEATURES;
+function getProviderDestPath(repoRoot, provider) {
+  if (provider === 'github') {
+    return path.join(repoRoot, '.github', 'workflows', 'ci.yml');
+  } else if (provider === 'gitlab') {
+    return path.join(repoRoot, '.gitlab-ci.yml');
+  }
+  return null;
 }
 
-function warnUnknownFeatures(features) {
-  const unknown = features.filter(f => !KNOWN_FEATURES.includes(f));
-  if (unknown.length > 0) console.warn(`[warn] unknown feature(s): ${unknown.join(', ')}`);
+function copyProviderTemplate(repoRoot, provider, dryRun) {
+  const srcPath = getSkillTemplatePath(provider);
+  const destPath = getProviderDestPath(repoRoot, provider);
+
+  if (!srcPath || !destPath) {
+    return { op: 'skip', path: destPath, reason: 'unknown provider' };
+  }
+
+  if (!fs.existsSync(srcPath)) {
+    return { op: 'skip', path: destPath, reason: `template not found: ${srcPath}` };
+  }
+
+  if (fs.existsSync(destPath)) {
+    return { op: 'skip', path: destPath, reason: 'exists' };
+  }
+
+  if (dryRun) {
+    return { op: 'copy', path: destPath, from: srcPath, mode: 'dry-run' };
+  }
+
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.copyFileSync(srcPath, destPath);
+  return { op: 'copy', path: destPath, from: srcPath };
 }
 
-function generatedFilesForPlatform(platform) {
-  if (platform === 'gitlab-ci') return ['.gitlab-ci.yml'];
-  if (platform === 'github-actions') return ['.github/workflows/ci.yml'];
-  return [];
-}
+// ============================================================================
+// Commands
+// ============================================================================
 
-function cmdInit(repoRoot, opts) {
-  const dryRun = !!opts['dry-run'];
-  const platformOpt = opts.platform ? normalizePlatform(opts.platform) : null;
-  if (platformOpt && !SUPPORTED_PLATFORMS.includes(platformOpt)) die(`[error] unknown platform: ${platformOpt}`);
-
+function cmdInit(repoRoot, provider, dryRun) {
   const ciDir = getCiDir(repoRoot);
-  const configPath = getConfigPath(repoRoot);
+  const actions = [];
 
-  if (dryRun) {
-    console.log('[plan] init ci/');
-    console.log(`  - mkdir: ${path.relative(repoRoot, ciDir)}`);
-    console.log(`  - mkdir: ${path.relative(repoRoot, path.join(ciDir, 'workdocs'))}`);
-    console.log(`  - write: ${path.relative(repoRoot, configPath)} (if missing)`);
-    return;
+  // Validate provider if specified
+  if (provider && !SUPPORTED_PROVIDERS.includes(provider)) {
+    die(`[error] Unsupported provider: ${provider}. Supported: ${SUPPORTED_PROVIDERS.join(', ')}`);
   }
 
-  ensureDir(ciDir);
-  ensureDir(path.join(ciDir, 'workdocs'));
-
-  const existing = loadConfig(repoRoot);
-  const isNew = !existing;
-  const cfg = normalizeConfig(existing || {}, platformOpt);
-  if (isNew) cfg.features = [...DEFAULT_FEATURES];
-
-  saveConfig(repoRoot, cfg);
-
-  console.log('[ok] CI config initialized.');
-  console.log(`- config: ${path.relative(repoRoot, configPath)}`);
-  console.log(`- platform: ${cfg.platform}`);
-  console.log(`- features: ${cfg.features.length > 0 ? cfg.features.join(', ') : '(none)'}`);
-}
-
-function cmdList(format) {
-  if (format === 'json') {
-    console.log(JSON.stringify({ platforms: SUPPORTED_PLATFORMS, features: KNOWN_FEATURES }, null, 2));
-    return;
-  }
-
-  console.log('Supported CI platforms:\n');
-  for (const p of SUPPORTED_PLATFORMS) console.log(`  - ${p}`);
-  console.log('\nKnown feature flags:\n');
-  for (const f of KNOWN_FEATURES) console.log(`  - ${f}`);
-}
-
-function cmdEnableFeature(repoRoot, feature) {
-  const f = normalizeFeature(feature);
-  if (!f) die('[error] feature is required');
-
-  const cfg = requireConfig(repoRoot);
-  if (!KNOWN_FEATURES.includes(f)) console.warn(`[warn] unknown feature: ${f}`);
-
-  if (!cfg.features.includes(f)) cfg.features.push(f);
-  cfg.features = [...new Set(cfg.features)].sort();
-  cfg.generated = false;
-  saveConfig(repoRoot, cfg);
-
-  console.log(`[ok] enabled feature: ${f}`);
-}
-
-function cmdDisableFeature(repoRoot, feature) {
-  const f = normalizeFeature(feature);
-  if (!f) die('[error] feature is required');
-
-  const cfg = requireConfig(repoRoot);
-  cfg.features = cfg.features.filter(x => x !== f);
-  cfg.generated = false;
-  saveConfig(repoRoot, cfg);
-
-  console.log(`[ok] disabled feature: ${f}`);
-}
-
-function generateGitlabCi(repoRoot, cfg, features, dryRun) {
-  const templatePath = path.join(repoRoot, '.gitlab-ci', 'gitlab-ci.yaml.template');
-  if (!fs.existsSync(templatePath)) {
-    die(`[error] gitlab template not found: ${path.relative(repoRoot, templatePath)}`);
-  }
-
-  const doc = loadYamlFile(templatePath);
-  const supported = PLATFORM_SUPPORTED_FEATURES['gitlab-ci'];
-  const enabled = new Set(features.filter(f => supported.includes(f)));
-
-  const unsupported = features.filter(f => !supported.includes(f));
-  if (unsupported.length > 0) console.warn(`[warn] gitlab-ci ignores unsupported features: ${unsupported.join(', ')}`);
-
-  if (enabled.size === 0) {
-    die(`[error] no supported features enabled for gitlab-ci (supported: ${supported.join(', ')})`);
-  }
-
-  if (Array.isArray(doc.stages)) {
-    doc.stages = doc.stages.filter(s => enabled.has(String(s)));
-  } else {
-    doc.stages = supported.filter(s => enabled.has(s));
-  }
-
-  for (const f of supported) {
-    if (!enabled.has(f) && Object.prototype.hasOwnProperty.call(doc, f)) delete doc[f];
-  }
-
-  const outPath = path.join(repoRoot, '.gitlab-ci.yml');
-  const yaml = dumpYaml(doc);
-  if (dryRun) {
-    console.log(`[plan] write: ${path.relative(repoRoot, outPath)}`);
-    return { outPath, written: false };
-  }
-  writeText(outPath, yaml);
-  return { outPath, written: true };
-}
-
-function generateGithubActions(repoRoot, cfg, features, dryRun) {
-  const supported = PLATFORM_SUPPORTED_FEATURES['github-actions'];
-  const enabled = new Set(features.filter(f => supported.includes(f)));
-
-  const unsupported = features.filter(f => !supported.includes(f));
-  if (unsupported.length > 0) console.warn(`[warn] github-actions ignores unsupported features: ${unsupported.join(', ')}`);
-
-  if (enabled.size === 0) {
-    die(`[error] no supported features enabled for github-actions (supported: ${supported.join(', ')})`);
-  }
-
-  const steps = [
-    { uses: 'actions/checkout@v4' },
-    { uses: 'actions/setup-node@v4', with: { 'node-version': '20', cache: 'npm' } },
-    { name: 'Install', run: 'npm ci' }
-  ];
-
-  if (enabled.has('lint')) steps.push({ name: 'Lint', run: 'npm run lint' });
-  if (enabled.has('test')) steps.push({ name: 'Test', run: 'npm test' });
-  if (enabled.has('build')) steps.push({ name: 'Build', run: 'npm run build' });
-
-  const workflow = {
-    name: 'CI',
-    on: {
-      push: { branches: ['main'] },
-      pull_request: {}
-    },
-    jobs: {
-      ci: {
-        'runs-on': 'ubuntu-latest',
-        steps
-      }
+  // Create directories
+  const dirs = [ciDir, path.join(ciDir, 'workdocs')];
+  for (const dir of dirs) {
+    if (dryRun) {
+      actions.push({ op: 'mkdir', path: dir, mode: 'dry-run' });
+    } else {
+      actions.push(ensureDir(dir));
     }
+  }
+
+  // Create config
+  const configPath = getConfigPath(repoRoot);
+  const existingConfig = readJson(configPath);
+  const newConfig = {
+    version: 1,
+    provider: provider || (existingConfig ? existingConfig.provider : null)
   };
 
-  const outPath = path.join(repoRoot, '.github', 'workflows', 'ci.yml');
-  const yaml = dumpYaml(workflow);
+  if (!fs.existsSync(configPath)) {
+    if (!dryRun) {
+      saveConfig(repoRoot, newConfig);
+      actions.push({ op: 'write', path: configPath });
+    } else {
+      actions.push({ op: 'write', path: configPath, mode: 'dry-run' });
+    }
+  } else if (provider && existingConfig && existingConfig.provider !== provider) {
+    // Update provider if explicitly specified and different
+    if (!dryRun) {
+      saveConfig(repoRoot, newConfig);
+      actions.push({ op: 'update', path: configPath, note: `provider: ${provider}` });
+    } else {
+      actions.push({ op: 'update', path: configPath, note: `provider: ${provider}`, mode: 'dry-run' });
+    }
+  } else {
+    actions.push({ op: 'skip', path: configPath, reason: 'exists' });
+  }
+
+  // Create AGENTS.md
+  const agentsPath = path.join(ciDir, 'AGENTS.md');
+  const agentsContent = `# CI Configuration (LLM-first)
+
+## Commands
+
+\`\`\`bash
+node .ai/scripts/cictl.js init
+node .ai/scripts/cictl.js init --provider github
+node .ai/scripts/cictl.js init --provider gitlab
+node .ai/scripts/cictl.js verify
+node .ai/scripts/cictl.js status
+\`\`\`
+
+## Guidelines
+
+- Track CI metadata in \`ci/config.json\`.
+- Edit provider files directly (e.g., \`.github/workflows/\`, \`.gitlab-ci.yml\`).
+`;
+
   if (dryRun) {
-    console.log(`[plan] write: ${path.relative(repoRoot, outPath)}`);
-    return { outPath, written: false };
-  }
-  writeText(outPath, yaml);
-  return { outPath, written: true };
-}
-
-function cmdGenerate(repoRoot, opts) {
-  const dryRun = !!opts['dry-run'];
-  const cfg = requireConfig(repoRoot);
-
-  const platformOpt = opts.platform ? normalizePlatform(opts.platform) : null;
-  const platform = platformOpt ?? cfg.platform;
-  if (!SUPPORTED_PLATFORMS.includes(platform)) die(`[error] unsupported platform: ${platform}`);
-
-  const features = effectiveFeatures(cfg.features);
-  warnUnknownFeatures(features);
-
-  let res = null;
-  if (platform === 'gitlab-ci') res = generateGitlabCi(repoRoot, cfg, features, dryRun);
-  if (platform === 'github-actions') res = generateGithubActions(repoRoot, cfg, features, dryRun);
-  if (!res) die(`[error] unsupported platform: ${platform}`);
-
-  if (!dryRun) {
-    cfg.platform = platform;
-    cfg.generated = true;
-    cfg.features = [...new Set(features)].sort();
-    saveConfig(repoRoot, cfg);
+    actions.push({ op: 'write', path: agentsPath, mode: 'dry-run' });
+  } else {
+    actions.push(writeFileIfMissing(agentsPath, agentsContent));
   }
 
-  console.log(dryRun ? '[plan] generate complete.' : '[ok] generate complete.');
-  console.log(`- platform: ${platform}`);
-  console.log(`- features: ${features.join(', ')}`);
-  console.log(`- output: ${path.relative(repoRoot, res.outPath)}`);
+  // Copy provider template if specified
+  if (provider) {
+    actions.push(copyProviderTemplate(repoRoot, provider, dryRun));
+  }
+
+  console.log('[ok] CI configuration initialized.');
+  for (const a of actions) {
+    const mode = a.mode ? ` (${a.mode})` : '';
+    const reason = a.reason ? ` [${a.reason}]` : '';
+    const note = a.note ? ` (${a.note})` : '';
+    const from = a.from ? ` <- ${path.relative(repoRoot, a.from)}` : '';
+    console.log(`  ${a.op}: ${path.relative(repoRoot, a.path)}${from}${note}${mode}${reason}`);
+  }
 }
 
 function cmdVerify(repoRoot) {
-  const cfg = requireConfig(repoRoot);
-  const warnings = [];
+  const config = loadConfig(repoRoot);
   const errors = [];
+  const warnings = [];
 
-  if (!SUPPORTED_PLATFORMS.includes(cfg.platform)) errors.push(`Unsupported platform: ${cfg.platform}`);
-  if (cfg.version !== 1) warnings.push(`Unexpected version (expected 1): ${cfg.version}`);
+  if (!config.provider) {
+    warnings.push('No CI provider configured. Run: cictl init --provider <github|gitlab>');
+  }
 
-  const unknown = (cfg.features || []).filter(f => !KNOWN_FEATURES.includes(f));
-  if (unknown.length > 0) warnings.push(`Unknown features in config: ${unknown.join(', ')}`);
+  if (!fs.existsSync(getCiDir(repoRoot))) {
+    errors.push('ci/ directory not found. Run: cictl init');
+  }
+  if (!fs.existsSync(getConfigPath(repoRoot))) {
+    errors.push('ci/config.json not found. Run: cictl init');
+  }
 
-  const expected = generatedFilesForPlatform(cfg.platform).map(p => path.join(repoRoot, ...p.split('/')));
-  for (const p of expected) {
-    if (!fs.existsSync(p)) {
-      const rel = path.relative(repoRoot, p);
-      if (cfg.generated) errors.push(`Missing generated file (config.generated=true): ${rel}`);
-      else warnings.push(`Missing generated file: ${rel} (run: cictl generate)`);
+  // Check provider-specific files
+  if (config.provider === 'github') {
+    const workflowDir = path.join(repoRoot, '.github', 'workflows');
+    if (!fs.existsSync(workflowDir)) {
+      warnings.push('.github/workflows/ directory not found. Run: cictl init --provider github');
+    } else {
+      const workflows = fs.readdirSync(workflowDir).filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
+      if (workflows.length === 0) {
+        warnings.push('No workflow files found in .github/workflows/');
+      }
+    }
+  } else if (config.provider === 'gitlab') {
+    const gitlabCi = path.join(repoRoot, '.gitlab-ci.yml');
+    if (!fs.existsSync(gitlabCi)) {
+      warnings.push('.gitlab-ci.yml not found. Run: cictl init --provider gitlab');
     }
   }
 
-  if (warnings.length > 0) {
-    console.log(`Warnings (${warnings.length}):`);
-    for (const w of warnings) console.log(`- ${w}`);
-  }
   if (errors.length > 0) {
-    console.log(`\nErrors (${errors.length}):`);
-    for (const e of errors) console.log(`- ${e}`);
-    process.exit(1);
+    console.log('\nErrors:');
+    for (const e of errors) console.log(`  - ${e}`);
+  }
+  if (warnings.length > 0) {
+    console.log('\nWarnings:');
+    for (const w of warnings) console.log(`  - ${w}`);
   }
 
-  console.log('\n[ok] CI verification passed.');
+  const ok = errors.length === 0;
+  console.log(ok ? '[ok] CI configuration verified.' : '[error] CI verification failed.');
+  process.exit(ok ? 0 : 1);
 }
 
 function cmdStatus(repoRoot, format) {
-  const cfg = loadConfig(repoRoot);
-  const normalized = cfg ? normalizeConfig(cfg) : null;
-
+  const config = loadConfig(repoRoot);
   const status = {
     initialized: fs.existsSync(getCiDir(repoRoot)),
-    config: normalized,
-    generatedFiles: normalized
-      ? generatedFilesForPlatform(normalized.platform).map(p => ({
-          path: p,
-          exists: fs.existsSync(path.join(repoRoot, ...p.split('/')))
-        }))
-      : []
+    provider: config.provider
   };
 
   if (format === 'json') {
@@ -436,37 +342,22 @@ function cmdStatus(repoRoot, format) {
 
   console.log('CI Status:');
   console.log(`  Initialized: ${status.initialized ? 'yes' : 'no'}`);
-  console.log(`  Config: ${normalized ? 'yes' : 'no'}`);
-  if (normalized) {
-    console.log(`  Platform: ${normalized.platform}`);
-    console.log(`  Features: ${normalized.features.length > 0 ? normalized.features.join(', ') : '(none)'}`);
-    console.log(`  Generated flag: ${normalized.generated ? 'true' : 'false'}`);
-  }
-  for (const f of status.generatedFiles) {
-    console.log(`  Output: ${f.path} (${f.exists ? 'present' : 'missing'})`);
-  }
+  console.log(`  Provider: ${status.provider || '(none)'}`);
 }
 
+// ============================================================================
+// Main
+// ============================================================================
+
 function main() {
-  const { command, opts, positionals } = parseArgs(process.argv);
+  const { command, opts } = parseArgs(process.argv);
   const repoRoot = path.resolve(opts['repo-root'] || process.cwd());
-  const format = String(opts.format || 'text').toLowerCase();
+  const format = (opts['format'] || 'text').toLowerCase();
+  const provider = opts['provider'] ? opts['provider'].toLowerCase() : null;
 
   switch (command) {
     case 'init':
-      cmdInit(repoRoot, opts);
-      break;
-    case 'list':
-      cmdList(format);
-      break;
-    case 'enable-feature':
-      cmdEnableFeature(repoRoot, positionals[0] || opts.feature);
-      break;
-    case 'disable-feature':
-      cmdDisableFeature(repoRoot, positionals[0] || opts.feature);
-      break;
-    case 'generate':
-      cmdGenerate(repoRoot, opts);
+      cmdInit(repoRoot, provider, !!opts['dry-run']);
       break;
     case 'verify':
       cmdVerify(repoRoot);
