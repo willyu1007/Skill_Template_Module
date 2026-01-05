@@ -10,7 +10,8 @@ It is the SSOT; other references should link here.
 - Stage A quality is enforced by **structure + placeholders checks** (`check-docs`). It does not attempt deep semantic evaluation.
 - Stage B blueprint is the **machine-readable SSOT** used for Stage C scaffolding and skill pack selection.
 - Pack selection is explicit:
-  - declared in `docs/project/project-blueprint.json` (`skills.packs`)
+  - declared in the working blueprint `init/project-blueprint.json` (`skills.packs`)
+  - archived to `docs/project/project-blueprint.json` after `cleanup-init --archive`
   - materialized into `.ai/skills/_meta/sync-manifest.json` (flat schema)
   - synced into provider wrappers by `node .ai/scripts/sync-skills.cjs`
 - Stage transitions require explicit approval (`approve`), not manual state edits.
@@ -22,13 +23,14 @@ It is the SSOT; other references should link here.
 
 Checks:
 - required files exist under `docs/project/` (or `--docs-root`)
+- required files exist under `init/stage-a-docs/` (or `--docs-root`)
 - required headings exist
 - template placeholders (e.g. “TBD”, “<fill>”) are not left unresolved (warn or error depending on `--strict`)
 
 Command:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --repo-root . --docs-root docs/project --strict
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --repo-root . --docs-root init/stage-a-docs --strict
 ```
 
 ---
@@ -54,7 +56,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
   --key onePurpose \
   --asked \
   --answered \
-  --written-to docs/project/requirements.md
+  --written-to init/stage-a-docs/requirements.md
 ```
 
 ---
@@ -69,7 +71,7 @@ Checks:
 Command:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --repo-root . --blueprint docs/project/project-blueprint.json
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --repo-root . --blueprint init/project-blueprint.json
 ```
 
 ---

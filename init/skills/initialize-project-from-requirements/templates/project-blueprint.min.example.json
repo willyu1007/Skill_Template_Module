@@ -23,6 +23,11 @@
   "skills": {
     "packs": ["workflows", "backend"]
   },
-  "addons": {}
+  "addons": {
+    "packaging": true,
+    "deployment": true,
+    "release": true,
+    "observability": true
+  }
 }
 

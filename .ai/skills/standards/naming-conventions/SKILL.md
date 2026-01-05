@@ -14,7 +14,7 @@ Define naming conventions for directories, files, and identifiers with these goa
 
 ## When to use
 
-Use this skill when:
+Use the naming-conventions skill when:
 - Creating new directories or files
 - Naming skills, workflows, or commands
 - Reviewing code for naming consistency
@@ -85,13 +85,13 @@ When scripts need to create temporary environments, caches, or intermediate file
 ## Script-Generated Files (MUST)
 
 Scripts that generate files or directories MUST:
-1. Follow the naming conventions defined in this skill
+1. Follow the naming conventions defined in the naming-conventions skill
 2. Use kebab-case for generated directory and file names
 3. Place temporary/intermediate files under `.ai/.tmp/`
 4. Document the expected output paths in the script's header or usage info
 
 Scripts SHOULD:
-- Validate generated names against this skill's rules before writing
+- Validate generated names against these rules before writing
 - Provide a `--dry-run` flag to preview generated paths
 
 ## Skill Naming (MUST)

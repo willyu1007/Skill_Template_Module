@@ -4,14 +4,14 @@
 
 - Use the template as a **question bank** for Stage A. Ask the **MUST-ask** set first, then use **branch modules** based on the project's capabilities.
 - Every answer MUST be written into a file artifact:
-  - Stage A docs under `docs/project/` (human-readable SSOT for intent)
-  - Stage B blueprint at `docs/project/project-blueprint.json` (machine-readable SSOT for scaffolding / pack selection)
-- If the user cannot decide, record the item as **TBD** in `docs/project/risk-open-questions.md` with:
+  - Stage A docs under `init/stage-a-docs/` (working SSOT during init; archived to `docs/project/` after completion)
+  - Stage B blueprint at `init/project-blueprint.json` (working SSOT during init)
+- If the user cannot decide, record the item as **TBD** in `init/stage-a-docs/risk-open-questions.md` with:
   - owner, options, and decision due.
 
 ## A. MUST-ask (minimal set)
 
-Ask these before writing the first draft of `docs/project/requirements.md`:
+Ask these before writing the first draft of `init/stage-a-docs/requirements.md`:
 
 1. **One-line purpose**
    - "In one sentence, what problem does this project solve, for whom, and what is the main outcome?"
@@ -51,7 +51,7 @@ Ask if the project has `capabilities.api.style != "none"` or has external integr
 - Rate limiting / abuse controls (if public)
 
 Write to:
-- Stage A: `docs/project/requirements.md` (high-level)
+- Stage A: `init/stage-a-docs/requirements.md` (high-level)
 - Stage B: `capabilities.api.*`
 
 ### B2. Database module (if persistent data exists)
@@ -65,7 +65,7 @@ Ask if `capabilities.database.enabled == true`.
 - Backup / restore requirements
 
 Write to:
-- Stage A: `docs/project/non-functional-requirements.md` + `requirements.md` (entities)
+- Stage A: `init/stage-a-docs/non-functional-requirements.md` + `requirements.md` (entities)
 - Stage B: `capabilities.database.*`
 
 ### B3. BPMN / process module (if business workflows matter)
@@ -79,7 +79,7 @@ Ask if `capabilities.bpmn.enabled == true`.
 - Audit needs (who did what, when)
 
 Write to:
-- Stage A: `docs/project/requirements.md` + `risk-open-questions.md`
+- Stage A: `init/stage-a-docs/requirements.md` + `risk-open-questions.md`
 - Optional future artifact: `docs/context/process/*.bpmn`
 
 ### B4. CI / quality module (if the project will be maintained)
@@ -93,90 +93,62 @@ Ask if `quality.ci.enabled == true` or `quality.testing.enabled == true`.
 - Release cadence expectations
 
 Write to:
-- Stage A: `docs/project/non-functional-requirements.md`
+- Stage A: `init/stage-a-docs/non-functional-requirements.md`
 - Stage B: `quality.*`
 
 ## C. Answer → Artifact mapping cheat sheet
 
 Use the mapping to avoid "knowledge floating in chat":
 
-- Scope (MUST/OUT) → `docs/project/requirements.md` (`## Goals`, `## Non-goals`)
-- User journeys + AC → `docs/project/requirements.md` (`## Users and user journeys`)
-- Constraints/NFR → `docs/project/non-functional-requirements.md`
-- Glossary terms/entities → `docs/project/domain-glossary.md`
-- TBD decisions/risks → `docs/project/risk-open-questions.md`
-- Repo layout/pack selection decisions → `docs/project/project-blueprint.json`
+- Scope (MUST/OUT) → `init/stage-a-docs/requirements.md` (`## Goals`, `## Non-goals`)
+- User journeys + AC → `init/stage-a-docs/requirements.md` (`## Users and user journeys`)
+- Constraints/NFR → `init/stage-a-docs/non-functional-requirements.md`
+- Glossary terms/entities → `init/stage-a-docs/domain-glossary.md`
+- TBD decisions/risks → `init/stage-a-docs/risk-open-questions.md`
+- Repo layout/pack selection decisions → `init/project-blueprint.json`
 
-## D. Add-on Decision Prompts (ask when determining capabilities)
+## D. Add-on Decision Prompts (default: all enabled)
 
-After understanding the project requirements, ask the following to determine which optional add-ons should be enabled:
+All add-ons are **enabled by default**. Ask if the user wants to **disable** any (opt-out model).
 
-### D1. Context Management (context-awareness)
+### Default add-ons (all enabled)
 
-Ask if the project needs:
-- "Does this project have API contracts (OpenAPI/Swagger) that LLM assistants should understand?"
-- "Does the project have a database schema that needs to be tracked for context?"
-- "Are there business process definitions (BPMN) that describe workflows?"
-- "Should LLM assistants have access to a central registry of project context artifacts?"
+| Add-on | Key | Purpose |
+|--------|-----|---------|
+| Packaging | `packaging` | Container/artifact build |
+| Deployment | `deployment` | Multi-environment deploy |
+| Release | `release` | Version/changelog management |
+| Observability | `observability` | Metrics/logs/traces contracts |
 
-→ If YES to any: Enable `addons.contextAwareness: true`
+**Note**: Core capabilities (context-awareness, db-mirror, ci-templates) are built-in and always available.
 
-### D2. Database Schema Management (db-mirror)
+### Prompt template
 
-Ask if:
-- "Does this project need to track and mirror database schema changes?"
-- "Should database migrations be managed programmatically?"
-- "Is there a need for schema introspection and documentation generation?"
+```
+The following add-ons will be enabled by default:
 
-→ If YES: Enable `addons.dbMirror: true`
+| Add-on | Purpose |
+|--------|---------|
+| packaging | Container/artifact packaging |
+| deployment | Multi-environment deployment |
+| release | Version and changelog management |
+| observability | Metrics/logs/traces contracts |
 
-### D3. CI/CD Configuration (ci-templates)
+Do you want to disable any of these? If so, which ones?
+(Press Enter to keep all enabled)
+```
 
-Ask if:
-- "Does this project need standardized CI/CD pipeline configuration?"
-- "Which CI provider? (GitHub Actions, GitLab CI, etc.)"
-- "What CI stages are needed? (lint, test, build, deploy)"
+### Disable conditions (only if user explicitly requests)
 
-→ If YES: Enable `addons.ciTemplates: true`
-
-### D4. Container/Artifact Packaging (packaging)
-
-Ask if:
-- "Will this project produce container images (Docker)?"
-- "Are there other artifacts to package (CLI binaries, libraries)?"
-- "What target platforms/architectures?"
-
-→ If YES: Enable `addons.packaging: true`
-
-### D5. Multi-Environment Deployment (deployment)
-
-Ask if:
-- "Does this project deploy to multiple environments (dev/staging/prod)?"
-- "What deployment model? (K8s, VM, serverless, static)"
-- "Are there rollback requirements?"
-
-→ If YES: Enable `addons.deployment: true`
-
-### D6. Release/Version Management (release)
-
-Ask if:
-- "Does this project need automated changelog generation?"
-- "What versioning strategy? (semantic, calendar, custom)"
-- "Are there release approval workflows?"
-
-→ If YES: Enable `addons.release: true`
-
-### D7. Observability Contracts (observability)
-
-Ask if:
-- "Does this project need metrics/monitoring definitions?"
-- "Are there logging schema requirements?"
-- "Is distributed tracing needed?"
-
-→ If YES: Enable `addons.observability: true`
+| Add-on | When to disable |
+|--------|-----------------|
+| `packaging` | Library-only project, no containers needed |
+| `deployment` | CLI tool, no deployment needed |
+| `release` | Internal tool, no formal release process |
+| `observability` | Simple app, no metrics/logs requirements |
 
 Write add-on decisions to:
-- Stage B: `addons.*` section in `docs/project/project-blueprint.json`
+- Stage B: `addons.*` section in `init/project-blueprint.json`
 
 ## E. Tech stack selection
 
@@ -341,18 +313,95 @@ For other languages, the LLM should:
 
 ---
 
+## G. Documentation Update Confirmation (after apply)
+
+After `apply` completes successfully, ask the user whether to update the project `AGENTS.md`.
+
+### When to ask
+
+Immediately after `apply` completes, before `approve --stage C`.
+
+### Prompt template
+
+```
+Initialization completed successfully.
+
+Would you like me to add the tech stack information to the project AGENTS.md?
+
+This will record:
+- Programming language and package manager
+- Frontend/backend frameworks
+- Database type
+- API style
+- Enabled add-ons
+
+The existing AGENTS.md content (Key Directories, Control Scripts, Common Tasks, Task Protocol, Rules) will be preserved.
+
+[Yes / No]
+```
+
+### If user says Yes
+
+Update `AGENTS.md` following these rules:
+
+1. **Preserve existing content** - Do NOT remove:
+   - Key Directories table
+   - Core Control Scripts table
+   - Optional Add-ons table
+   - Common Tasks section
+   - Task Protocol section
+   - Rules section
+
+2. **Insert position** - Add new sections **before** `## Key Directories`
+
+3. **Content template**:
+
+```markdown
+## Tech Stack
+
+| Category | Choice |
+|----------|--------|
+| Language | {{repo.language}} |
+| Package Manager | {{repo.packageManager}} |
+| Layout | {{repo.layout}} |
+| Frontend | {{capabilities.frontend.framework or "N/A"}} |
+| Backend | {{capabilities.backend.framework or "N/A"}} |
+| Database | {{capabilities.database.kind or "N/A"}} |
+| API Style | {{capabilities.api.style or "N/A"}} |
+
+## Enabled Add-ons
+
+| Add-on | Purpose |
+|--------|---------|
+| packaging | Container/artifact build |
+| deployment | Multi-env deploy |
+| release | Version/changelog |
+| observability | Metrics/logs/traces |
+```
+
+### LLM-first documentation principles
+
+- **Semantic density**: Each line carries meaningful info
+- **Structured format**: Tables/lists for quick parsing
+- **Token efficient**: No redundant text; key info first
+- **Preserve constraints**: Never remove template repo's core rules
+
+---
+
 ## Verification
 
 - After the interview, run Stage A validation:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --docs-root docs/project
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --repo-root . --docs-root init/stage-a-docs --strict
 ```
 
 - After generating blueprint, run Stage B validation:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --blueprint docs/project/project-blueprint.json
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --blueprint init/project-blueprint.json
 ```
 
 - For languages without templates, LLM should generate config files before running `apply`.
+
+- After apply completes, ask user about AGENTS.md update (Module G).

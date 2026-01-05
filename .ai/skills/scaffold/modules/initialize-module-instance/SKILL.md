@@ -1,13 +1,13 @@
 ---
 name: initialize-module-instance
-description: Create a new module instance with modulectl and register it into the modular SSOT/derived registries.
+description: Create a new module instance with modulectl and register the module into the modular SSOT/derived registries.
 ---
 
 # Initialize a Module Instance
 
 ## Purpose
 
-Create a new module under `modules/<module_id>/` and ensure it is correctly registered into:
+Create a new module under `modules/<module_id>/` and ensure the module is correctly registered into:
 
 - `.system/modular/instance_registry.yaml` (derived)
 - `.system/modular/flow_impl_index.yaml` (derived)
@@ -21,10 +21,19 @@ Create a new module under `modules/<module_id>/` and ensure it is correctly regi
 
 ## Outputs
 
-- Module skeleton:
-  - `modules/<module_id>/MANIFEST.yaml` (SSOT)
-  - `modules/<module_id>/interact/registry.json` (SSOT)
-  - `modules/<module_id>/workdocs/` (module-local workdocs)
+`modulectl init --apply` generates the following files:
+
+| File | Purpose |
+|------|---------|
+| `modules/<module_id>/MANIFEST.yaml` | Module metadata (SSOT) |
+| `modules/<module_id>/AGENTS.md` | Basic operating instructions (to be enhanced in step 4) |
+| `modules/<module_id>/ABILITY.md` | Placeholder for responsibility boundaries |
+| `modules/<module_id>/interact/registry.json` | Context artifacts registry (SSOT) |
+| `modules/<module_id>/workdocs/README.md` | Workdocs usage instructions |
+| `modules/<module_id>/src/` | Source code directory |
+| `modules/<module_id>/tests/` | Test directory |
+| `modules/<module_id>/config/` | Configuration directory |
+
 - Updated derived registries and graphs
 
 ## Procedure
@@ -50,7 +59,24 @@ node .ai/scripts/flowctl.js lint
 node .ai/scripts/contextctl.js build
 ```
 
-4. (Optional) Add flow nodes and implementations
+4. **Documentation confirmation (Required)**
+
+After core initialization (steps 1–3) completes, ask the user:
+
+```
+Module initialization completed. Would you like me to add boundary definitions to the module AGENTS.md?
+
+This will enhance the existing AGENTS.md with:
+- Module boundaries (responsibilities / non-responsibilities)
+
+The existing Operating Rules and Key Files sections will be preserved.
+
+[Yes / No]
+```
+
+If user agrees, **update** (not overwrite) `modules/<module_id>/AGENTS.md` following the merge strategy in the "Documentation Confirmation" section below.
+
+5. (Optional) Add flow nodes and implementations
 
 - Add/edit `.system/modular/flow_graph.yaml` to include new flow nodes.
 - Add `implements` entries under `modules/<module_id>/MANIFEST.yaml` interfaces.
@@ -63,16 +89,18 @@ node .ai/scripts/contextctl.js build
 
 ## Examples
 
-See `examples/example.api/` for a complete module skeleton including:
+See `examples/example-api/` for a complete module skeleton including:
 
 - `MANIFEST.yaml` - Module metadata with interfaces and flow participation
-- `AGENTS.md` - AI operating instructions
-- `ABILITY.md` - Responsibility boundaries
+- `AGENTS.md` - AI operating instructions (includes boundaries)
+- `ABILITY.md` - (Legacy) Standalone responsibility boundaries reference
 - `interact/registry.json` - Context artifacts registry
 - `interact/openapi.yaml` - OpenAPI specification
 - `workdocs/` - Module work documentation
 
 Copy and customize for your new module.
+
+**Note**: New modules should include boundaries directly in `AGENTS.md` (see Documentation Confirmation section). The separate `ABILITY.md` is kept in examples for reference only.
 
 ## Verification
 
@@ -83,3 +111,103 @@ Copy and customize for your new module.
 - Do **not** edit derived artifacts directly; use the ctl scripts to regenerate them.
 - Do **not** introduce alternative SSOT files or duplicate registries (single source of truth is enforced).
 - Keep changes scoped: prefer module-local updates (MANIFEST, interact registry) over project-wide edits when possible.
+
+---
+
+## Documentation Confirmation (Required)
+
+After module initialization completes, the LLM **must** ask the user whether to add boundary definitions to the existing `AGENTS.md`.
+
+**Important**: `modulectl init --apply` already creates a basic `AGENTS.md` with Operating Rules and Key Files. This step **enhances** that file by adding boundary definitions, not replacing the existing file.
+
+### When to ask
+
+Immediately after core initialization (steps 1–3) completes successfully, before optional step 5.
+
+### What to ask
+
+1. Whether to add boundary definitions to `modules/<module_id>/AGENTS.md`
+2. Module boundaries: what the module IS responsible for (DO)
+3. Module boundaries: what the module is NOT responsible for (DO NOT)
+
+### Prompt template
+
+```
+Module {{module_id}} initialized successfully.
+
+Would you like me to add boundary definitions to the module AGENTS.md?
+
+If yes, please provide:
+1. What is this module responsible for? (2–5 items)
+2. What is this module NOT responsible for? (2–5 items)
+
+[Yes / No]
+```
+
+### Merge strategy
+
+**DO preserve** (from existing AGENTS.md generated by modulectl):
+- `## Operating rules` section
+- `## Key files` section
+- YAML frontmatter
+
+**DO add/update**:
+- `## Boundaries` section (add if missing; update if present)
+  - `### Responsibilities (DO)`
+  - `### Non-responsibilities (DO NOT)`
+
+**Heading matching**: treat `## Key files`/`## Key Files` and `## Operating rules`/`## Operating Rules` as equivalent (case-insensitive).
+
+**Insertion rule (no reordering)**:
+- If `## Boundaries` exists: update only the DO/DO NOT lists.
+- Else: insert the new `## Boundaries` section after the `# {{module_id}}` heading and before the first existing `## ...` section (typically `## Operating rules` in modulectl-generated files).
+
+### Target AGENTS.md structure (after merge)
+
+```markdown
+---
+name: {{module_id}}
+purpose: Module agent instructions for {{module_id}}
+---
+
+# {{module_id}}
+
+## Boundaries
+
+### Responsibilities (DO)
+
+- {{user-provided responsibility 1}}
+- {{user-provided responsibility 2}}
+- ...
+
+### Non-responsibilities (DO NOT)
+
+- {{user-provided non-responsibility 1}}
+- {{user-provided non-responsibility 2}}
+- ...
+
+## Operating rules
+
+(preserved from modulectl-generated AGENTS.md)
+
+## Key files
+
+(preserved from modulectl-generated AGENTS.md)
+
+## Description
+
+(preserved if present; modulectl appends the section by default when `--description` is provided)
+```
+
+### LLM-first documentation principles
+
+When updating module AGENTS.md:
+
+- **Semantic density**: Each line carries meaningful info
+- **Structured format**: Use tables/lists for quick parsing
+- **Token efficient**: No redundant text; key info first
+- **Clear boundaries**: Explicitly state DO and DO NOT
+
+### If user declines
+
+Skip boundary definition addition. The module AGENTS.md (generated by modulectl) remains with basic Operating Rules and Key Files, but without explicit boundary definitions.

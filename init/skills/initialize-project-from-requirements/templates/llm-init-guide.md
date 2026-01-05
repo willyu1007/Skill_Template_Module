@@ -12,7 +12,8 @@ The document provides step-by-step guidance for an AI assistant to help a user c
 4. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
 5. [Phase 4: Add-on recommendations](#phase-4-add-on-recommendations)
 6. [Phase 5: Config generation](#phase-5-config-generation)
-7. [Decision tree reference](#decision-tree-reference)
+7. [Phase 6: Documentation update confirmation](#phase-6-documentation-update-confirmation)
+8. [Decision tree reference](#decision-tree-reference)
 
 ---
 
@@ -39,16 +40,21 @@ User starts initialization
          │
          ▼
 ┌─────────────────────────────┐
-│ Phase 4: Add-on recommendations│ ← recommend add-ons based on capabilities
+│ Phase 4: Add-on config       │  ← all add-ons enabled by default
 └────────┬────────────────────┘
          │
          ▼
 ┌─────────────────────────────┐
-│ Phase 5: Config generation   │  ← templates or LLM-generated
+│ Phase 5: Config generation   │  ← templates or LLM-generated + run apply
 └────────┬────────────────────┘
          │
          ▼
-      Run apply
+┌─────────────────────────────┐
+│ Phase 6: Doc update confirm  │  ← ask user to update AGENTS.md
+└────────┬────────────────────┘
+         │
+         ▼
+   Initialization complete
 ```
 
 ---
@@ -69,11 +75,13 @@ Ask these questions in order (see module A in `conversation-prompts.md`):
 
 ### Output requirements
 
-Write answers to the following files:
-- `docs/project/requirements.md` - primary requirements
-- `docs/project/non-functional-requirements.md` - NFRs
-- `docs/project/domain-glossary.md` - glossary
-- `docs/project/risk-open-questions.md` - TBDs / risks / open questions
+Write answers to the following files (working SSOT during init):
+- `init/stage-a-docs/requirements.md` - primary requirements
+- `init/stage-a-docs/non-functional-requirements.md` - NFRs
+- `init/stage-a-docs/domain-glossary.md` - glossary
+- `init/stage-a-docs/risk-open-questions.md` - TBDs / risks / open questions
+
+**Note**: After init completes, use `cleanup-init --archive` to archive to `docs/project/`.
 
 ---
 
@@ -126,7 +134,7 @@ Write answers to the following files:
 
 ## Phase 3: Blueprint generation
 
-Based on information from Phase 1 and Phase 2, generate `docs/project/project-blueprint.json`.
+Based on information from Phase 1 and Phase 2, generate `init/project-blueprint.json`.
 
 ### Minimal blueprint template
 
@@ -173,31 +181,46 @@ Based on information from Phase 1 and Phase 2, generate `docs/project/project-bl
 
 ## Phase 4: Add-on recommendations
 
-### Recommendation rules
+### Default behavior: all add-ons enabled
 
-Recommend add-ons based on capabilities in the blueprint:
+By default, the following add-ons are **enabled** in the blueprint:
 
-| Condition | Recommended add-on |
-|----------|---------------------|
-| `api.style != "none"` or `database.enabled` or `bpmn.enabled` | `contextAwareness` |
-| `database.enabled: true` | `dbMirror` |
-| `quality.ci.enabled: true` | `ciTemplates` |
-| Containerization needed | `packaging` |
-| Multi-environment deployments needed | `deployment` |
-| Release/version tooling needed | `release` |
-| Metrics/logs/tracing needed | `observability` |
+| Add-on | Key | Purpose |
+|--------|-----|---------|
+| Packaging | `packaging` | Container/artifact build |
+| Deployment | `deployment` | Multi-environment deploy |
+| Release | `release` | Version/changelog management |
+| Observability | `observability` | Metrics/logs/traces contracts |
 
-### Example prompt
+**Note**: Core capabilities (context-awareness, db-mirror, ci-templates) are built-in and do not require add-on installation.
+
+### LLM action
+
+Ask the user if they want to **disable** any add-ons (opt-out model):
 
 ```
-Based on your requirements, I recommend the following add-ons:
+The following add-ons will be enabled by default:
 
-1. ✅ context-awareness - Your project has APIs and a database; this add-on helps LLM assistants understand API contracts and database structure
-2. ✅ db-mirror - database schema management and migration support
-3. ❓ ci-templates - do you need CI/CD configuration?
+| Add-on | Purpose |
+|--------|---------|
+| packaging | Container/artifact packaging |
+| deployment | Multi-environment deployment |
+| release | Version and changelog management |
+| observability | Metrics/logs/traces contracts |
 
-Do you want to enable these add-ons?
+Do you want to disable any of these? (If not, press Enter to continue)
 ```
+
+### Disable rules
+
+Only disable an add-on if the user explicitly requests it or if the project clearly does not need it:
+
+| Condition | Can disable |
+|-----------|-------------|
+| CLI tool only, no deployment | `deployment` |
+| Library package, no containers | `packaging` |
+| Internal tool, no release process | `release` |
+| Simple app, no observability needs | `observability` |
 
 ---
 
@@ -371,6 +394,79 @@ src/
 
 ---
 
+## Phase 6: Documentation update confirmation
+
+After `apply` completes successfully, the LLM **must** ask the user whether to update the project `AGENTS.md` with tech stack information.
+
+### When to ask
+
+Ask immediately after `apply` completes and before running `approve --stage C`.
+
+### LLM action
+
+```
+Initialization completed. Would you like me to add the tech stack information to the project AGENTS.md?
+
+This will record:
+- Programming language and package manager
+- Frontend/backend frameworks
+- Database type
+- API style
+- Enabled add-ons
+
+The existing AGENTS.md content (Key Directories, Control Scripts, Common Tasks, etc.) will be preserved.
+
+[Yes / No]
+```
+
+### Update rules
+
+1. **Preserve existing content**: Do NOT overwrite or remove:
+   - Key Directories table
+   - Core Control Scripts table
+   - Optional Add-ons table
+   - Common Tasks section
+   - Task Protocol section
+   - Rules section
+
+2. **Insert position**: Add new sections **before** `## Key Directories`
+
+3. **Content to add**:
+
+```markdown
+## Tech Stack
+
+| Category | Choice |
+|----------|--------|
+| Language | {{repo.language}} |
+| Package Manager | {{repo.packageManager}} |
+| Layout | {{repo.layout}} |
+| Frontend | {{capabilities.frontend.framework or "N/A"}} |
+| Backend | {{capabilities.backend.framework or "N/A"}} |
+| Database | {{capabilities.database.kind or "N/A"}} |
+| API Style | {{capabilities.api.style or "N/A"}} |
+
+## Enabled Add-ons
+
+| Add-on | Purpose |
+|--------|---------|
+| packaging | Container/artifact build |
+| deployment | Multi-env deploy |
+| release | Version/changelog |
+| observability | Metrics/logs/traces |
+```
+
+### LLM-first documentation principles
+
+When updating AGENTS.md, follow these principles:
+
+- **Semantic density**: Each line should carry meaningful information
+- **Structured format**: Use tables and lists for quick LLM parsing
+- **Token efficient**: Avoid redundant descriptions; key info first
+- **Preserve constraints**: Never remove template repo's core rules
+
+---
+
 ## Decision tree reference
 
 ### Language → package manager decision tree
@@ -435,7 +531,7 @@ AI: Great. Now let's determine the tech stack:
 
 User: TypeScript, React for the frontend, and PostgreSQL for the database.
 
-AI: Thanks. I'll generate the project blueprint. Based on your answers, I recommend:
+AI: Thanks. I'll generate the project blueprint. Based on your answers:
 
 - Language: TypeScript + pnpm
 - Layout: single
@@ -444,12 +540,31 @@ AI: Thanks. I'll generate the project blueprint. Based on your answers, I recomm
 - API: REST + JWT
 - Database: PostgreSQL
 
-Recommended add-ons:
-- ✅ context-awareness (API/DB contract management)
-- ✅ db-mirror (database schema management)
-- ❓ ci-templates (CI/CD configuration)
+The following add-ons will be enabled by default:
+- packaging (container builds)
+- deployment (multi-environment)
+- release (version/changelog)
+- observability (metrics/logs/traces)
 
-Do you confirm this configuration?
+Do you want to disable any of these? (Press Enter to keep all enabled)
+
+User: [Enter]
+
+AI: Great, all add-ons enabled. Running apply...
+
+[apply completes]
+
+AI: Initialization completed. Would you like me to add the tech stack information to the project AGENTS.md?
+
+This will record the language, frameworks, database, and enabled add-ons. The existing template content will be preserved.
+
+User: Yes
+
+AI: Done. AGENTS.md updated with:
+- Tech Stack table
+- Enabled Add-ons table
+
+Next: run `approve --stage C` to complete initialization.
 ```
 
 ---
@@ -460,3 +575,5 @@ Do you confirm this configuration?
 2. **Write to files**: record every decision and answer in the corresponding docs
 3. **Validate outputs**: use `check-docs` and `validate` to validate artifacts
 4. **Get explicit approval**: the user must explicitly approve each stage before advancing
+5. **Add-ons default ON**: all add-ons are enabled by default; ask user to disable if needed
+6. **Documentation confirmation**: always ask user about AGENTS.md update after apply completes

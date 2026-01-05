@@ -95,6 +95,8 @@ function printHelp() {
     '',
     'Checks:',
     '  - UTF-8 encoding validation',
+    '  - EOL style (LF-only; CRLF/CR are errors)',
+    '  - Final newline (missing is a warning)',
     '  - Garbled text (mojibake) detection',
     '  - Heading depth <= 4 levels',
     '  - Vague reference detection (it/this/above/below)',
@@ -279,6 +281,61 @@ function checkUtf8Encoding(filePath) {
   }
 
   return { errors, hasBom };
+}
+
+function checkEolStyle(filePath) {
+  const errors = [];
+  const warnings = [];
+  const buffer = fs.readFileSync(filePath);
+
+  if (buffer.length === 0) return { errors, warnings };
+
+  let line = 1;
+  let firstCrlfLine = null;
+  let firstCrOnlyLine = null;
+
+  for (let i = 0; i < buffer.length; i++) {
+    const byte = buffer[i];
+
+    if (byte === 0x0d) {
+      const next = i + 1 < buffer.length ? buffer[i + 1] : null;
+      if (next === 0x0a) {
+        if (firstCrlfLine === null) firstCrlfLine = line;
+      } else {
+        if (firstCrOnlyLine === null) firstCrOnlyLine = line;
+      }
+    }
+
+    if (byte === 0x0a) {
+      line++;
+    }
+  }
+
+  if (firstCrlfLine !== null) {
+    errors.push({
+      type: 'error',
+      line: firstCrlfLine,
+      message: 'File uses CRLF line endings; repo standard is LF. (Hint: `git add --renormalize .` after adding .gitattributes)',
+    });
+  }
+
+  if (firstCrOnlyLine !== null) {
+    errors.push({
+      type: 'error',
+      line: firstCrOnlyLine,
+      message: 'File uses CR (classic Mac) line endings; repo standard is LF.',
+    });
+  }
+
+  if (buffer[buffer.length - 1] !== 0x0a) {
+    warnings.push({
+      type: 'warning',
+      line,
+      message: 'File is missing a final newline (LF) at end-of-file.',
+    });
+  }
+
+  return { errors, warnings };
 }
 
 function detectGarbledText(content) {
@@ -567,6 +624,11 @@ function lintFile(filePath) {
       message: 'File has UTF-8 BOM (not recommended)',
     });
   }
+
+  // 1.1 EOL style check (LF-only)
+  const eolResult = checkEolStyle(filePath);
+  errors.push(...eolResult.errors);
+  warnings.push(...eolResult.warnings);
 
   // 2. Read content for further checks
   let content;

@@ -96,6 +96,47 @@ If you explicitly disable context in a blueprint (for unusual use cases), you ca
 
 The setting will skip context-related steps, but the files remain present (core capability).
 
+## Add-on default behavior
+
+All optional add-ons are **enabled by default** (opt-out model):
+
+| Add-on | Key | Purpose |
+|--------|-----|---------|
+| Packaging | `packaging` | Container/artifact build |
+| Deployment | `deployment` | Multi-environment deploy |
+| Release | `release` | Version/changelog management |
+| Observability | `observability` | Metrics/logs/traces contracts |
+
+The LLM should ask: "Do you want to **disable** any add-ons?" (not "enable").
+
+To disable an add-on in the blueprint:
+
+```json
+{
+  "addons": {
+    "packaging": false
+  }
+}
+```
+
+## Documentation confirmation (after apply)
+
+After Stage C `apply` completes, the LLM **must** ask:
+
+```
+Would you like me to add the tech stack information to the project AGENTS.md?
+```
+
+If user agrees, update `AGENTS.md` with:
+- Tech Stack table (language, package manager, frameworks, database, API style)
+- Enabled Add-ons table
+
+**Rules**:
+- Preserve existing content (Key Directories, Control Scripts, Common Tasks, Task Protocol, Rules)
+- Insert new sections **before** `## Key Directories`
+
+See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 6 for detailed template.
+
 ## Cleanup
 
 Only after completion and user confirmation:

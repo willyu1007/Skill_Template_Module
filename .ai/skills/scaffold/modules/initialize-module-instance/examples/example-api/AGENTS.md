@@ -7,38 +7,56 @@ purpose: Module agent instructions for example.api
 
 Example API module demonstrating the module-first template structure.
 
-## Operating rules
+## Boundaries
 
-- Read the file first when working inside the module.
-- Keep changes local to the module unless explicitly cross-cutting.
-- If you change the module's manifest, run:
-  - `node .ai/scripts/modulectl.js registry-build`
-  - `node .ai/scripts/flowctl.js update-from-manifests`
-  - `node .ai/scripts/flowctl.js lint`
+### Responsibilities (DO)
+
+- **User CRUD operations**: Create, read, update, delete user records
+- **User validation**: Validate user input data before persistence
+- **User serialization**: Transform user data for API responses
+- **Health reporting**: Expose service health status
+
+### Non-responsibilities (DO NOT)
+
+- **Authentication/Authorization**: Handled by a separate auth module
+- **User notifications**: Handled by a notification service
+- **Audit logging**: Handled by infrastructure/middleware
+- **Rate limiting**: Handled by API gateway/infrastructure
 
 ## Key files
 
 | File | Purpose |
 |------|---------|
 | `MANIFEST.yaml` | Module metadata (SSOT) |
-| `interact/registry.json` | Context artifacts registry (SSOT) |
-| `workdocs/` | Long-running module notes |
+| `interact/registry.json` | Context artifacts (SSOT) |
+| `workdocs/` | Task tracking |
 | `src/` | Source code |
 | `tests/` | Unit/integration tests |
 | `config/` | Module configuration |
+
+## Operating rules
+
+- Keep changes local to module unless cross-cutting
+- After manifest changes, run:
+  - `node .ai/scripts/modulectl.js registry-build`
+  - `node .ai/scripts/flowctl.js update-from-manifests`
+  - `node .ai/scripts/flowctl.js lint`
+- Use workdocs for multi-step tasks (see `workdocs/README.md`)
 
 ## Description
 
 The module provides a simple user management HTTP API:
 
-- `POST /api/users` - Create a new user
-- `GET /api/users/:id` - Get user by ID
-- `GET /api/users` - List all users
-- `GET /health` - Health check
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/users` | POST | Create a new user |
+| `/api/users/:id` | GET | Get user by ID |
+| `/api/users` | GET | List all users |
+| `/health` | GET | Health check |
 
 ## Business flows
 
-The module participates in the `user_management` flow:
+Participates in `user_management` flow:
 
 ```
 create_user → get_user
@@ -47,8 +65,9 @@ create_user → get_user
 
 ## Context artifacts
 
-The module maintains its own context registry at `interact/registry.json`.
-To add an artifact (e.g., OpenAPI spec):
+Registry: `interact/registry.json`
+
+Add artifact example:
 
 ```bash
 node .ai/scripts/contextctl.js add-artifact \
@@ -60,8 +79,7 @@ node .ai/scripts/contextctl.js add-artifact \
 
 ## Testing
 
-For integration testing, scenarios are defined in `modules/integration/scenarios.yaml`.
-Run validation and execution:
+Scenarios: `modules/integration/scenarios.yaml`
 
 ```bash
 node .ai/scripts/integrationctl.js validate

@@ -67,7 +67,7 @@ Run the checklist after drafting all Stage A docs, **before** requesting user ap
 
 ## Stage B: Blueprint Quality Checklist
 
-Run the checklist after drafting `project-blueprint.json`, **before** requesting user approval.
+Run the checklist after drafting `init/project-blueprint.json`, **before** requesting user approval.
 
 ### B1. Consistency with Stage A
 
@@ -106,7 +106,7 @@ Run the checklist after `apply` command, **before** cleanup.
 
 - [ ] Does the generated directory structure match `repo.layout`?
 - [ ] Are placeholder READMEs meaningful (not just "TODO")?
-- [ ] Are no existing files overwritten?
+- [ ] Were any files overwritten unexpectedly? (Expected overwrite: root `README.md`.)
 
 ### C2. Skills Sync
 
@@ -116,8 +116,8 @@ Run the checklist after `apply` command, **before** cleanup.
 
 ### C3. Cleanup Readiness
 
-- [ ] Are all Stage A docs preserved in `docs/project/`?
-- [ ] Is `project-blueprint.json` preserved?
+- [ ] If you plan to delete `init/`, have you archived Stage A docs to `docs/project/`? (use `cleanup-init --archive`)
+- [ ] If you plan to delete `init/`, is the blueprint archived to `docs/project/project-blueprint.json`?
 - [ ] Is `.ai/skills/_meta/sync-manifest.json` preserved?
 - [ ] Are you confident the init kit is no longer needed?
 
