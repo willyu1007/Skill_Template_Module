@@ -9,7 +9,6 @@ In the **module-first** template, these capabilities are part of the repo by def
 - Context registries (`contextctl.js`, `docs/context/*`, `modules/*/interact/registry.json`)
 - Modular system controls (`modulectl.js`, `flowctl.js`, `integrationctl.js`, `.system/modular/*`)
 - DB mirror tools (`dbctl.js`, `db/`)
-- CI template tools (`cictl.js`, `ci/`, `.gitlab-ci/`)
 
 They do **not** live under `addons/` anymore.
 

@@ -37,7 +37,6 @@ Read `init/AGENTS.md` for project initialization instructions.
 | Context registries | `node .ai/scripts/contextctl.js` |
 | Skill packs + wrapper sync | `node .ai/scripts/skillsctl.js` |
 | DB mirror (optional usage) | `node .ai/scripts/dbctl.js` |
-| CI templates (optional usage) | `node .ai/scripts/cictl.js` |
 
 ## Optional Add-ons (installable via init pipeline)
 

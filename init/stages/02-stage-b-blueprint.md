@@ -101,7 +101,6 @@ These flags are supported for backward compatibility, but they do not install fi
   - Default: enabled
   - Set to `false` to skip context-related init steps (files remain present)
 - `addons.dbMirror`
-- `addons.ciTemplates`
 
 ### Non-core add-ons
 

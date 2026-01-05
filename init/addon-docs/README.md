@@ -10,7 +10,6 @@ These capabilities are **included by default** in the module-first template. No 
 
 | Document | Capability | Control Script |
 |----------|------------|----------------|
-| [ci-templates.md](ci-templates.md) | CI templates/tooling | `cictl.js` |
 | [context-awareness.md](context-awareness.md) | Context registry system | `contextctl.js`, `projectctl.js` |
 | [db-mirror.md](db-mirror.md) | DB mirror tooling | `dbctl.js` |
 

@@ -50,7 +50,6 @@
   "addons": {
     "contextAwareness": true,
     "dbMirror": true,
-    "ciTemplates": true,
     "packaging": true,
     "deployment": true,
     "release": true,

@@ -49,12 +49,12 @@ The `payload/` directory contains all files that will be copied into the target 
 
 ### Add-on ID
 
-- Use lowercase with hyphens: `context-awareness`, `db-mirror`, `ci-templates`
+- Use lowercase with hyphens: `context-awareness`, `db-mirror`, `packaging`
 - Keep it short but descriptive
 
 ### Control Scripts
 
-- Name: `<shortname>ctl.js` (e.g., `contextctl.js`, `dbctl.js`, `cictl.js`)
+- Name: `<shortname>ctl.js` (e.g., `contextctl.js`, `dbctl.js`, `packctl.js`)
 - Location: `payload/.ai/scripts/`
 - Must support `init` command with `--repo-root` parameter
 
@@ -66,8 +66,7 @@ In `project-blueprint.json`, add-ons are enabled via the `addons` object:
 {
   "addons": {
     "contextAwareness": true,
-    "dbMirror": true,
-    "ciTemplates": true
+    "dbMirror": true
   }
 }
 ```
@@ -107,7 +106,6 @@ The init pipeline detects and installs add-ons based on blueprint configuration:
 |--------|-----|---------|
 | Context Awareness | `context-awareness` | API/DB/BPMN contracts for LLM |
 | DB Mirror | `db-mirror` | Database schema mirroring |
-| CI Templates | `ci-templates` | CI/CD configuration templates |
 
 ### DevOps Add-ons
 

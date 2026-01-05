@@ -120,7 +120,7 @@ All add-ons are **enabled by default**. Ask if the user wants to **disable** any
 | Release | `release` | Version/changelog management |
 | Observability | `observability` | Metrics/logs/traces contracts |
 
-**Note**: Core capabilities (context-awareness, db-mirror, ci-templates) are built-in and always available.
+**Note**: Core capabilities (context-awareness, db-mirror) are built-in and always available.
 
 ### Prompt template
 

@@ -537,12 +537,6 @@ function recommendedAddonsFromBlueprint(blueprint) {
   // db-mirror: enabled when database is enabled
   if (caps.database && caps.database.enabled) rec.push('db-mirror');
 
-  // ci-templates: enabled when CI is configured
-  const ciEnabled =
-    (q.ci && q.ci.enabled) ||
-    (blueprint.ci && blueprint.ci.enabled);
-  if (ciEnabled) rec.push('ci-templates');
-
   // packaging: enabled when containerization/packaging is configured
   const packagingEnabled =
     (devops.packaging && devops.packaging.enabled) ||
@@ -575,7 +569,6 @@ function getEnabledAddons(blueprint) {
   // NOTE: context-awareness is a CORE capability, not an addon.
   // It is not included in this list because it doesn't live in addons/.
   if (isDbMirrorEnabled(blueprint)) enabled.push('db-mirror');
-  if (isCiTemplatesEnabled(blueprint)) enabled.push('ci-templates');
   if (isPackagingEnabled(blueprint)) enabled.push('packaging');
   if (isDeploymentEnabled(blueprint)) enabled.push('deployment');
   if (isReleaseEnabled(blueprint)) enabled.push('release');
@@ -923,13 +916,6 @@ function isDbMirrorEnabled(blueprint) {
   const addons = blueprint.addons || {};
   // Only addons.* triggers installation; db.* is configuration only
   return addons.dbMirror === true || addons['db-mirror'] === true;
-}
-
-function isCiTemplatesEnabled(blueprint) {
-  if (!blueprint || typeof blueprint !== 'object') return false;
-  const addons = blueprint.addons || {};
-  // Only addons.* triggers installation; ci.* is configuration only
-  return addons.ciTemplates === true || addons['ci-templates'] === true;
 }
 
 function isPackagingEnabled(blueprint) {
@@ -1431,7 +1417,6 @@ function cleanupUnusedAddons(repoRoot, blueprint, addonsRoot, apply) {
   // not an addon. Its scripts live in .ai/scripts/, not addons/.
   const allAddonIds = [
     'db-mirror',
-    'ci-templates',
     'packaging',
     'deployment',
     'release',
@@ -2012,13 +1997,6 @@ if (command === 'validate') {
       console.log('[info] Installing db-mirror add-on...');
       const res = ensureAddon(repoRoot, 'db-mirror', addonsRoot, true, 'dbctl.js', addonOptions);
       handleAddonResult(res, 'db-mirror');
-    }
-
-    // ci-templates add-on
-    if (isCiTemplatesEnabled(blueprint)) {
-      console.log('[info] Installing ci-templates add-on...');
-      const res = ensureAddon(repoRoot, 'ci-templates', addonsRoot, true, 'cictl.js', addonOptions);
-      handleAddonResult(res, 'ci-templates');
     }
 
     // packaging add-on

@@ -192,7 +192,7 @@ By default, the following add-ons are **enabled** in the blueprint:
 | Release | `release` | Version/changelog management |
 | Observability | `observability` | Metrics/logs/traces contracts |
 
-**Note**: Core capabilities (context-awareness, db-mirror, ci-templates) are built-in and do not require add-on installation.
+**Note**: Core capabilities (context-awareness, db-mirror) are built-in and do not require add-on installation.
 
 ### LLM action
 
@@ -500,8 +500,6 @@ Check capabilities
 │   └── Recommend: dbMirror
 ├── bpmn.enabled
 │   └── Recommend: contextAwareness
-├── quality.ci.enabled
-│   └── Recommend: ciTemplates
 └── DevOps needs
     ├── Containerization → packaging
     ├── Multi-environment → deployment

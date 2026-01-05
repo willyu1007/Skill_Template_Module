@@ -261,14 +261,6 @@
           "type": "boolean",
           "description": "Alias for dbMirror."
         },
-        "ciTemplates": {
-          "type": "boolean",
-          "description": "Enable the ci-templates add-on (CI/CD configuration templates)."
-        },
-        "ci-templates": {
-          "type": "boolean",
-          "description": "Alias for ciTemplates."
-        },
         "packaging": {
           "type": "boolean",
           "description": "Enable the packaging add-on (container/artifact packaging)."
@@ -348,7 +340,7 @@
     },
     "ci": {
       "type": "object",
-      "description": "CI configuration (effective when ci-templates add-on is enabled).",
+      "description": "CI configuration (for project CI preferences; see testing skills for CI integration).",
       "properties": {
         "enabled": {
           "type": "boolean"
