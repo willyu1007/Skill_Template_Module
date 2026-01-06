@@ -219,7 +219,10 @@ function runSync(repoRoot, providers) {
       return;
     }
 
-    const args = ['--scope', 'current', '--providers', providers];
+    // sync-skills has destructive modes (reset/prune/delete) guarded by --yes.
+    // Provider wrappers are generated artifacts in this repo, so we always run
+    // in a deterministic reset mode here.
+    const args = ['--scope', 'current', '--providers', providers, '--mode', 'reset', '--yes'];
     console.log(`[info] Running: node ${path.relative(repoRoot, scriptPath)} ${args.join(' ')}`);
 
     const child = spawn('node', [scriptPath, ...args], {

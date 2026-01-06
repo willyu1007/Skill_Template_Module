@@ -2,8 +2,7 @@
 /**
  * build.js - Build Execution Script
  *
- * Entry point for build operations.
- * Wraps packctl.js build commands for convenience.
+ * Convenience wrapper around packctl.js build commands.
  *
  * Usage:
  *   node .ai/scripts/build.js <target> [--tag <tag>]
@@ -11,7 +10,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { resolve, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,11 +48,11 @@ function runPackctl(args) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const parsed = parseArgs(args);
+  const parsed = parseArgs(process.argv.slice(2));
 
   if (parsed.flags.help || parsed._[0] === 'help') {
-    console.log(`
+    console.log(
+      `
 build.js - Build Execution Script
 
 Usage:
@@ -61,34 +60,39 @@ Usage:
   node .ai/scripts/build.js --all [--tag <tag>]
 
 Options:
-  --all         Build all registered targets
-  --tag <tag>   Image tag (default: latest)
-  --help        Show this help
+  --all              Build all registered targets
+  --tag <tag>        Image tag (default: latest)
+  --context <path>   Docker build context (default: .)
+  --dry-run          Print docker command only
+  --repo-root <path> Repo root override (optional)
+  --help             Show this help
 
 Examples:
   node .ai/scripts/build.js api --tag v1.0.0
   node .ai/scripts/build.js --all --tag latest
-`);
+`.trim()
+    );
     return 0;
   }
 
+  const commonArgs = [];
+  if (parsed.flags.tag) commonArgs.push('--tag', parsed.flags.tag);
+  if (parsed.flags.context) commonArgs.push('--context', parsed.flags.context);
+  if (parsed.flags['dry-run']) commonArgs.push('--dry-run');
+  if (parsed.flags['repo-root']) commonArgs.push('--repo-root', parsed.flags['repo-root']);
+
   if (parsed.flags.all) {
-    const buildArgs = ['build-all'];
-    if (parsed.flags.tag) buildArgs.push('--tag', parsed.flags.tag);
-    return runPackctl(buildArgs);
+    return runPackctl(['build-all', ...commonArgs]);
   }
 
   const target = parsed._[0];
   if (!target) {
-    console.error('Error: Target required. Use --all to build all targets.');
-    console.error('Run with --help for usage.');
+    console.error('[error] Target required. Use --all to build all targets. Run with --help for usage.');
     return 1;
   }
 
-  const buildArgs = ['build', '--target', target];
-  if (parsed.flags.tag) buildArgs.push('--tag', parsed.flags.tag);
-  return runPackctl(buildArgs);
+  return runPackctl(['build', '--target', target, ...commonArgs]);
 }
 
-main().then(code => process.exit(code));
+main().then((code) => process.exit(code));
 

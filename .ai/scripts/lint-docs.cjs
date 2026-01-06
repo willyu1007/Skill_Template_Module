@@ -89,6 +89,7 @@ function printHelp() {
     'Options:',
     '  --path <dir>    Directory to scan (default: repo root)',
     '  --fix           Interactive fix for garbled text',
+    '  --fix-eol       Convert CRLF/CR to LF and ensure final newline (non-interactive)',
     '  --strict        Treat warnings as errors',
     '  --quiet         Only show errors, not warnings',
     '  -h, --help      Show help',
@@ -114,6 +115,7 @@ function parseArgs(argv) {
   const args = {
     path: DEFAULT_PATH,
     fix: false,
+    fixEol: false,
     strict: false,
     quiet: false,
     help: false,
@@ -123,6 +125,7 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '-h' || a === '--help') args.help = true;
     else if (a === '--fix') args.fix = true;
+    else if (a === '--fix-eol') args.fixEol = true;
     else if (a === '--strict') args.strict = true;
     else if (a === '--quiet') args.quiet = true;
     else if (a === '--path' && argv[i + 1]) {
@@ -315,7 +318,7 @@ function checkEolStyle(filePath) {
     errors.push({
       type: 'error',
       line: firstCrlfLine,
-      message: 'File uses CRLF line endings; repo standard is LF. (Hint: `git add --renormalize .` after adding .gitattributes)',
+      message: 'File uses CRLF line endings; repo standard is LF. (Hint: run `node .ai/scripts/lint-docs.cjs --fix-eol` or `git add --renormalize .` after adding .gitattributes)',
     });
   }
 
@@ -336,6 +339,31 @@ function checkEolStyle(filePath) {
   }
 
   return { errors, warnings };
+}
+
+function normalizeEolBuffer(buffer) {
+  const out = [];
+  for (let i = 0; i < buffer.length; i++) {
+    const b = buffer[i];
+    if (b === 0x0d) {
+      const next = i + 1 < buffer.length ? buffer[i + 1] : null;
+      if (next === 0x0a) i += 1; // consume LF in CRLF
+      out.push(0x0a);
+      continue;
+    }
+    out.push(b);
+  }
+  if (out.length === 0 || out[out.length - 1] !== 0x0a) out.push(0x0a);
+  return Buffer.from(out);
+}
+
+function fixEol(filePath) {
+  const original = fs.readFileSync(filePath);
+  if (original.length === 0) return { changed: false };
+  const normalized = normalizeEolBuffer(original);
+  if (Buffer.compare(original, normalized) === 0) return { changed: false };
+  fs.writeFileSync(filePath, normalized);
+  return { changed: true };
 }
 
 function detectGarbledText(content) {
@@ -679,6 +707,18 @@ async function main() {
   console.log(colors.gray(`Found ${mdFiles.length} Markdown files to check`));
   console.log('');
 
+  // Optional non-interactive EOL normalization (CRLF/CR -> LF) + final newline.
+  if (args.fixEol) {
+    let changed = 0;
+    for (const filePath of mdFiles) {
+      const res = fixEol(filePath);
+      if (res.changed) changed += 1;
+    }
+    if (changed > 0) {
+      console.log(colors.gray(`[fix-eol] Updated ${changed} file(s)\n`));
+    }
+  }
+
   // Check naming conventions (directories)
   const namingIssues = checkNamingConventions(args.path);
 
@@ -785,4 +825,3 @@ main().catch((err) => {
   console.error(colors.red(`Error: ${err.message}`));
   process.exit(1);
 });
-

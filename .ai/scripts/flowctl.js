@@ -30,21 +30,33 @@ function usage(exitCode = 0) {
 Usage:
   node .ai/scripts/flowctl.js <command> [options]
 
+Options:
+  --repo-root <path>          Repo root (default: cwd)
+
 Commands:
   init
     Ensure the modular SSOT skeleton exists.
 
   update-from-manifests
     --flow-graph <path>        Default: .system/modular/flow_graph.yaml
+    --flow-bindings <path>     Default: .system/modular/flow_bindings.yaml
     --instance-registry <path> Default: .system/modular/instance_registry.yaml
     --out <path>               Default: .system/modular/flow_impl_index.yaml
     Build the flow implementation index (DERIVED) from the instance registry.
 
   lint
+    --flow-graph <path>        Default: .system/modular/flow_graph.yaml
+    --flow-bindings <path>     Default: .system/modular/flow_bindings.yaml
+    --type-graph <path>        Default: .system/modular/type_graph.yaml
+    --instance-registry <path> Default: .system/modular/instance_registry.yaml
+    --flow-impl-index <path>   Default: .system/modular/flow_impl_index.yaml
     --strict                   Fail on warnings
     Validate flow_graph/bindings + derived index.
 
   graph
+    --flow-graph <path>        Default: .system/modular/flow_graph.yaml
+    --flow-bindings <path>     Default: .system/modular/flow_bindings.yaml
+    --flow-impl-index <path>   Default: .system/modular/flow_impl_index.yaml
     --format <mermaid>         Default: mermaid
     Render graphs into .system/modular/graphs/
 

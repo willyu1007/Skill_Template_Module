@@ -16,6 +16,9 @@ function usage(exitCode = 0) {
 Usage:
   node .ai/scripts/projectctl.js <command> [options]
 
+Options:
+  --repo-root <path>   Repo root (default: auto-detect from cwd)
+
 Commands:
   init
     Ensure .ai/project/state.json exists.
@@ -49,6 +52,23 @@ function die(msg, code = 1) {
 
 function isoNow() {
   return new Date().toISOString();
+}
+
+function looksLikeRepoRoot(dir) {
+  // Anchor on `.ai/package.json` (module boundary marker for this template).
+  return fs.existsSync(path.join(dir, '.ai', 'package.json'));
+}
+
+function findRepoRoot(startDir) {
+  let cur = path.resolve(startDir);
+  // Walk upward until root.
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (looksLikeRepoRoot(cur)) return cur;
+    const parent = path.dirname(cur);
+    if (parent === cur) return null;
+    cur = parent;
+  }
 }
 
 function readText(p) {
@@ -140,12 +160,38 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   if (args.length === 0 || args[0] === '-h' || args[0] === '--help') usage(0);
   const command = args.shift();
-  return { command, args };
+  const opts = {};
+  const positionals = [];
+
+  while (args.length > 0) {
+    const t = args.shift();
+    if (t === '-h' || t === '--help') usage(0);
+    if (t === '--repo-root') {
+      const v = args.shift();
+      if (!v) die('[error] --repo-root requires a value');
+      opts['repo-root'] = v;
+      continue;
+    }
+    if (t.startsWith('--')) {
+      die(`[error] Unknown option: ${t}`);
+    }
+    positionals.push(t);
+  }
+
+  return { command, opts, positionals };
 }
 
 function main() {
-  const { command, args } = parseArgs(process.argv);
-  const repoRoot = process.cwd();
+  const { command, opts, positionals } = parseArgs(process.argv);
+  const explicitRoot = opts['repo-root'] ? path.resolve(opts['repo-root']) : null;
+  const detectedRoot = explicitRoot || findRepoRoot(process.cwd());
+  if (!detectedRoot) {
+    die('[error] Failed to detect repo root from cwd. Run from repo root or pass --repo-root <path>.');
+  }
+  if (!looksLikeRepoRoot(detectedRoot)) {
+    die(`[error] Not a valid repo root (missing .ai/package.json): ${detectedRoot}`);
+  }
+  const repoRoot = detectedRoot;
   const statePath = path.join(repoRoot, '.ai', 'project', 'state.json');
 
   switch (command) {
@@ -162,7 +208,7 @@ function main() {
     }
 
     case 'set-context-mode': {
-      const mode = args[0];
+      const mode = positionals[0];
       if (!ALLOWED_CONTEXT_MODES.includes(mode)) die('[error] mode must be contract|snapshot');
       const { state } = ensureStateFile(repoRoot);
       state.context.mode = mode;
@@ -179,7 +225,7 @@ function main() {
     }
 
     case 'set-stage': {
-      const stage = args[0];
+      const stage = positionals[0];
       if (!ALLOWED_STAGES.includes(stage)) die(`[error] stage must be one of: ${ALLOWED_STAGES.join(', ')}`);
       const { state } = ensureStateFile(repoRoot);
       state.project = state.project || {};

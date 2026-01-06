@@ -119,6 +119,12 @@ Commands:
     --addons-root <path>        Add-ons directory (default: addons)
     --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
 
+  cleanup-addons
+    --repo-root <path>          Repo root (default: cwd)
+    --apply                      Actually remove addons/ (default: dry-run)
+    --i-understand              Required acknowledgement (refuses without it)
+    --addons-root <path>        Add-ons directory (default: addons)
+
 Examples:
   node .../init-pipeline.cjs start
   node .../init-pipeline.cjs status
@@ -127,6 +133,7 @@ Examples:
   node .../init-pipeline.cjs apply --providers both
   node .../init-pipeline.cjs approve --stage A
   node .../init-pipeline.cjs cleanup-init --apply --i-understand --archive
+  node .../init-pipeline.cjs cleanup-addons --apply --i-understand
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -1465,6 +1472,53 @@ function cleanupUnusedAddons(repoRoot, blueprint, addonsRoot, apply) {
   return { removed: removedAddons, skipped: skippedAddons };
 }
 
+function isWithinRepoRoot(repoRoot, candidatePath) {
+  const rel = path.relative(repoRoot, candidatePath);
+  if (!rel) return false; // same path
+  if (rel.startsWith('..') || rel.startsWith(`..${path.sep}`)) return false;
+  return !path.isAbsolute(rel);
+}
+
+function cleanupAddonsDir(repoRoot, addonsRoot, apply) {
+  const addonsDir = path.resolve(repoRoot, addonsRoot || 'addons');
+  const marker = path.join(addonsDir, 'CONVENTION.md');
+
+  if (!isWithinRepoRoot(repoRoot, addonsDir)) {
+    return { op: 'refuse', path: addonsDir, mode: 'refused', reason: 'addons-root must be within repo-root' };
+  }
+
+  if (!fs.existsSync(addonsDir)) {
+    return { op: 'skip', path: addonsDir, mode: 'skipped', reason: 'addons/ not present' };
+  }
+
+  // Guardrails similar to init/.init-kit: reduce risk of deleting a non-template directory.
+  if (!fs.existsSync(marker)) {
+    return { op: 'refuse', path: addonsDir, mode: 'refused', reason: 'missing addons/CONVENTION.md marker' };
+  }
+
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const trashDir = path.join(repoRoot, `.addons-trash-${ts}`);
+
+  if (!apply) {
+    return { op: 'rm', path: addonsDir, mode: 'dry-run', note: `will move to ${path.basename(trashDir)} then delete` };
+  }
+
+  // Move first (reduces risk if delete fails on Windows due to open file handles)
+  fs.renameSync(addonsDir, trashDir);
+
+  try {
+    fs.rmSync(trashDir, { recursive: true, force: true });
+    return { op: 'rm', path: addonsDir, mode: 'applied' };
+  } catch (e) {
+    return {
+      op: 'rm',
+      path: addonsDir,
+      mode: 'partial',
+      note: `renamed to ${path.basename(trashDir)} but could not delete automatically: ${e.message}`
+    };
+  }
+}
+
 function main() {
   const { command, opts } = parseArgs(process.argv);
   const format = (opts['format'] || 'text').toLowerCase();
@@ -2253,6 +2307,36 @@ if (command === 'validate') {
         }
       }
     }
+    process.exit(0);
+  }
+
+  if (command === 'cleanup-addons') {
+    if (!opts['i-understand']) die('[error] cleanup-addons requires --i-understand');
+    const apply = !!opts['apply'];
+    const addonsRoot = opts['addons-root'] || 'addons';
+
+    const result = cleanupAddonsDir(repoRoot, addonsRoot, apply);
+
+    if (format === 'json') {
+      const ok = result.mode !== 'refused';
+      console.log(JSON.stringify({ ok, result }, null, 2));
+      process.exit(ok ? 0 : 1);
+    }
+
+    const rel = path.relative(repoRoot, result.path || '');
+    const reason = result.reason ? ` - ${result.reason}` : '';
+
+    if (result.mode === 'refused') {
+      console.error(`[error] ${result.op}: ${rel} (${result.mode})${reason}`);
+      process.exit(1);
+    }
+
+    if (result.mode === 'dry-run') console.log(`[plan] ${result.op}: ${rel} (${result.mode})`);
+    else if (result.mode === 'applied') console.log(`[ok] ${result.op}: ${rel} (${result.mode})`);
+    else if (result.mode === 'partial') console.log(`[warn] ${result.op}: ${rel} (${result.mode})`);
+    else console.log(`[skip] ${result.op}: ${rel} (${result.mode})${reason}`);
+
+    if (result.note) console.log(`Note: ${result.note}`);
     process.exit(0);
   }
 

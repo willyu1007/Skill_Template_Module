@@ -33,6 +33,9 @@ function usage(exitCode = 0) {
 Usage:
   node .ai/scripts/modulectl.js <command> [options]
 
+Options:
+  --repo-root <path>          Repo root (default: cwd)
+
 Commands:
   init
     --module-id <id>            Module id (e.g., billing.api)

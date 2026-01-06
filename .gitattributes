@@ -9,6 +9,7 @@
 #
 # Notes:
 # - This repo standardizes on LF for all text (including scripts).
+# - docs lint warns on missing final newline; keep files ending with LF.
 # - For existing repos, use: `git add --renormalize .` once after adding this file.
 #
 

@@ -1,6 +1,6 @@
 ---
 name: initialize-module-instance
-description: Create a new module instance with modulectl and register it into the modular SSOT/derived registries.
+description: Create a new module instance with modulectl and register the module into the modular SSOT/derived registries.
 category: scaffold/modules
 ssot_path: .ai/skills/scaffold/modules/initialize-module-instance
 ---

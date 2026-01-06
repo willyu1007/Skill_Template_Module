@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * rollback.js - Rollback Script
+ * rollback.js - Rollback Guidance
  *
- * Provides rollback guidance and commands.
+ * Prints human-run rollback commands and references runbooks.
  *
  * Usage:
  *   node .ai/scripts/rollback.js --service <service> --env <env>
@@ -42,67 +42,85 @@ function loadConfig(repoRoot) {
   const configPath = join(repoRoot, 'ops/deploy/config.json');
   if (!existsSync(configPath)) return null;
   try {
-    return JSON.parse(readFileSync(configPath, 'utf8'));
-  } catch (e) {
+    const raw = JSON.parse(readFileSync(configPath, 'utf8'));
+    return raw && typeof raw === 'object' ? raw : null;
+  } catch {
     return null;
   }
 }
 
+function normalizeConfig(raw) {
+  const config = raw && typeof raw === 'object' ? { ...raw } : {};
+  if (!Array.isArray(config.services)) config.services = [];
+  if (typeof config.model !== 'string' || config.model.trim() === '') config.model = '(unknown)';
+  return config;
+}
+
 function main() {
-  const args = process.argv.slice(2);
-  const parsed = parseArgs(args);
+  const parsed = parseArgs(process.argv.slice(2));
   const repoRoot = resolveRepoRoot(parsed.flags['repo-root']);
 
   if (parsed.flags.help) {
-    console.log(`
-rollback.js - Rollback Script
+    console.log(
+      `
+rollback.js - Rollback Guidance
 
 Usage:
-  node .ai/scripts/rollback.js --service <service> --env <env>
+  node .ai/scripts/rollback.js --service <id> --env <env>
 
 Options:
-  --service <id>  Service to rollback (required)
-  --env <env>     Target environment (required)
-  --help          Show this help
+  --service <id>     Service to rollback (required)
+  --env <env>        Target environment (required)
+  --repo-root <path> Repo root override (optional)
+  --help             Show this help
 
-This script provides rollback guidance and commands.
-Actual rollback execution requires human intervention.
-`);
+This script prints rollback guidance only. Humans execute the commands.
+`.trim()
+    );
     return 0;
   }
 
   const { service, env } = parsed.flags;
-
   if (!service || !env) {
-    console.error('Error: --service and --env are required.');
-    console.error('Run with --help for usage.');
+    console.error('[error] --service and --env are required. Run with --help for usage.');
     return 1;
   }
 
-  const config = loadConfig(repoRoot);
-  if (!config) {
-    console.error('Error: Deployment config not found.');
+  const rawConfig = loadConfig(repoRoot);
+  if (!rawConfig) {
+    console.error('[error] Deployment config not found or invalid: ops/deploy/config.json');
+    console.error('        Run: node .ai/scripts/deployctl.js init');
     return 1;
   }
 
-  const svc = config.services.find(s => s.id === service);
+  const config = normalizeConfig(rawConfig);
+  if (config.services.length === 0) {
+    console.error('[error] No services are registered for deployment.');
+    console.error(`        Run: node .ai/scripts/deployctl.js add-service --id ${service}`);
+    return 1;
+  }
+
+  const svc = config.services.find((s) => s.id === service);
   if (!svc) {
-    console.error(`Error: Service "${service}" not found.`);
+    console.error(`[error] Service "${service}" not found.`);
+    console.error('Available services:');
+    for (const s of config.services) console.error(`  - ${s.id}`);
     return 1;
   }
 
-  console.log(`\n🔄 Rollback Plan`);
-  console.log(`${'─'.repeat(40)}`);
+  console.log('\nRollback Plan');
+  console.log('----------------------------------------');
   console.log(`Service:     ${service}`);
   console.log(`Environment: ${env}`);
   console.log(`Model:       ${config.model}`);
-  console.log(`${'─'.repeat(40)}`);
+  if (svc.artifact) console.log(`Artifact:    ${svc.artifact}`);
+  console.log('----------------------------------------');
 
-  console.log(`\n⚠️  Rollback requires human execution.`);
-  console.log(`\nRollback commands:`);
+  console.log('\nRollback commands (human-run):');
 
   if (config.model === 'k8s') {
-    console.log(`
+    console.log(
+      `
 # Kubernetes rollback
 kubectl rollout undo deployment/${service} -n ${env}
 
@@ -111,15 +129,18 @@ kubectl rollout status deployment/${service} -n ${env}
 
 # View rollout history
 kubectl rollout history deployment/${service} -n ${env}
-`);
+`.trim()
+    );
   } else {
-    console.log(`
+    console.log(
+      `
 # Refer to your ${config.model} rollback procedure
-# Check ops/deploy/workdocs/runbooks/rollback-procedure.md
-`);
+# See: ops/deploy/workdocs/runbooks/rollback-procedure.md
+`.trim()
+    );
   }
 
-  console.log(`\n📖 See: ops/deploy/workdocs/runbooks/rollback-procedure.md`);
+  console.log('\nSee: ops/deploy/workdocs/runbooks/rollback-procedure.md');
   return 0;
 }
 

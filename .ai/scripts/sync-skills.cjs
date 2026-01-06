@@ -34,10 +34,11 @@ function printHelp() {
     '  --skill <name>                        Repeatable; adds one skill name',
     '  --manifest <path>                     JSON manifest (for --scope current)',
     '  --mode <reset|update>                 reset deletes provider roots; update is incremental (default: reset)',
-    '  --prune                               With --mode update: delete wrappers not in selected set',
+    '  --prune                               With --mode update: delete wrappers not in selected set (destructive)',
     '  --delete <csv>                        Delete wrapper(s) only (no SSOT changes)',
     '  --list                                List discovered skills (respects --scope filters)',
     '  --dry-run                             Print actions without writing',
+    '  --yes                                 Required for destructive operations (reset/prune/delete), unless --dry-run',
     '  -h, --help                            Show help',
     '',
     'Scopes:',
@@ -277,6 +278,7 @@ function parseArgs(argv) {
     prune: false,
     list: false,
     dryRun: false,
+    yes: false,
     specificSkills: [],
     deleteSkills: [],
   };
@@ -285,6 +287,10 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '-h' || a === '--help') {
       args.help = true;
+      continue;
+    }
+    if (a === '-y' || a === '--yes') {
+      args.yes = true;
       continue;
     }
     if (a === '--providers' || a === '--provider') {
@@ -506,6 +512,15 @@ function sync() {
   const mode = String(args.mode || '').toLowerCase() || 'reset';
   if (!['reset', 'update'].includes(mode)) {
     console.error(colors.red(`Invalid --mode: ${args.mode}`));
+    process.exit(1);
+  }
+
+  const isDestructive =
+    !args.dryRun && (mode === 'reset' || (mode === 'update' && args.prune) || args.deleteSkills.length > 0);
+  if (isDestructive && !args.yes) {
+    console.error(colors.red('Refusing to perform destructive operations without --yes.'));
+    console.error(colors.gray('Destructive operations include: --mode reset, --mode update --prune, and --delete.'));
+    console.error(colors.gray('Preview safely with --dry-run, then re-run with --yes.'));
     process.exit(1);
   }
 

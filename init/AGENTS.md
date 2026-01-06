@@ -137,6 +137,16 @@ If user agrees, update `AGENTS.md` with:
 
 See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 6 for detailed template.
 
+## Add-ons directory cleanup (after completion)
+
+After Stage C approval (`approve --stage C`), ask the user whether to keep the add-on source directory `addons/`.
+
+If the user chooses to remove it:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand
+```
+
 ## Cleanup
 
 Only after completion and user confirmation:

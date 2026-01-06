@@ -37,6 +37,9 @@ function usage(exitCode = 0) {
 Usage:
   node .ai/scripts/integrationctl.js <command> [options]
 
+Options:
+  --repo-root <path>          Repo root (default: cwd)
+
 Commands:
   init
     Ensure modules/integration skeleton exists.

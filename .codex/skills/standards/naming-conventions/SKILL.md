@@ -1,6 +1,6 @@
 ---
 name: naming-conventions
-description: Apply consistent naming conventions for directories, files, and identifiers - covers kebab-case rules, SSOT layout, and skill naming standards.
+description: Apply consistent naming conventions for directories, files, and identifiers - covers kebab-case rules, SSOT layout, skill naming standards, and script-generated file paths (including temporary files under .ai/.tmp/).
 category: standards
 ssot_path: .ai/skills/standards/naming-conventions
 ---

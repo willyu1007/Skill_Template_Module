@@ -36,7 +36,7 @@ function printHelp() {
     'Usage: node .ai/scripts/lint-skills.cjs [options]',
     '',
     'Options:',
-    '  --fix           Auto-fix issues where possible (not implemented yet)',
+    '  --fix           Auto-fix issues where possible (frontmatter + required sections)',
     '  --strict        Treat warnings as errors',
     '  --quiet         Only show errors, not warnings',
     '  -h, --help      Show help',
@@ -130,6 +130,129 @@ function parseFrontmatter(content) {
   return result;
 }
 
+function extractFrontmatterBlock(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) return null;
+  const full = match[0];
+  const yaml = match[1];
+  const rest = content.slice(full.length);
+  return { full, yaml, rest };
+}
+
+function findFirstHeadingText(markdown) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('# ')) return t.slice(2).trim();
+  }
+  return null;
+}
+
+function ensureSection(content, heading, bodyLines) {
+  const re = new RegExp(`^## ${heading}\\s*$`, 'm');
+  if (re.test(content)) return { content, changed: false };
+  const suffix = content.endsWith('\n') ? '' : '\n';
+  const block = [`## ${heading}`, ...bodyLines, ''].join('\n');
+  return { content: content + suffix + '\n' + block, changed: true };
+}
+
+function fixSkillFile(skillDir, skillsRoot) {
+  const relPath = path.relative(skillsRoot, skillDir);
+  const dirName = path.basename(skillDir);
+  const skillMdPath = path.join(skillDir, SKILL_MD);
+
+  if (!fs.existsSync(skillMdPath)) {
+    return { relPath, changed: false, actions: ['Missing SKILL.md (cannot fix)'] };
+  }
+
+  const original = fs.readFileSync(skillMdPath, 'utf8');
+  let content = original.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const actions = [];
+  let changed = false;
+
+  const fm = extractFrontmatterBlock(content);
+  if (fm) {
+    const lines = fm.yaml.split('\n');
+    const out = [];
+    let hasName = false;
+    let hasDesc = false;
+
+    for (const line of lines) {
+      if (/^name:\s*/.test(line)) {
+        out.push(`name: ${dirName}`);
+        if (line.trim() !== `name: ${dirName}`) actions.push('Updated frontmatter name to match directory');
+        hasName = true;
+        continue;
+      }
+      if (/^description:\s*/.test(line)) {
+        const existing = line.replace(/^description:\s*/, '').trim();
+        if (existing.length === 0) {
+          const inferred = findFirstHeadingText(fm.rest) || dirName;
+          out.push(`description: ${inferred}`);
+          actions.push('Filled missing frontmatter description');
+        } else {
+          out.push(line);
+        }
+        hasDesc = true;
+        continue;
+      }
+      out.push(line);
+    }
+
+    if (!hasName) {
+      out.push(`name: ${dirName}`);
+      actions.push('Added missing frontmatter name');
+    }
+    if (!hasDesc) {
+      const inferred = findFirstHeadingText(fm.rest) || dirName;
+      out.push(`description: ${inferred}`);
+      actions.push('Added missing frontmatter description');
+    }
+
+    const rebuilt = `---\n${out.join('\n')}\n---\n`;
+    content = rebuilt + (fm.rest.startsWith('\n') ? fm.rest.slice(1) : fm.rest);
+    changed = true;
+  } else {
+    const inferred = findFirstHeadingText(content) || dirName;
+    const header = `---\nname: ${dirName}\ndescription: ${inferred}\n---\n\n`;
+    content = header + content.replace(/^\n+/, '');
+    actions.push('Inserted missing frontmatter');
+    changed = true;
+  }
+
+  const v = ensureSection(content, 'Verification', [
+    '',
+    '- [ ] Add verification steps',
+  ]);
+  if (v.changed) {
+    content = v.content;
+    actions.push('Added missing ## Verification section');
+    changed = true;
+  }
+
+  const b = ensureSection(content, 'Boundaries', [
+    '',
+    '- MUST define what this skill will not do',
+  ]);
+  if (b.changed) {
+    content = b.content;
+    actions.push('Added missing ## Boundaries section');
+    changed = true;
+  }
+
+  if (!content.endsWith('\n')) {
+    content += '\n';
+    actions.push('Added final newline');
+    changed = true;
+  }
+
+  if (changed && content !== original) {
+    fs.writeFileSync(skillMdPath, content, 'utf8');
+    return { relPath, changed: true, actions };
+  }
+  return { relPath, changed: false, actions: changed ? actions : [] };
+}
+
 function lintSkill(skillDir, skillsRoot) {
   const errors = [];
   const warnings = [];
@@ -209,6 +332,19 @@ function main() {
   const skillDirs = findSkillDirs(defaultSkillsRoot);
   console.log(colors.gray(`Found ${skillDirs.length} skills to lint\n`));
 
+  if (args.fix) {
+    let fixedCount = 0;
+    for (const skillDir of skillDirs) {
+      const res = fixSkillFile(skillDir, defaultSkillsRoot);
+      if (res.changed) {
+        fixedCount += 1;
+        console.log(colors.gray(`[fix] ${res.relPath}/`));
+        for (const a of res.actions) console.log(colors.gray(`  - ${a}`));
+      }
+    }
+    if (fixedCount > 0) console.log(colors.gray(`\n[fix] Updated ${fixedCount} skill(s).\n`));
+  }
+
   let totalErrors = 0;
   let totalWarnings = 0;
   const results = [];
@@ -267,4 +403,3 @@ function main() {
 }
 
 main();
-

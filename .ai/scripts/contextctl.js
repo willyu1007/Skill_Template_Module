@@ -25,6 +25,9 @@ function usage(exitCode = 0) {
 Usage:
   node .ai/scripts/contextctl.js <command> [options]
 
+Options:
+  --repo-root <path>            Repo root (default: cwd)
+
 Commands:
   init
     Ensure docs/context SSOT + schemas exist.

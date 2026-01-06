@@ -563,6 +563,15 @@ AI: Done. AGENTS.md updated with:
 - Enabled Add-ons table
 
 Next: run `approve --stage C` to complete initialization.
+
+User: [runs approve --stage C]
+
+AI: Initialization is complete. Do you want to keep the add-on sources under `addons/`? If not, I can remove `addons/` now (it is not required for day-to-day project operation).
+
+[Yes / No]
+
+If the user chooses **No**, run:
+`node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand`
 ```
 
 ---
@@ -575,3 +584,4 @@ Next: run `approve --stage C` to complete initialization.
 4. **Get explicit approval**: the user must explicitly approve each stage before advancing
 5. **Add-ons default ON**: all add-ons are enabled by default; ask user to disable if needed
 6. **Documentation confirmation**: always ask user about AGENTS.md update after apply completes
+7. **Add-ons directory cleanup**: after init completes, ask whether to keep `addons/`; if not, run `cleanup-addons`

@@ -388,6 +388,28 @@ Update `AGENTS.md` following these rules:
 
 ---
 
+## H. Add-ons Directory Cleanup Confirmation (after approve)
+
+After `approve --stage C` completes, ask the user whether to keep the add-on source directory `addons/`.
+
+### Prompt template
+
+```
+Initialization is complete.
+
+Do you want to keep the add-on sources under `addons/`? (They are not required for day-to-day project operation, but keeping them can help with future add-on re-installs or comparisons.)
+
+[Yes / No]
+```
+
+### If user says No
+
+Run:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand
+```
+
 ## Verification
 
 - After the interview, run Stage A validation:
@@ -405,3 +427,4 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 - For languages without templates, LLM should generate config files before running `apply`.
 
 - After apply completes, ask user about AGENTS.md update (Module G).
+- After init completes (`approve --stage C`), ask user about `addons/` cleanup (Module H).

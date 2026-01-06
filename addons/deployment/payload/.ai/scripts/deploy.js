@@ -2,11 +2,14 @@
 /**
  * deploy.js - Deploy Execution Entry Point
  *
- * Entry point for deployment operations.
- * Wraps deployctl.js for convenience.
+ * Convenience wrapper around deployctl.js.
+ *
+ * Note: This does not execute deployments; it generates plans for humans.
  *
  * Usage:
  *   node .ai/scripts/deploy.js <service> --env <env> [--tag <tag>]
+ *   node .ai/scripts/deploy.js --list
+ *   node .ai/scripts/deploy.js --status [--env <env>]
  */
 
 import { spawn } from 'node:child_process';
@@ -48,59 +51,63 @@ function runDeployctl(args) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const parsed = parseArgs(args);
+  const parsed = parseArgs(process.argv.slice(2));
 
   if (parsed.flags.help || parsed._[0] === 'help') {
-    console.log(`
+    console.log(
+      `
 deploy.js - Deploy Execution Entry Point
 
 Usage:
   node .ai/scripts/deploy.js <service> --env <env> [--tag <tag>]
   node .ai/scripts/deploy.js --list
-  node .ai/scripts/deploy.js --status --env <env>
+  node .ai/scripts/deploy.js --status [--env <env>]
 
 Options:
-  --env <env>     Target environment (required for deploy)
-  --tag <tag>     Override artifact tag
-  --list          List registered services
-  --status        Show deployment status
-  --help          Show this help
+  --env <env>        Target environment (required for plan)
+  --tag <tag>        Optional tag override (recorded in history)
+  --repo-root <path> Repo root override (optional)
+  --list             List registered services
+  --status           Show deployment status
+  --help             Show this help
 
 Examples:
   node .ai/scripts/deploy.js api --env staging
   node .ai/scripts/deploy.js api --env prod --tag v1.2.3
+  node .ai/scripts/deploy.js --list
   node .ai/scripts/deploy.js --status --env staging
-`);
+`.trim()
+    );
     return 0;
   }
 
+  const repoRootArgs = parsed.flags['repo-root'] ? ['--repo-root', parsed.flags['repo-root']] : [];
+
   if (parsed.flags.list) {
-    return runDeployctl(['list']);
+    return runDeployctl(['list', ...repoRootArgs]);
   }
 
   if (parsed.flags.status) {
-    const statusArgs = ['status'];
+    const statusArgs = ['status', ...repoRootArgs];
     if (parsed.flags.env) statusArgs.push('--env', parsed.flags.env);
     return runDeployctl(statusArgs);
   }
 
   const service = parsed._[0];
   if (!service) {
-    console.error('Error: Service required.');
-    console.error('Run with --help for usage.');
+    console.error('[error] Service required. Run with --help for usage.');
     return 1;
   }
 
   if (!parsed.flags.env) {
-    console.error('Error: --env is required.');
+    console.error('[error] --env is required.');
     return 1;
   }
 
-  // Run plan (actual deployment would require human execution)
-  const planArgs = ['plan', '--service', service, '--env', parsed.flags.env];
+  const planArgs = ['plan', '--service', service, '--env', parsed.flags.env, ...repoRootArgs];
+  if (parsed.flags.tag) planArgs.push('--tag', parsed.flags.tag);
   return runDeployctl(planArgs);
 }
 
-main().then(code => process.exit(code));
+main().then((code) => process.exit(code));
 

@@ -95,6 +95,8 @@ Note: the Context system is not installed from `addons/`. Even if `addons.contex
 5. Single source of truth for config generation: `scripts/scaffold-configs.cjs`.
 6. **Add-ons default ON**: All optional add-ons (packaging, deployment, release, observability) are **enabled by default**. Use opt-out model (ask user to disable, not enable).
 7. **Phase 6 documentation confirmation is REQUIRED**: After `apply` completes, the LLM MUST ask the user whether to update `AGENTS.md` with tech stack info. See `templates/llm-init-guide.md` Phase 6.
+8. **Post-init add-on source cleanup confirmation**: After initialization completes (after `approve --stage C`), ask the user whether to keep the `addons/` directory. If the user wants to remove `addons/`, run:
+   - `node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand`
 
 ---
 

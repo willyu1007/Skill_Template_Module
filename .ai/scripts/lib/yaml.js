@@ -121,6 +121,14 @@ export function parseYaml(text) {
     const indent = stripped.match(/^ */)[0].length;
     const trimmed = stripped.trim();
 
+    // YAML document markers are a no-op for this minimal subset.
+    if (trimmed === '---' || trimmed === '...') continue;
+
+    // Complex keys are out of scope for this parser.
+    if (trimmed.startsWith('?')) {
+      throw new Error(`YAML parse error (line ${i + 1}): complex keys ("?") are not supported`);
+    }
+
     // Pop contexts until we find parent indentation
     // For array items (- ...), we need to pop until we find the array container
     // or a context at a lower indent level
@@ -161,6 +169,14 @@ export function parseYaml(text) {
       }
 
       const rest = trimmed.slice(1).trimStart();
+      if (rest.startsWith('|') || rest.startsWith('>')) {
+        throw new Error(`YAML parse error (line ${i + 1}): multi-line scalars ("|" or ">") are not supported`);
+      }
+      if (rest.startsWith('&') || rest.startsWith('*')) {
+        throw new Error(
+          `YAML parse error (line ${i + 1}): anchors/aliases ("&" / "*") are not supported (quote the value if it is a literal string)`
+        );
+      }
       if (rest === '') {
         const obj = {};
         parent.container.push(obj);
@@ -170,6 +186,15 @@ export function parseYaml(text) {
 
       const kv = parseKeyValue(rest);
       if (kv && kv.key) {
+        const restTrim = kv.rest.trim();
+        if (restTrim.startsWith('|') || restTrim.startsWith('>')) {
+          throw new Error(`YAML parse error (line ${i + 1}): multi-line scalars ("|" or ">") are not supported`);
+        }
+        if (restTrim.startsWith('&') || restTrim.startsWith('*')) {
+          throw new Error(
+            `YAML parse error (line ${i + 1}): anchors/aliases ("&" / "*") are not supported (quote the value if it is a literal string)`
+          );
+        }
         const obj = {};
         parent.container.push(obj);
         // Parse first key/value inline
@@ -201,6 +226,16 @@ export function parseYaml(text) {
       parent.container[kv.key] = undefined;
       parent.pendingKey = kv.key;
       continue;
+    }
+
+    const restTrim = kv.rest.trim();
+    if (restTrim.startsWith('|') || restTrim.startsWith('>')) {
+      throw new Error(`YAML parse error (line ${i + 1}): multi-line scalars ("|" or ">") are not supported`);
+    }
+    if (restTrim.startsWith('&') || restTrim.startsWith('*')) {
+      throw new Error(
+        `YAML parse error (line ${i + 1}): anchors/aliases ("&" / "*") are not supported (quote the value if it is a literal string)`
+      );
     }
 
     parent.container[kv.key] = parseScalar(kv.rest);
