@@ -1,6 +1,6 @@
 ---
 name: create-workdocs-plan
-description: Create a workdocs task bundle for a module or integration task (overview/plan/architecture/implementation notes/verification + pitfalls).
+description: Create or resume a module/integration workdocs task bundle (00–05) for non-trivial work (multi-step/multi-file/unclear/handoff); docs only (no code changes).
 category: workflows/workdocs
 ssot_path: .ai/skills/workflows/workdocs/create-workdocs-plan
 ---

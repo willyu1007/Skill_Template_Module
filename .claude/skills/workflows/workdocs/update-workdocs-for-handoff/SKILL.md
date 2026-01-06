@@ -1,6 +1,6 @@
 ---
 name: update-workdocs-for-handoff
-description: Update a task's workdocs to be handoff-ready for another developer or agent.
+description: Finalize/synchronize a task’s workdocs for handoff or wrap-up in module/integration scope; docs only (no new code changes).
 category: workflows/workdocs
 ssot_path: .ai/skills/workflows/workdocs/update-workdocs-for-handoff
 ---

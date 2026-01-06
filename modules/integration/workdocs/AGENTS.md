@@ -37,9 +37,9 @@ active/<task-slug>/
 
 - Read `03-implementation-notes.md` and `05-pitfalls.md` first.
 - Update `01-plan.md` and `04-verification.md` as you work.
+- If the user asks for planning before coding (plan/roadmap/milestones/phases), create `active/<task-slug>/roadmap.md` via `plan-maker` before implementation.
 
 ## Skills
 
 - Create: `create-workdocs-plan` (scope: integration)
 - Handoff: `update-workdocs-for-handoff`
-

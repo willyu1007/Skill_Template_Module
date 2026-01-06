@@ -1,6 +1,6 @@
 ---
 name: initialize-module-instance
-description: Create a new module instance with modulectl and register the module into the modular SSOT/derived registries.
+description: Create a new module instance with modulectl, including a workdocs baseline, and register the module into the modular SSOT/derived registries.
 ---
 
 # Initialize a Module Instance
@@ -30,6 +30,7 @@ Create a new module under `modules/<module_id>/` and ensure the module is correc
 | `modules/<module_id>/ABILITY.md` | Placeholder for responsibility boundaries |
 | `modules/<module_id>/interact/registry.json` | Context artifacts registry (SSOT) |
 | `modules/<module_id>/workdocs/README.md` | Workdocs usage instructions |
+| `modules/<module_id>/workdocs/AGENTS.md` | Workdocs operating rules + resume checklist |
 | `modules/<module_id>/src/` | Source code directory |
 | `modules/<module_id>/tests/` | Test directory |
 | `modules/<module_id>/config/` | Configuration directory |
@@ -76,6 +77,14 @@ The existing Operating Rules and Key Files sections will be preserved.
 
 If user agrees, **update** (not overwrite) `modules/<module_id>/AGENTS.md` following the merge strategy in the "Documentation Confirmation" section below.
 
+4.5. **Workdocs baseline (Expected)**
+
+The module skeleton should include:
+- `modules/<module_id>/workdocs/AGENTS.md` (workdocs rules + resume checklist)
+- `modules/<module_id>/workdocs/README.md` (structure)
+
+If either file is missing, create it (do not overwrite existing) and keep the content minimal and operational.
+
 5. (Optional) Add flow nodes and implementations
 
 - Add/edit `.system/modular/flow_graph.yaml` to include new flow nodes.
@@ -99,6 +108,12 @@ See `examples/example-api/` for a complete module skeleton including:
 - `workdocs/` - Module work documentation
 
 Copy and customize for your new module.
+
+### Workdocs baseline (excerpt)
+
+New modules are expected to include `modules/<module_id>/workdocs/AGENTS.md`, with headings like:
+- `## When to use workdocs (MUST)`
+- `## Resume checklist`
 
 **Note**: New modules should include boundaries directly in `AGENTS.md` (see Documentation Confirmation section). The separate `ABILITY.md` is kept in examples for reference only.
 

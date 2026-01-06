@@ -260,7 +260,11 @@ function discoverModules(repoRoot, modulesDirOpt) {
 
 function templateAgentsMd(moduleId, moduleType, description) {
   const desc = description ? `\n\n## Description\n\n${description}\n` : '';
-  return `---\nname: ${moduleId}\npurpose: Module agent instructions for ${moduleId}\n---\n\n# ${moduleId}\n\n## Operating rules\n\n- Read this file first when working inside this module.\n- Keep changes local to this module unless explicitly cross-cutting.\n- If you change this module's manifest, run:\n  - node .ai/scripts/modulectl.js registry-build\n  - node .ai/scripts/flowctl.js update-from-manifests\n  - node .ai/scripts/flowctl.js lint\n\n## Key files\n\n- MANIFEST.yaml (SSOT)\n- interact/registry.json (SSOT)\n- workdocs/ (long-running module notes)\n${desc}`;
+  return `---\nname: ${moduleId}\npurpose: Module agent instructions for ${moduleId}\n---\n\n# ${moduleId}\n\n## Operating rules\n\n- Read this file first when working inside this module.\n- Keep changes local to this module unless explicitly cross-cutting.\n- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).\n- If you change this module's manifest, run:\n  - node .ai/scripts/modulectl.js registry-build\n  - node .ai/scripts/flowctl.js update-from-manifests\n  - node .ai/scripts/flowctl.js lint\n\n## Key files\n\n- MANIFEST.yaml (SSOT)\n- interact/registry.json (SSOT)\n- workdocs/AGENTS.md (how to use workdocs)\n- workdocs/ (long-running module notes)\n${desc}`;
+}
+
+function templateWorkdocsAgentsMd(moduleId) {
+  return `---\nname: ${moduleId}-workdocs\npurpose: Workdocs operating rules for ${moduleId}\n---\n\n# ${moduleId} — workdocs\n\n## Scope\n\nLong-running task tracking, design decisions, and handoff documentation for this module.\n\n## Operating rules (MUST)\n\n- Do not start non-trivial implementation without a task folder under \`active/<task_slug>/\`.\n- Prefer **resume over new**: if a related task already exists in \`active/\`, reuse it.\n- Before doing any work in an existing task, read:\n  - \`03-implementation-notes.md\`\n  - \`05-pitfalls.md\`\n- Keep execution synced during work:\n  - \`01-plan.md\` (checklist + newly discovered TODOs)\n  - \`03-implementation-notes.md\` (what changed + decisions + deviations)\n  - \`04-verification.md\` (commands run + results + blockers)\n- Before context switch / handoff / wrap-up: run \`update-workdocs-for-handoff\` and ensure \`handoff.md\` is present and actionable.\n\n## Structure\n\n| Directory | Content |\n|---|---|\n| \`active/<task-slug>/\` | Current tasks |\n| \`archive/<task-slug>/\` | Completed tasks |\n\n## Workflow\n\n1. If the user asks for planning before coding, write \`active/<task_slug>/roadmap.md\` via \`plan-maker\` (planning-only).\n2. Create (or resume) the task bundle via \`create-workdocs-plan\`.\n3. Execute work while continuously syncing \`01-plan.md\`, \`03-implementation-notes.md\`, and \`04-verification.md\`.\n4. Before handoff: use \`update-workdocs-for-handoff\`.\n5. On completion: move the folder to \`archive/\`.\n`;
 }
 
 function templateAbilityMd(moduleId) {
@@ -309,17 +313,19 @@ function cmdInit(repoRoot, opts) {
   const abilityPath = path.join(moduleDir, 'ABILITY.md');
   const registryPath = path.join(moduleDir, 'interact', 'registry.json');
   const workdocsReadmePath = path.join(moduleDir, 'workdocs', 'README.md');
+  const workdocsAgentsPath = path.join(moduleDir, 'workdocs', 'AGENTS.md');
 
   const manifestObj = defaultManifest(moduleId, moduleType, description);
   const manifestYaml = dumpYaml(manifestObj);
 
-  const workdocsReadme = `# ${moduleId} — workdocs\n\nThis folder contains long-running notes for the module.\n\nRecommended structure:\n\n- active/ — current tasks\n- archive/ — closed tasks\n\nFor integration-related work, prefer writing in modules/integration/workdocs/.\n`;
+  const workdocsReadme = `# ${moduleId} — workdocs\n\nThis folder contains long-running notes for the module.\n\nRead first:\n- workdocs/AGENTS.md (how to use workdocs)\n\nRecommended structure:\n\n- active/ — current tasks\n- archive/ — closed tasks\n\nFor integration-related work, prefer writing in modules/integration/workdocs/.\n`;
 
   filesToWrite.push({ path: manifestPath, content: manifestYaml });
   filesToWrite.push({ path: agentsPath, content: templateAgentsMd(moduleId, moduleType, description) });
   filesToWrite.push({ path: abilityPath, content: templateAbilityMd(moduleId) });
   filesToWrite.push({ path: registryPath, content: JSON.stringify(defaultModuleContextRegistry(moduleId), null, 2) + '\n' });
   filesToWrite.push({ path: workdocsReadmePath, content: workdocsReadme });
+  filesToWrite.push({ path: workdocsAgentsPath, content: templateWorkdocsAgentsMd(moduleId) });
 
   const dirsToEnsure = [
     path.join(moduleDir, 'interact'),

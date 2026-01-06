@@ -38,68 +38,20 @@ Read `init/AGENTS.md` for project initialization instructions.
 | Skill packs + wrapper sync | `node .ai/scripts/skillsctl.js` |
 | DB mirror (optional usage) | `node .ai/scripts/dbctl.js` |
 
-## Optional Add-ons (installable via init pipeline)
+## Task Protocol (workdocs discipline)
 
-These are kept as payloads under `addons/` and can be installed during project initialization:
+**Decision gate (MUST)** — before editing code on non-trivial work:
+- Either (A) **resume** an existing task under `modules/<module_id>/workdocs/active/` (or `modules/integration/workdocs/active/`), or
+- (B) **create** a new bundle via `create-workdocs-plan`, or
+- (C) explicitly state “skip workdocs” + a short reason (only acceptable for small, well-defined fixes).
 
-| Add-on | Purpose | Control Script |
-|---|---|---|
-| `packaging` | Container/artifact packaging | `packctl.js` |
-| `deployment` | Multi-environment deployment | `deployctl.js` |
-| `release` | Version and changelog management | `releasectl.js` |
-| `observability` | Metrics/logs/traces contracts | `obsctl.js` |
+**Planning vs implementation routing**
+- If the user asks for a planroadmap: use `plan-maker` to write `roadmap.md` first (planning-only).
+- If the task needs context preservation (multi-session, handoff) or qualifies as complex: follow with `create-workdocs-plan` (00–05) and then start coding while continuously syncing workdocs.
 
-See `init/addon-docs/convention.md` for conventions.
-
-## Common Tasks
-
-### Add or Edit Skills
-
-- Edit `.ai/skills/` only (SSOT).
-- Regenerate provider wrappers with:
-
-```bash
-node .ai/scripts/sync-skills.cjs
-```
-
-### Initialize a Module Instance
-
-```bash
-node .ai/scripts/modulectl.js init --module-id <module_id> --apply
-node .ai/scripts/modulectl.js registry-build
-node .ai/scripts/flowctl.js update-from-manifests
-node .ai/scripts/flowctl.js lint
-node .ai/scripts/contextctl.js build
-```
-
-### Validate Integration Scenarios
-
-```bash
-node .ai/scripts/integrationctl.js validate
-node .ai/scripts/integrationctl.js compile
-node .ai/scripts/integrationctl.js run --execute   # optional; requires runtime endpoints config
-```
-
-## Task Protocol (for complex tasks)
-
-For tasks that involve multiple steps, span multiple files, or require decisions:
-
-1. **Check existing workdocs**: Look for active plans at `modules/<module_id>/workdocs/active/`
-2. **Create a plan** (if needed): Use skill `create-workdocs-plan`
-3. **Execute with tracking**: Keep `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, and `05-pitfalls.md` current
-4. **Handoff**: Use skill `update-workdocs-for-handoff` before context switch
-
-**When to use workdocs:**
-- Task spans multiple files (>3)
-- Task requires multiple steps (>5)
-- Task involves architectural decisions
-- Task may be interrupted/handed off
-- Task has unclear scope requiring exploration
-
-**Skip workdocs when:**
-- Single file fix
-- Simple refactor (rename, move)
-- Well-defined, quick task (<30 min)
+**Execution sync (MUST)**
+- Keep these files current during execution: `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, `05-pitfalls.md`.
+- Before context switch/handoff/wrap-up: run `update-workdocs-for-handoff`.
 
 ## Rules
 - For LLM engineering tasks, open `.ai/llm-config/AGENTS.md`

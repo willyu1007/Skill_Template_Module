@@ -1,6 +1,6 @@
 ---
 name: create-workdocs-plan
-description: Create a workdocs task bundle for a module or integration task (overview/plan/architecture/implementation notes/verification + pitfalls).
+description: Create or resume a module/integration workdocs task bundle (00–05) for non-trivial work (multi-step/multi-file/unclear/handoff); docs only (no code changes).
 ---
 
 # create-workdocs-plan
@@ -12,6 +12,16 @@ Create a workdocs task bundle that is implementation-ready and suitable for hand
 The repository is **module-first**:
 - Module workdocs live under `modules/<module_id>/workdocs/`
 - Cross-module integration workdocs live under `modules/integration/workdocs/`
+
+## Default use (do not wait for a “trigger phrase”)
+
+Use this skill **proactively** whenever you are about to do non-trivial work:
+- multi-step or multi-file changes
+- unclear scope / discovery needed
+- any meaningful architectural/flow decision
+- likely handoff / context switch
+
+User “trigger phrases” are only hints; correct usage must not depend on language.
 
 ## Inputs
 
@@ -35,20 +45,46 @@ A directory with a workdocs bundle:
 1. **Infer scope**
    - If the task is clearly about a single module, treat the task as module-scoped.
    - If the task spans multiple modules (or involves scenario testing), treat the task as integration-scoped.
+   - If scope is unclear, ask the user to confirm `module_id` or `integration` before creating files.
 
-2. **Create the workdocs folder**
+2. **Prefer resume over new creation (robustness)**
+   - Check for existing tasks first:
+     - Module: `modules/<module_id>/workdocs/active/`
+     - Integration: `modules/integration/workdocs/active/`
+   - If an active task already matches the user’s request, **reuse it** and only update missing artifacts (do not create a parallel task folder).
+   - If you reuse an existing task, read these first before doing any work:
+     - `03-implementation-notes.md`
+     - `05-pitfalls.md`
+
+3. **Confirm `<task_slug>` (kebab-case)**
+   - Propose a slug (e.g., `fix-auth-middleware`, `add-checkout-flag`), ask the user to confirm.
+   - If the user can’t decide now, choose a conservative slug and record the assumption in `00-overview.md`.
+
+4. **Create the workdocs folder**
    Use one of:
    - Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/`
    - Integration-scoped: `modules/integration/workdocs/active/<task_slug>/`
 
-3. **Create the bundle files from templates**
+5. **Create the bundle files from templates**
    - Copy from `./templates/` into the task folder.
    - Fill in placeholders with task-specific content.
+   - Set `03-implementation-notes.md`:
+     - `Current status: planned`
+     - `Last updated: YYYY-MM-DD`
 
 ## Notes
 
 - Prefer linking to SSOT: module MANIFEST, `.system/modular/flow_graph.yaml`, and context registries.
 - Keep workdocs concise and operational (paths, commands, current status, concrete verification).
+
+## Execution sync rules (what “good” looks like)
+
+Even though this skill is docs-only, it is designed to make execution **robust**:
+- During implementation, keep these files current:
+  - `01-plan.md` (check off completed items; add newly discovered TODOs)
+  - `03-implementation-notes.md` (what changed + decisions + deviations)
+  - `04-verification.md` (commands run + results + blockers)
+- Before context switch/handoff, run `update-workdocs-for-handoff`.
 
 ## Verification
 

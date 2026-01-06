@@ -23,6 +23,12 @@
   - Run:
     - `node .ai/scripts/lint-skills.cjs --strict`
     - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
+- If the user asks to **sync skill stubs** (sync skills / sync stubs):
+  - Use the repo selection in `.ai/skills/_meta/sync-manifest.json` via `--scope current`
+  - Run: `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
+- If the task is **dev-docs task documentation** (long-running work, handoff, context recovery):
+  - Open: `dev-docs/AGENTS.md`
+  - Use workflows: `create-dev-docs-plan`, `update-dev-docs-for-handoff`
 
 ## Context loading rules (token-efficient)
 

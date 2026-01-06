@@ -1,6 +1,6 @@
 ---
 name: plan-maker
-description: Create a goal-aligned macro-level roadmap (modules/<module_id>/workdocs/active/<task_slug>/roadmap.md or modules/integration/workdocs/active/<task_slug>/roadmap.md) by asking clarifying questions when needed; planning only (no code changes).
+description: Create a macro-level roadmap under module/integration workdocs (`roadmap.md`); ask clarifying questions and confirm plan-only vs plan+implement (planning only, no code changes).
 ---
 
 # Plan Maker
@@ -9,6 +9,10 @@ description: Create a goal-aligned macro-level roadmap (modules/<module_id>/work
 Produce a single, goal-aligned **macro-level roadmap** as a Markdown document that can guide execution without modifying the codebase.
 
 The skill focuses on **strategic planning**: milestones, phased execution, impact scope, acceptance criteria, risk assessment, and rollback strategy. The skill does NOT cover implementation-level details (specific file changes, step-by-step code modifications)—those belong in `01-plan.md` created by `create-workdocs-plan`.
+
+## Default routing (do not depend on language)
+
+Use plan-maker whenever the user asks for planning before coding (plan/roadmap/milestones/phases/rollout/rollback), regardless of language.
 
 ## When to use
 Use plan-maker when:
@@ -22,6 +26,9 @@ Avoid plan-maker when:
 
 ## Required inputs
 - Task goal
+- Confirm intent:
+  - **Plan-only** (produce `roadmap.md` and stop), or
+  - **Plan + implement** (still produce `roadmap.md` first, then switch to `create-workdocs-plan` + implementation in a follow-up step/turn)
 - Workdocs scope (must be explicit)
   - Module-scoped: the user provides `module_id`
   - Integration-scoped: the user confirms `integration`
@@ -33,27 +40,30 @@ Avoid plan-maker when:
 
 ## Steps
 1. Restate the goal in one sentence and confirm direction.
-2. Identify what is unclear and ask clarifying questions.
+2. Confirm intent explicitly:
+   - Ask: “Roadmap only (no code changes), or roadmap + proceed to implementation next?”
+3. Identify what is unclear and ask clarifying questions.
    - Ask only what is necessary to align the plan to the goal (scope, non-goals, target environment, success criteria, constraints).
    - If the user cannot answer now, record assumptions explicitly and surface the risk.
-3. Require an explicit scope from the user:
+4. Require an explicit scope from the user:
    - Module-scoped: confirm `module_id`
    - Integration-scoped: confirm `integration`
-4. Propose a `<task_slug>` and confirm it with the user.
+5. Propose a `<task_slug>` and confirm it with the user.
    - Use kebab-case; avoid dates unless requested.
-5. Draft the roadmap using `./templates/roadmap.md`.
+6. Draft the roadmap using `./templates/roadmap.md`.
    - Keep it macro-level: phases, milestones, deliverables, verification, risks, rollback.
    - Only include specific file paths/APIs when you have evidence; otherwise add a discovery step.
    - Include an explicit "Open questions / Assumptions" section.
    - Include module-first considerations (affected modules, SSOT touchpoints, derived artifacts to regenerate, integration checks) with discovery steps if unknown.
-6. Save the roadmap to the scoped workdocs path.
-7. Return a short handoff message to the user:
+7. Save the roadmap to the scoped workdocs path.
+8. Return a short handoff message to the user:
    - confirmed goal
    - where the plan was saved
    - the next 3 actions to start execution (without executing them)
 
 ## Verification
 - [ ] Goal is restated and (where needed) confirmed with the user
+- [ ] Plan-only vs plan+implement intent is explicitly confirmed
 - [ ] Ambiguities are resolved or recorded as explicit open questions/assumptions
 - [ ] Roadmap includes milestones/phases and per-step deliverables
 - [ ] Roadmap defines verification/acceptance criteria and a rollback strategy
