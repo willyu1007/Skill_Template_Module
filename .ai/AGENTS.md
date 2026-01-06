@@ -22,7 +22,7 @@
   - Open: `.ai/skills/standards/documentation-guidelines/SKILL.md`
   - Run:
     - `node .ai/scripts/lint-skills.cjs --strict`
-    - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+    - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
 
 ## Context loading rules (token-efficient)
 
@@ -36,6 +36,6 @@ AI/LLM MUST NOT:
 ## Verification (repo maintenance)
 
 - Lint skills: `node .ai/scripts/lint-skills.cjs --strict`
-- Sync stubs: `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+- Sync stubs: `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
 - LLM config key gate: `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 - LLM registry sanity: `node .ai/skills/workflows/llm/llm_engineering/scripts/validate-llm-registry.cjs`

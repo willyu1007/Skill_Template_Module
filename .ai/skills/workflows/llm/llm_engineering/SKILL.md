@@ -54,7 +54,7 @@ Open **one** example only if you need a concrete template.
 ## Verification
 - If you changed **skills**:
   - `node .ai/scripts/lint-skills.cjs --strict`
-  - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset`
+  - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
 
 - Registry sanity (recommended; run before release):
   - `node .ai/skills/workflows/llm/llm_engineering/scripts/validate-llm-registry.cjs`

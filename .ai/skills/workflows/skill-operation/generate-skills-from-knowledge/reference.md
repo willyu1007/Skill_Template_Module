@@ -118,7 +118,7 @@ The section defines the skill authoring standard for the repository.
 - You MUST edit skills only in `.ai/skills/`
 - You MUST NOT edit `.codex/skills/` or `.claude/skills/` directly
 - After adding or updating a skill, you MUST sync stubs:
-  - Full sync (default): `node .ai/scripts/sync-skills.cjs`
+  - Full sync (reset): `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
   - Incremental (one skill): `node .ai/scripts/sync-skills.cjs --scope specific --skills <skill-name> --mode update`
 
 ## Naming and Layout
@@ -217,4 +217,6 @@ Before finishing a skill change:
 - Stub generation discovers skills by recursively finding `SKILL.md` under `.ai/skills/`
 - Provider stubs are flattened by skill `name` under `.codex/skills/<skill-name>/` and `.claude/skills/<skill-name>/`
 - The "current collection" is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
-  - `node .ai/scripts/sync-skills.cjs --scope current --providers both`
+- Provider stubs mirror the SSOT hierarchy under `.codex/skills/` and `.claude/skills/`
+- The "current collection" is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
+  - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`

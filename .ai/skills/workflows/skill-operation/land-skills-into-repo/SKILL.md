@@ -94,7 +94,7 @@ The verifier checks:
 After landing skills into the SSOT, generate provider stubs:
 
 ```bash
-node .ai/scripts/sync-skills.cjs --scope current --providers both
+node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes
 ```
 
 The command generates lightweight wrapper stubs in `.codex/skills/` and `.claude/skills/` that point to the SSOT.

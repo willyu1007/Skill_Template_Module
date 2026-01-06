@@ -1375,7 +1375,9 @@ function syncWrappers(repoRoot, providers, apply) {
   }
   const providersArg = providers || 'both';
   const cmd = 'node';
-  const args = [scriptPath, '--scope', 'current', '--providers', providersArg];
+  // sync-skills supports destructive modes guarded by --yes. Provider wrappers are
+  // generated artifacts in this repo, so we run deterministically in reset mode.
+  const args = [scriptPath, '--scope', 'current', '--providers', providersArg, '--mode', 'reset', '--yes'];
 
   if (!apply) return { op: 'run', cmd: `${cmd} ${args.join(' ')}`, mode: 'dry-run' };
 
