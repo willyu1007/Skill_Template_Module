@@ -31,6 +31,7 @@ Create a new module under `modules/<module_id>/` and ensure the module is correc
 | `modules/<module_id>/interact/registry.json` | Context artifacts registry (SSOT) |
 | `modules/<module_id>/workdocs/README.md` | Workdocs usage instructions |
 | `modules/<module_id>/workdocs/AGENTS.md` | Workdocs operating rules + resume checklist |
+| `modules/<module_id>/workdocs/domain-glossary.md` | (Optional) Module-specific domain terms (if Step 0.5 completed) |
 | `modules/<module_id>/src/` | Source code directory |
 | `modules/<module_id>/tests/` | Test directory |
 | `modules/<module_id>/config/` | Configuration directory |
@@ -39,19 +40,43 @@ Create a new module under `modules/<module_id>/` and ensure the module is correc
 
 ## Procedure
 
-1. Initialize the module skeleton:
+### Step 0.5 — Domain glossary alignment (optional)
+
+Before running `modulectl init`, ask the user:
+
+```
+Would you like to define key domain terms for the module?
+
+The glossary helps ensure consistent terminology within the module.
+If yes, I'll help you build a module-specific domain glossary.
+
+[Yes / Skip for now]
+```
+
+**If user says Yes**:
+1. Ask for key domain terms (3-10 terms) specific to the module:
+   - "What are the key domain terms for the module?"
+   - For each term: "How would you define <term>?"
+2. After module initialization completes, write to `modules/<module_id>/workdocs/domain-glossary.md`
+
+**If user says Skip**:
+- Proceed to Step 1 (no glossary created)
+
+The domain glossary alignment step is **MustAsk but not blocking** — user can skip and fill in later.
+
+### Step 1 — Initialize the module skeleton
 
 ```bash
 node .ai/scripts/modulectl.js init --module-id <module_id> --module-type <module_type> --description "<desc>" --apply
 ```
 
-2. Verify manifests and module-local SSOT:
+### Step 2 — Verify manifests and module-local SSOT
 
 ```bash
 node .ai/scripts/modulectl.js verify --strict
 ```
 
-3. Rebuild derived registries/graphs:
+### Step 3 — Rebuild derived registries/graphs
 
 ```bash
 node .ai/scripts/modulectl.js registry-build
@@ -60,14 +85,14 @@ node .ai/scripts/flowctl.js lint
 node .ai/scripts/contextctl.js build
 ```
 
-4. **Documentation confirmation (Required)**
+### Step 4 — Documentation confirmation (Required)
 
 After core initialization (steps 1–3) completes, ask the user:
 
 ```
 Module initialization completed. Would you like me to add boundary definitions to the module AGENTS.md?
 
-This will enhance the existing AGENTS.md with:
+The update will enhance the existing AGENTS.md with:
 - Module boundaries (responsibilities / non-responsibilities)
 
 The existing Operating Rules and Key Files sections will be preserved.
@@ -77,15 +102,16 @@ The existing Operating Rules and Key Files sections will be preserved.
 
 If user agrees, **update** (not overwrite) `modules/<module_id>/AGENTS.md` following the merge strategy in the "Documentation Confirmation" section below.
 
-4.5. **Workdocs baseline (Expected)**
+### Step 4.5 — Workdocs baseline (Expected)
 
 The module skeleton should include:
 - `modules/<module_id>/workdocs/AGENTS.md` (workdocs rules + resume checklist)
 - `modules/<module_id>/workdocs/README.md` (structure)
+- `modules/<module_id>/workdocs/domain-glossary.md` (if Step 0.5 was completed)
 
-If either file is missing, create it (do not overwrite existing) and keep the content minimal and operational.
+If either AGENTS.md or README.md is missing, create it (do not overwrite existing) and keep the content minimal and operational.
 
-5. (Optional) Add flow nodes and implementations
+### Step 5 — (Optional) Add flow nodes and implementations
 
 - Add/edit `.system/modular/flow_graph.yaml` to include new flow nodes.
 - Add `implements` entries under `modules/<module_id>/MANIFEST.yaml` interfaces.
@@ -95,6 +121,11 @@ If either file is missing, create it (do not overwrite existing) and keep the co
 
 - Treat MANIFEST.yaml and module context registry as SSOT.
 - Treat instance_registry and flow_impl_index as derived artifacts (overwritable).
+
+## Included assets
+
+- Template: `./templates/domain-glossary.md` (for Step 0.5 domain glossary)
+- Examples: `./examples/example-api/` (complete module skeleton)
 
 ## Examples
 
@@ -133,7 +164,7 @@ New modules are expected to include `modules/<module_id>/workdocs/AGENTS.md`, wi
 
 After module initialization completes, the LLM **must** ask the user whether to add boundary definitions to the existing `AGENTS.md`.
 
-**Important**: `modulectl init --apply` already creates a basic `AGENTS.md` with Operating Rules and Key Files. This step **enhances** that file by adding boundary definitions, not replacing the existing file.
+**Important**: `modulectl init --apply` already creates a basic `AGENTS.md` with Operating Rules and Key Files. The documentation confirmation step **enhances** that file by adding boundary definitions, not replacing the existing file.
 
 ### When to ask
 
@@ -153,8 +184,8 @@ Module {{module_id}} initialized successfully.
 Would you like me to add boundary definitions to the module AGENTS.md?
 
 If yes, please provide:
-1. What is this module responsible for? (2–5 items)
-2. What is this module NOT responsible for? (2–5 items)
+1. What is the module responsible for? (2–5 items)
+2. What is the module NOT responsible for? (2–5 items)
 
 [Yes / No]
 ```

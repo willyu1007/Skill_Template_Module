@@ -2,12 +2,30 @@
 
 ## Conclusions (read first)
 
-- Use the template as a **question bank** for Stage A. Ask the **MUST-ask** set first, then use **branch modules** based on the project's capabilities.
+- Use the template as a **question bank** for Stage A. Start with **A0 (glossary alignment, optional)**, then ask the **MUST-ask** set, then use **branch modules** based on the project's capabilities.
 - Every answer MUST be written into a file artifact:
   - Stage A docs under `init/stage-a-docs/` (working SSOT during init; archived to `docs/project/` after completion)
   - Stage B blueprint at `init/project-blueprint.json` (working SSOT during init)
 - If the user cannot decide, record the item as **TBD** in `init/stage-a-docs/risk-open-questions.md` with:
   - owner, options, and decision due.
+
+## A0. Domain glossary alignment (optional, before MUST-ask)
+
+Ask before the MUST-ask set:
+
+1. **Glossary alignment prompt**
+   - "Before we define requirements, would you like to align on key domain terms?"
+   - "This helps ensure consistent terminology. [Yes / Skip for now]"
+
+2. **If Yes: term collection**
+   - "What are the 3-10 key domain terms in this project?"
+   - For each term: "How would you define <term>?"
+   - "Any synonyms or non-examples for <term>?"
+
+3. **Write to artifact**
+   - `init/stage-a-docs/domain-glossary.md`
+
+This step is **MustAsk but not blocking** — user can skip and fill in later.
 
 ## A. MUST-ask (minimal set)
 

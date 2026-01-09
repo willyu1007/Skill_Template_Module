@@ -42,7 +42,7 @@ A handoff-ready workdocs set including:
 
 2. If the folder does not exist:
    - Stop and ask for the missing scope inputs (`module_id` vs `integration`, `task_slug`), then create the bundle via `create-workdocs-plan`.
-   - Do not guess scope silently; if you must assume, record it explicitly in `00-overview.md`.
+   - Do not guess scope silently; if an assumption is required, record the assumption explicitly in `00-overview.md`.
 
 3. Update `03-implementation-notes.md`:
    - Current status
@@ -64,7 +64,7 @@ A handoff-ready workdocs set including:
    - Keep entries future-facing (“do not do X because Y”)
 
 7. Create/update `handoff.md` (recommended):
-   - Keep it short and operational:
+   - Keep `handoff.md` short and operational:
      - Where to start reading (usually `03-implementation-notes.md`)
      - Exact next 3 actions (commands + file paths)
      - Blockers + how to unblock
@@ -90,3 +90,14 @@ A handoff-ready workdocs set including:
 - Do **not** make additional product/code changes when preparing the handoff; only document and point to the existing changes.
 - Do **not** edit derived artifacts directly; regenerate them via the corresponding ctl scripts if needed.
 - Keep handoff notes operational: commands, file paths, and exact known issues; avoid long narratives.
+
+
+## Reader-test handoff check (borrowed)
+
+Before considering the handoff complete, ensure a fresh reader can answer:
+- What changed?
+- What is the current status?
+- What are the next 3 actions (with commands + file paths)?
+- How do we verify success?
+
+If any question requires "tribal knowledge," add the missing context to `handoff.md` or `03-implementation-notes.md`.

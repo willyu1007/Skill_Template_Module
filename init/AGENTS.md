@@ -22,6 +22,31 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 
 ## Stage flow (validation + approval)
 
+### Phase 0.5 — Domain glossary alignment (optional, before Stage A)
+
+Before starting Stage A requirements interview, ask the user:
+
+```
+Before we define requirements, would you like to align on key domain terms?
+
+This helps ensure we use consistent terminology throughout the project.
+If yes, I'll help you build a domain glossary (domain-glossary.md).
+
+[Yes / Skip for now]
+```
+
+**If user says Yes**:
+1. Ask for key domain terms (3-10 terms):
+   - "What are the key business/domain terms in this project?"
+   - For each term: "How would you define <term>? Any synonyms or non-examples?"
+2. Write to `init/stage-a-docs/domain-glossary.md`
+3. Continue to Stage A
+
+**If user says Skip**:
+- Continue to Stage A (`domain-glossary.md` will still be created by `start` and can be filled later)
+
+This step is **MustAsk but not blocking** — user can skip and fill in later.
+
 ### Stage A (requirements docs)
 1) Run start to create templates:
 ```bash

@@ -63,4 +63,24 @@ description: Cypress Web UI E2E automation: bootstrap, author specs, run/debug, 
 - Do not edit `.codex/skills/` or `.claude/skills/` directly (generated).
 - Do not introduce a second Web UI framework if Cypress is the chosen tool for the suite.
 - Do not rely on production data or production credentials.
-- Do not disable assertions to “make tests pass”; fix the determinism issue.
+- Do not disable assertions to "make tests pass"; fix the determinism issue.
+
+
+## Reconnaissance-then-action workflow (borrowed)
+
+When adding or debugging Cypress E2E tests:
+
+1. **Reconnaissance**
+   - Confirm the target app is running and reachable.
+   - Use the Cypress runner to inspect the rendered DOM.
+   - Identify stable selectors (`data-cy`, `data-testid`, or roles).
+   - Prefer intercepts and explicit assertions over fixed waits.
+
+2. **Action**
+   - Implement the interaction using stable selectors.
+   - Assert on outcomes (visible UI state, route, network behavior) rather than layout details.
+
+### If Cypress and Playwright skills are both loaded
+
+- Do not attempt to use both frameworks in the same test suite.
+- Choose the framework already present in the repo (or explicitly requested by the user) and proceed with that skill's procedures.

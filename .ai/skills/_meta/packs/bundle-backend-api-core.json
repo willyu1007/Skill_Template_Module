@@ -1,0 +1,21 @@
+{
+  "id": "bundle-backend-api-core",
+  "version": "1.0.0",
+  "description": "Minimal backend API endpoint bundle: routing/controllers, validation, async error handling, and service guidelines.",
+  "includePrefixes": [
+    "backend/http/implement-backend-routing-and-controllers/",
+    "backend/validation/validate-backend-inputs/",
+    "backend/errors/handle-backend-async-errors/",
+    "backend/common/apply-backend-service-guidelines/"
+  ],
+  "dependencies": [],
+  "scripts": {},
+  "metadata": {
+    "author": "routing-dispatch-meta-skill",
+    "tags": [
+      "backend",
+      "api",
+      "bundle"
+    ]
+  }
+}

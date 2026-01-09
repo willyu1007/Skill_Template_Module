@@ -130,3 +130,16 @@ modules/<module_id>/workdocs/active/<task_slug>/
   04-verification.md      # Verification commands + results
   05-pitfalls.md          # "Do not repeat" lessons
 ```
+
+
+## Writing and collaboration tips (borrowed)
+
+To make workdocs usable for both humans and LLMs:
+
+- Write **purpose + outcome first** in `00-overview.md`.
+- Keep paragraphs single-intent; use headings that match the decisions the reader must make.
+- Use MUST/SHOULD/MAY for constraints and invariants.
+- Add verification commands with expected results (especially in `04-verification.md`).
+- Before finalizing, do a quick **reader test**: can a fresh agent answer "what do I do next?" using only the workdocs bundle?
+
+If workdocs content is also used for status updates, consider a short **3P (Progress / Plans / Problems)** summary in `handoff.md`.

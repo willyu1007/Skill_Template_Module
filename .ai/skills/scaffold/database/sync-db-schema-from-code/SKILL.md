@@ -34,12 +34,17 @@ Avoid sync-db-schema-from-code when:
 - Execution strategy:
   - **Default**: Prisma migrate (versioned migrations)
   - Optional (explicitly chosen): Prisma db push
+- Schema filter mode (optional, PostgreSQL only):
+  - **default**: include all schemas the ORM manages
+  - **explicit**: user-specified list of schemas/tables to include
+  - **exclude-extensions**: auto-detect and exclude extension-owned objects (recommended when extensions like PostGIS, pg_trgm, uuid-ossp are installed)
 
 ## Outputs
 Create an auditable task log under `modules/<module_id>/workdocs/active/<task>/db/`:
-- `00-connection-check.md` (no secrets)
+- `00-connection-check.md` (no secrets; includes extension list if PostgreSQL)
 - `01-schema-drift-report.md`
 - `02-migration-plan.md`
+- `02-extension-exclusion.md` (optional, if extensions detected and exclusion configured)
 - `03-execution-log.md`
 - `04-post-verify.md`
 
@@ -87,6 +92,29 @@ Optionally, store machine-readable snapshots under `modules/<module_id>/workdocs
    - define verification and rollback strategy
    - choose strategy: **migrate (default)** vs push (explicit)
 
+### Phase A.5 — Extension detection (PostgreSQL only, optional)
+
+> Skip this phase if the target DB is not PostgreSQL or if no extensions are installed.
+
+10. Detect installed extensions:
+    - Run: `SELECT extname, extversion FROM pg_extension WHERE extname != 'plpgsql';`
+    - Record results in `00-connection-check.md`
+
+11. If extensions are detected, ask user:
+    - "Extensions detected: [list]. Should we exclude extension-owned objects from diff?"
+    - Common extensions that create objects in public schema: PostGIS, pg_trgm, uuid-ossp, hstore, pgcrypto
+
+12. If user chooses to exclude extensions:
+    - **Prisma**: Configure `schemas` array in `schema.prisma` to explicitly list user schemas, or use a shadow database that mirrors extension setup
+    - **Alembic**: Configure `include_object` callback in `env.py` to filter extension-owned tables/types
+    - Document exclusion rules in `02-extension-exclusion.md`
+
+13. If sync fails due to extension conflicts:
+    - Identify the conflicting objects (tables, types, functions)
+    - Separate user tables from extension-owned objects
+    - Recommend: use a dedicated schema for user tables (e.g., `app` schema) instead of `public`
+    - Update migration plan to handle schema separation
+
 ### Approval checkpoint (mandatory)
 10. Ask for explicit user approval before any DB writes, confirming:
    - target environment and target DB
@@ -110,6 +138,7 @@ Optionally, store machine-readable snapshots under `modules/<module_id>/workdocs
 - [ ] Intent is confirmed as **code → target DB**
 - [ ] Target environment and DB type are explicit
 - [ ] Connectivity check completed and saved without secrets
+- [ ] (PostgreSQL) Extensions detected and exclusion strategy confirmed if needed
 - [ ] Diff preview produced and reviewed before applying changes
 - [ ] Strategy is explicit (default migrate; push only if explicitly chosen)
 - [ ] Approval gate was respected before any DB writes
@@ -123,6 +152,8 @@ Optionally, store machine-readable snapshots under `modules/<module_id>/workdocs
 - MUST NOT apply destructive changes without an explicit backup/snapshot plan (or explicit risk acceptance)
 - MUST NOT log or store credentials; always redact connection strings
 - SHOULD prefer reviewing migration SQL in code review for remote/prod changes
+- SHOULD detect and handle extension-owned objects when sync fails on PostgreSQL
+- SHOULD recommend schema separation (user tables in dedicated schema) when extension conflicts are persistent
 
 ## Included assets
 - Templates: `./templates/` for connection, drift, plan, execution log, and verification docs

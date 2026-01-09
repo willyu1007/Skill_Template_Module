@@ -1,5 +1,0 @@
-const { runAgent } = require('../../core/run');
-
-module.exports = {
-  runAgent
-};

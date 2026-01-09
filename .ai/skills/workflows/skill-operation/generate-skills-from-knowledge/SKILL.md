@@ -47,7 +47,7 @@ The expected outputs are:
   - created/updated skills
   - split/merge operations
   - known limitations / follow-ups
-- A lint report (stdout) from `python ./scripts/skillgen.py lint ...` (recommended)
+- A lint report (stdout) from `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py lint ...` (recommended)
 
 ## Steps
 ### Scenario A: Convert docs into a skills bundle (recommended default)
@@ -65,7 +65,7 @@ The expected outputs are:
    - confirm portability constraints (remove provider/project specifics)
    - confirm what will be created vs updated
 5. Run:
-   - `python ./scripts/skillgen.py apply --plan <plan.json>` to scaffold the skill directories.
+   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py apply --plan <plan.json>` to scaffold the skill directories.
 6. For each generated skill:
    - rewrite `SKILL.md` to be **high-signal and short**,
    - move large examples into `examples/`,
@@ -73,9 +73,9 @@ The expected outputs are:
    - put deep rationale into `reference.md`,
    - remove cross-skill links ("See also", "Related docs").
 7. Run:
-   - `python ./scripts/skillgen.py lint --skills-root <skills_root>` and fix issues until clean.
+   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py lint --skills-root <skills_root>` and fix issues until clean.
 8. Package the bundle (optional):
-   - `python ./scripts/skillgen.py package --skills-root <skills_root> --out <bundle.zip>`
+   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py package --skills-root <skills_root> --out <bundle.zip>`
 
 ### Scenario B: Convert docs directly into a repository skills root
 Follow Scenario A, but set `skills_root` to the repository's skills SSOT directory.
@@ -99,8 +99,11 @@ Run the linter and confirm:
 - cross-skill relative links (e.g., `../<other-skill>`) are absent
 
 ## Included assets
-- `./scripts/skillgen.py`: plan/apply/lint/package helper
+- `./scripts/skillgen.py`: plan/apply/lint/package helper (run via `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py ...`)
+- `./scripts/init_skill.py`: quick initializer for creating a new skill from scratch
 - `./templates/conversion-plan.schema.json`: JSON Schema for a conversion plan
 - `./templates/conversion-plan.example.json`: example plan
+- `./templates/skill-skeleton/SKILL.md`: minimal skill template with all required sections
 - `./examples/quickstart.md`: end-to-end usage example
 - `./examples/plan-writing-guide.md`: how to write a good plan for an LLM
+- `./reference.md`: skill authoring standards and design principles

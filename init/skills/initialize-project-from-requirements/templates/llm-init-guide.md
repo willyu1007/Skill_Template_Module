@@ -7,13 +7,14 @@ The document provides step-by-step guidance for an AI assistant to help a user c
 ## Contents
 
 1. [Workflow overview](#workflow-overview)
-2. [Phase 1: Requirements interview](#phase-1-requirements-interview)
-3. [Phase 2: Tech stack selection](#phase-2-tech-stack-selection)
-4. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
-5. [Phase 4: Add-on recommendations](#phase-4-add-on-recommendations)
-6. [Phase 5: Config generation](#phase-5-config-generation)
-7. [Phase 6: Documentation update confirmation](#phase-6-documentation-update-confirmation)
-8. [Decision tree reference](#decision-tree-reference)
+2. [Phase 0.5: Domain glossary alignment](#phase-05-domain-glossary-alignment-optional)
+3. [Phase 1: Requirements interview](#phase-1-requirements-interview)
+4. [Phase 2: Tech stack selection](#phase-2-tech-stack-selection)
+5. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
+6. [Phase 4: Add-on recommendations](#phase-4-add-on-recommendations)
+7. [Phase 5: Config generation](#phase-5-config-generation)
+8. [Phase 6: Documentation update confirmation](#phase-6-documentation-update-confirmation)
+9. [Decision tree reference](#decision-tree-reference)
 
 ---
 
@@ -23,6 +24,12 @@ The document provides step-by-step guidance for an AI assistant to help a user c
 User starts initialization
        │
        ▼
+┌─────────────────────────────┐
+│ Phase 0.5: Domain glossary   │  ← optional, align terminology first
+│ alignment (optional)         │
+└────────┬────────────────────┘
+         │
+         ▼
 ┌─────────────────────────────┐
 │ Phase 1: Requirements        │  ← use conversation-prompts.md modules A/B
 │ interview                    │
@@ -56,6 +63,58 @@ User starts initialization
          ▼
    Initialization complete
 ```
+
+---
+
+## Phase 0.5: Domain glossary alignment (optional)
+
+Before starting Phase 1 (requirements interview), ask the user whether they want to align on domain terminology first.
+
+### When to ask
+
+At the very beginning of the initialization process, before any requirements questions.
+
+### LLM action
+
+```
+Before we define requirements, would you like to align on key domain terms?
+
+This helps ensure we use consistent terminology throughout the project.
+If yes, I'll help you build a domain glossary (domain-glossary.md).
+
+[Yes / Skip for now]
+```
+
+### If user says Yes
+
+1. Ask for key domain terms (3-10 terms):
+   - "What are the key business/domain terms in this project?"
+   - For each term: "How would you define <term>?"
+   - "Any synonyms or non-examples for <term>?"
+
+2. Write to `init/stage-a-docs/domain-glossary.md` using the file template created by `start` (keep the file placeholder-free so `check-docs --strict` can pass):
+   ```markdown
+   # Domain Glossary
+   
+   ## Purpose
+   Define domain terms used across requirements and implementation.
+   
+   ## Terms
+   
+   ### Term name
+   - Definition: Write a one-sentence definition.
+   - Synonyms: List synonyms, or write "none".
+   - Non-examples: List non-examples, or write "none".
+   - Notes: Optional.
+   ```
+
+3. Continue to Phase 1
+
+### If user says Skip
+
+- Continue to Phase 1 (`domain-glossary.md` will still be created by `start` and can be filled later)
+
+This step is **MustAsk but not blocking** — user can skip and fill in later.
 
 ---
 

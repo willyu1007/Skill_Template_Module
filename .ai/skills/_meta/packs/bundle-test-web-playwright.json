@@ -1,0 +1,19 @@
+{
+  "id": "bundle-test-web-playwright",
+  "version": "1.0.0",
+  "description": "Web E2E testing with Playwright (mutually exclusive with Cypress web bundle).",
+  "includePrefixes": [
+    "testing/test-web-playwright/"
+  ],
+  "dependencies": [],
+  "scripts": {},
+  "metadata": {
+    "author": "routing-dispatch-meta-skill",
+    "tags": [
+      "testing",
+      "playwright",
+      "e2e",
+      "bundle"
+    ]
+  }
+}

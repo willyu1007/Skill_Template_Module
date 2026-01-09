@@ -1,5 +1,0 @@
-{
-  "type": "commonjs",
-  "description": "Force CommonJS mode for agent-builder.js (overrides parent type=module)"
-}
-

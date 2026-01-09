@@ -90,6 +90,7 @@ The roadmap provides macro-level planning. For implementation details, use `crea
 
 ```
 modules/<module_id>/workdocs/active/<task_slug>/
+  requirement.md          # (Optional) Requirements alignment
   roadmap.md              # Macro-level planning (plan-maker)
   00-overview.md          # Goal, non-goals, acceptance criteria
   01-plan.md              # Implementation plan (specific steps)
@@ -103,6 +104,7 @@ or (integration scope):
 
 ```
 modules/integration/workdocs/active/<task_slug>/
+  requirement.md          # (Optional) Requirements alignment
   roadmap.md              # Macro-level planning
   00-overview.md
   01-plan.md
@@ -112,9 +114,18 @@ modules/integration/workdocs/active/<task_slug>/
   05-pitfalls.md
 ```
 
+## Next step (after roadmap approval)
+After user confirms this roadmap is correct, run `create-workdocs-plan` to generate the implementation bundle.
+
+The following fields will be pre-filled from this roadmap:
+- Goal → `00-overview.md` Goal
+- Non-goals → `00-overview.md` Non-goals
+- Acceptance criteria → `04-verification.md`
+
 ## To-dos
 - [ ] Confirm open questions
 - [ ] Confirm milestone ordering and DoD
 - [ ] Confirm verification/acceptance criteria
 - [ ] Confirm rollout/rollback strategy
+- [ ] (After approval) Create implementation workdocs bundle
 

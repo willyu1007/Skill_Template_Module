@@ -220,3 +220,150 @@ Before finishing a skill change:
 - Provider stubs mirror the SSOT hierarchy under `.codex/skills/` and `.claude/skills/`
 - The "current collection" is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
   - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
+
+---
+
+# Skill Design Principles (borrowed from skill-creator)
+
+This section provides additional design guidance for creating effective skills.
+
+## Core Principles
+
+### Concise is Key
+
+The context window is a shared resource. Skills share context with system prompts, conversation history, other skills' metadata, and the actual user request.
+
+**Default assumption: the LLM is already very smart.** Only add context the LLM doesn't already have. Challenge each piece of information:
+- "Does the LLM really need the detail?"
+- "Does the paragraph justify its token cost?"
+
+Prefer concise examples over verbose explanations.
+
+### Set Appropriate Degrees of Freedom
+
+Match the level of specificity to the task's fragility and variability:
+
+| Freedom Level | When to Use | Example |
+|---------------|-------------|---------|
+| **High** (text instructions) | Multiple approaches valid, decisions depend on context | "Choose an appropriate caching strategy based on data access patterns" |
+| **Medium** (pseudocode/parameterized scripts) | Preferred pattern exists, some variation acceptable | "Use the provided template, adjust timeouts as needed" |
+| **Low** (specific scripts, few parameters) | Operations are fragile, consistency is critical | "Run exactly: `python migrate.py --dry-run` first" |
+
+Think of it as exploring a path: a narrow bridge with cliffs needs specific guardrails (low freedom), while an open field allows many routes (high freedom).
+
+## Progressive Disclosure Design
+
+Skills use a three-level loading system to manage context efficiently:
+
+1. **Metadata (name + description)** - Always in context (~100 words)
+2. **SKILL.md body** - When skill triggers (<5k words target)
+3. **Bundled resources** - As needed (unlimited, can be executed without loading)
+
+### Progressive Disclosure Patterns
+
+Keep SKILL.md body to essentials and under 500 lines. Split content into separate files when approaching the line limit. When splitting, **always reference the split files from SKILL.md** so the reader knows they exist.
+
+**Pattern 1: High-level guide with references**
+
+```markdown
+# PDF Processing
+
+## Quick start
+Extract text with pdfplumber:
+[code example]
+
+## Advanced features
+- **Form filling**: See [reference.md#forms](reference.md#forms) for complete guide
+- **API reference**: See [reference.md#api](reference.md#api) for all methods
+```
+
+**Pattern 2: Domain-specific organization**
+
+For skills with multiple domains, organize by domain to avoid loading irrelevant context:
+
+```
+bigquery-skill/
+├── SKILL.md (overview and navigation)
+└── references/
+    ├── finance.md (revenue, billing metrics)
+    ├── sales.md (opportunities, pipeline)
+    └── product.md (API usage, features)
+```
+
+When a user asks about sales metrics, the LLM only reads `sales.md`.
+
+**Pattern 3: Variant-specific organization**
+
+For skills supporting multiple frameworks:
+
+```
+cloud-deploy/
+├── SKILL.md (workflow + provider selection)
+└── references/
+    ├── aws.md (AWS patterns)
+    ├── gcp.md (GCP patterns)
+    └── azure.md (Azure patterns)
+```
+
+### Important Guidelines
+
+- **Avoid deeply nested references** - Keep references one level deep from SKILL.md
+- **Structure longer reference files** - For files longer than 100 lines, include a table of contents at the top
+
+## Bundled Resources
+
+### scripts/
+
+Executable code for tasks requiring deterministic reliability or repeatedly rewritten.
+
+- **When to include**: Same code rewritten repeatedly, or deterministic reliability needed
+- **Benefits**: Token efficient, deterministic, may be executed without loading into context
+
+### references/
+
+Documentation intended to be loaded as needed into context.
+
+- **When to include**: Documentation the LLM should reference while working
+- **Examples**: Database schemas, API docs, domain knowledge, company policies
+- **Best practice**: If files are large (>10k words), include grep search patterns in SKILL.md
+- **Avoid duplication**: Information should live in either SKILL.md or references, not both
+
+### templates/
+
+Reusable snippets and skeletons for outputs.
+
+- **When to include**: Skeletons for outputs, reusable config stubs, folder layouts
+- **Examples**: Report outlines, config templates, schema stubs
+
+### What NOT to Include
+
+A skill should only contain essential files. Do NOT create:
+- README.md (use `SKILL.md` as the entry document)
+- INSTALLATION_GUIDE.md
+- CHANGELOG.md
+- User-facing documentation (skills are for agents, not end users)
+
+## Skill Creation Quick Reference
+
+### From Scratch
+
+Use the init script:
+
+```bash
+python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/init_skill.py <skill-name> --path <target-directory>
+```
+
+### From Knowledge Docs
+
+1. Inventory source docs (in-scope vs out-of-scope)
+2. Write a conversion plan mapping capabilities → skills
+3. Apply the plan to scaffold skills
+4. Move large examples into `examples/` and snippets into `templates/`
+5. Lint until clean
+
+### Iteration Workflow
+
+1. Use the skill on real tasks
+2. Notice struggles or inefficiencies
+3. Identify how SKILL.md or resources should be updated
+4. Implement changes and test again

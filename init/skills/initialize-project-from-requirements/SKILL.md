@@ -153,19 +153,46 @@ The skill supports an LLM (AI assistant) guiding a user through the entire initi
 ### Flow overview
 
 ```
-Phase 1: Requirements interview → Phase 2: Tech stack selection → Phase 3: Blueprint generation
+Phase 0.5: Domain glossary alignment (optional) → Phase 1: Requirements interview
+    → Phase 2: Tech stack selection → Phase 3: Blueprint generation
     → Phase 4: Add-on config (default ON) → Phase 5: Config generation + apply
     → Phase 6: Documentation update confirmation
 ```
+
+### Phase 0.5: Domain glossary alignment (optional, recommended)
+
+Before starting Phase 1 (requirements interview), ask the user:
+
+```
+Before we define requirements, would you like to align on key domain terms?
+
+This helps ensure we use consistent terminology throughout the project.
+If yes, I'll help you build a domain glossary (domain-glossary.md).
+
+[Yes / Skip for now]
+```
+
+**If user says Yes**:
+1. Ask for key domain terms (3-10 terms):
+   - "What are the key business/domain terms in this project?"
+   - For each term: "How would you define <term>? Any synonyms or non-examples?"
+2. Write to `init/stage-a-docs/domain-glossary.md`
+3. Continue to Phase 1
+
+**If user says Skip**:
+- Continue to Phase 1 (`domain-glossary.md` will still be created by `start` and can be filled later)
+
+This step is **MustAsk but not blocking** — user can skip and fill in later.
 
 ### Phase 1–4: conversation-driven guidance
 
 The LLM should follow the question order in `conversation-prompts.md`:
 
-1. **Module A**: must-ask questions (requirements, users, constraints)
-2. **Module B**: branch modules (API, database, BPMN, CI)
-3. **Module D**: add-on decisions (default: all enabled; ask if user wants to disable any)
-4. **Module E**: tech stack selection (language, frameworks, package manager)
+1. **Module A0**: domain glossary alignment (optional, before MUST-ask)
+2. **Module A**: must-ask questions (requirements, users, constraints)
+3. **Module B**: branch modules (API, database, BPMN, CI)
+4. **Module D**: add-on decisions (default: all enabled; ask if user wants to disable any)
+5. **Module E**: tech stack selection (language, frameworks, package manager)
 
 ### Add-on default behavior
 

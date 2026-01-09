@@ -1,0 +1,19 @@
+{
+  "id": "bundle-test-ci-github-actions",
+  "version": "1.0.0",
+  "description": "CI testing workflows for GitHub Actions (mutually exclusive with GitLab CI bundle).",
+  "includePrefixes": [
+    "testing/test-ci-github-actions/"
+  ],
+  "dependencies": [],
+  "scripts": {},
+  "metadata": {
+    "author": "routing-dispatch-meta-skill",
+    "tags": [
+      "testing",
+      "ci",
+      "github-actions",
+      "bundle"
+    ]
+  }
+}
