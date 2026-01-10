@@ -8,6 +8,8 @@ This document provides guidance for writing tests in Stage D based on acceptance
 
 Each scenario in `acceptance.scenarios[]` becomes a test case.
 
+> Note: The Stage C scaffold includes a minimal `tests/smoke.test.js`. For full scenario coverage, add `tests/acceptance.test.js` (or extend the smoke test file).
+
 **Blueprint Scenario**:
 ```json
 {
@@ -24,7 +26,7 @@ Each scenario in `acceptance.scenarios[]` becomes a test case.
 }
 ```
 
-**Generated Test** (using Node.js built-in test runner):
+**Example Test** (using Node.js built-in test runner):
 
 ```javascript
 // tests/acceptance.test.js
@@ -204,4 +206,3 @@ node --test --experimental-test-coverage tests/
 - [ ] Kill switch scenario tested
 - [ ] Mocks in place for external dependencies
 - [ ] Tests can run offline (no real API calls)
-

@@ -24,7 +24,7 @@ The skill is designed for **LLM-first, human support** workflows:
 - **agent_builder does NOT edit flow_graph.yaml**: If flow nodes are missing, a `flow-change-request.md` is emitted and integration stops.
 - **Explicit approvals required**: Stage A (integration decision) and Stage B (blueprint) require user approval before scaffolding.
 - **Kill switch mandatory**: `AGENT_ENABLED` env var must be in `configuration.env_vars`.
-- **API routes fixed**: Must include `run` and `health` routes.
+- **API routes fixed**: Must include `GET /health` and `POST /run` routes (names `health` and `run`).
 - **No secrets in repo**: `.env.example` contains placeholders only.
 - **Core/Adapters separation required**: All agents use the `core/` + `adapters/` structure.
 
@@ -129,9 +129,9 @@ Type "approve B" to proceed to scaffolding.
 ### Phase 3: Stage C — Scaffold
 
 **Actions**:
-1. Run plan first: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js plan --workdir <WORKDIR>`
+1. Run plan first: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js plan --workdir <WORKDIR> --repo-root .`
 2. Present the file list to be created under the host module.
-3. Run apply: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js apply --workdir <WORKDIR> --apply`
+3. Run apply: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js apply --workdir <WORKDIR> --repo-root . --apply`
 4. Report created files and any skipped files.
 
 **Output**: List of generated files organized by category (code, docs, config).
@@ -149,23 +149,27 @@ Type "approve B" to proceed to scaffolding.
    - Write `prompts/system.md` with role, capabilities, boundaries
    - Write `prompts/examples.md` with in-scope and out-of-scope examples
 3. **Expand Tests**: For each scenario in `acceptance.scenarios[]`:
-   - Write test case in `tests/acceptance.test.js`
+   - Extend tests under `tests/` (default scaffold: `tests/smoke.test.js`; optionally add `tests/acceptance.test.js`)
 
 ### Phase 5: Stage E — Verify
 
 **Actions**:
-1. Run verification: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js verify --workdir <WORKDIR>`
-2. Review generated evidence in workdir:
+1. Run verification: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js verify --workdir <WORKDIR> --repo-root .`
+   - Optional flags:
+     - `--skip-http` (for sandbox/CI)
+     - `--format json` (machine-readable output)
+2. Review generated evidence in the workdir:
    - `stage-e/verification-evidence.json`
    - `stage-e/verification-report.md`
-3. If any scenario fails, investigate and fix.
+3. If the scaffolded workdocs directory exists (`deliverables.docs_path`), the verify command also copies both files into that directory.
+4. If any scenario fails, investigate and fix.
 
 **Output**: Verification report.
 
 ### Phase 6: Stage F — Modular Integration
 
 **Actions**:
-1. Run: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --apply`
+1. Run: `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply`
 2. The command will:
    - Verify the target flow/node exists in `.system/modular/flow_graph.yaml`
    - Update `modules/<module_id>/MANIFEST.yaml` with interfaces (health, run) and implements
@@ -189,13 +193,14 @@ node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js finish --
 | Stage | Command |
 |-------|---------|
 | Start | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js start` |
+| Status | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js status --workdir <WORKDIR>` |
 | Approve A | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js approve --stage A --workdir <WORKDIR>` |
-| Validate | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js validate-blueprint --workdir <WORKDIR>` |
+| Validate | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js validate-blueprint --workdir <WORKDIR> --format text` |
 | Approve B | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js approve --stage B --workdir <WORKDIR>` |
-| Plan | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js plan --workdir <WORKDIR>` |
-| Apply | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js apply --workdir <WORKDIR> --apply` |
-| Verify | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js verify --workdir <WORKDIR>` |
-| Integrate | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --apply` |
+| Plan | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js plan --workdir <WORKDIR> --repo-root .` |
+| Apply | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js apply --workdir <WORKDIR> --repo-root . --apply` |
+| Verify | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js verify --workdir <WORKDIR> --repo-root . --format text` |
+| Integrate | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply` |
 | Finish | `node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js finish --workdir <WORKDIR> --apply` |
 
 See **LLM Execution Protocol** above for detailed step-by-step instructions.

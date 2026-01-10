@@ -456,6 +456,20 @@
         "required": false,
         "sensitivity": "internal",
         "example_placeholder": "./var/worker/out"
+      },
+      {
+        "name": "EXAMPLE_BASE_URL",
+        "description": "Base URL for the example_search tool (example only).",
+        "required": false,
+        "sensitivity": "internal",
+        "example_placeholder": "https://search.example.com"
+      },
+      {
+        "name": "EXAMPLE_API_KEY",
+        "description": "API key for the example_search tool (example only).",
+        "required": false,
+        "sensitivity": "secret",
+        "example_placeholder": "<optional>"
       }
     ],
     "config_files": [
@@ -596,7 +610,8 @@
         },
         "auth": {
           "kind": "api_key",
-          "env_var": "EXAMPLE_API_KEY"
+          "env_var": "EXAMPLE_API_KEY",
+          "base_url_env": "EXAMPLE_BASE_URL"
         },
         "audit": {
           "required": true,

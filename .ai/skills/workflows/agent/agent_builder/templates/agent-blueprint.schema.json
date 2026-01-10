@@ -299,7 +299,9 @@
         },
         "base_path": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "pattern": "^/",
+          "description": "HTTP base path. MUST start with '/'."
         },
         "timeout_budget_ms": {
           "type": "integer",
@@ -338,7 +340,8 @@
               },
               "path": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "pattern": "^/"
               },
               "request_schema_ref": {
                 "$ref": "#/$defs/schemaRef"
@@ -353,7 +356,33 @@
                 "type": "string"
               }
             },
-            "additionalProperties": true
+            "additionalProperties": true,
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "name": { "const": "health" } },
+                  "required": ["name"]
+                },
+                "then": {
+                  "properties": {
+                    "method": { "const": "get" },
+                    "path": { "const": "/health" }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": { "name": { "const": "run" } },
+                  "required": ["name"]
+                },
+                "then": {
+                  "properties": {
+                    "method": { "const": "post" },
+                    "path": { "const": "/run" }
+                  }
+                }
+              }
+            ]
           },
           "allOf": [
             {
@@ -1871,6 +1900,10 @@
             },
             "env_var": {
               "type": "string"
+            },
+            "base_url_env": {
+              "type": "string",
+              "description": "Env var containing a base URL (recommended for http_api/internal_service tools)."
             }
           },
           "additionalProperties": true

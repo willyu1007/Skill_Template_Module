@@ -21,9 +21,8 @@ During Stage D implementation, use these templates as starting points for tool i
 | Variable | Source | Description |
 |----------|--------|-------------|
 | `{{tool_id}}` | `tools.tools[].id` | Tool identifier |
-| `{{tool_base_url_env}}` | `tools.tools[].auth.base_url_env` | Env var for base URL |
+| `{{tool_base_url_env}}` | `tools.tools[].auth.base_url_env` | Env var for base URL (recommended for `http_api` / `internal_service`) |
 | `{{tool_api_key_env}}` | `tools.tools[].auth.env_var` | Env var for API key |
 | `{{timeout_ms}}` | `tools.tools[].timeouts.timeout_ms` | Request timeout |
 | `{{max_attempts}}` | `tools.tools[].retry.max_attempts` | Max retry attempts |
 | `{{backoff}}` | `tools.tools[].retry.backoff` | Backoff strategy |
-

@@ -1,12 +1,12 @@
 # `agent_builder` Usage Guide
 
-`agent_builder` scaffolds a **complete, repo-integrated Agent** for a real feature request.
+`agent_builder` scaffolds a **module-embedded, repo-integrated agent component** (agent proxy) for a real feature request.
 
 It produces:
-- a runnable agent module (`agents/<agent_id>/`),
-- maintainability docs (`agents/<agent_id>/workdocs/`),
-- a project registry entry (`agents/registry.json`, includes `agent_module_map` for LLM scope),
-- plus a validated, versioned **blueprint** that becomes the single source of truth for subsequent implementation.
+- a runnable agent component under an existing module (`modules/<module_id>/src/agents/<agent_id>/`),
+- module-local workdocs (`modules/<module_id>/workdocs/active/agent-<agent_id>/`),
+- module-local contract artifacts (`modules/<module_id>/interact/agents/<agent_id>/{blueprint.json,openapi.json}`),
+- plus a validated, versioned **blueprint** that becomes the single source of truth for subsequent implementation and modular integration.
 
 This guide is written for human operators. An LLM can follow the same steps programmatically.
 
@@ -29,25 +29,28 @@ When a blueprint is applied, `agent_builder` generates:
 
 | Deliverable | Default Path | Contents |
 |-------------|--------------|----------|
-| Agent module | `agents/<agent_id>/` | `src/core/`, `src/adapters/`, `prompts/`, `schemas/`, `config/` |
-| Agent docs | `agents/<agent_id>/workdocs/` | `overview.md`, `integration.md`, `runbook.md`, etc. |
-| Registry entry | `agents/registry.json` | Discovery index + `agent_module_map` (agent_id -> module_ids) |
+| Agent component | `modules/<module_id>/src/agents/<agent_id>/` | `src/core/`, `src/adapters/`, `prompts/`, `schemas/`, `config/` |
+| Agent workdocs | `modules/<module_id>/workdocs/active/agent-<agent_id>/` | `overview.md`, `integration.md`, `runbook.md`, etc. |
+| Interact artifacts (managed) | `modules/<module_id>/interact/agents/<agent_id>/` | `blueprint.json`, `openapi.json` |
+| Module context registry (upsert) | `modules/<module_id>/interact/registry.json` | Artifact entries for blueprint/openapi |
+| Modular integration (Stage F) | `modules/<module_id>/MANIFEST.yaml` (+ optional `modules/integration/scenarios.yaml`) | Interfaces/implements + optional scenario scaffold |
 
 > Core/Adapters separation is mandatory. See [Adapter Behaviors](adapter-behaviors.md) for runtime details.
 
 ---
 
-## 3) Staged Flow (A–E)
+## 3) Staged Flow (A–F)
 
 | Stage | Purpose | Artifacts | Checkpoint |
 |-------|---------|-----------|------------|
 | **A** | Interview | `stage-a/interview-notes.md`, `stage-a/integration-decision.md` | User approval required |
 | **B** | Blueprint | `stage-b/agent-blueprint.json` | User approval required |
-| **C** | Scaffold | Code + docs + registry in repo | — |
+| **C** | Scaffold | Code + docs + contracts in repo | — |
 | **D** | Implement | Real domain logic in `src/core/` | — |
-| **E** | Verify | Acceptance scenarios + cleanup | — |
+| **E** | Verify | Acceptance scenarios + evidence | — |
+| **F** | Integrate | Update module MANIFEST + derived rebuilds | — |
 
-**Rule:** During Stage A, do not write anything to the repo. Artifacts live in a temporary workdir.
+**Rule:** During Stage A and Stage B, do not write anything to the repo. Artifacts live in a temporary workdir.
 
 ---
 
@@ -69,7 +72,10 @@ This script is dependency-free (Node.js only).
 | `apply` | Apply scaffold into the repo |
 | `verify` | Execute acceptance scenarios |
 | `verify --skip-http` | Skip HTTP scenarios (for sandbox/CI) |
+| `integrate-modular` | Patch module MANIFEST + rebuild derived registries |
 | `finish` | Delete the temporary workdir |
+
+> Tip: `--workdir` can be omitted if you export `AGENT_BUILDER_WORKDIR` to point at the current run workdir.
 
 ### Quickstart
 
@@ -90,6 +96,9 @@ node .../agent-builder.js apply --workdir <WORKDIR> --repo-root . --apply
 # Verify acceptance scenarios
 node .../agent-builder.js verify --workdir <WORKDIR> --repo-root .
 
+# Integrate into modular SSOT (module MANIFEST + derived rebuilds)
+node .../agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply
+
 # Cleanup (--apply required to actually delete)
 node .../agent-builder.js finish --workdir <WORKDIR> --apply
 ```
@@ -102,41 +111,30 @@ node .../agent-builder.js finish --workdir <WORKDIR> --apply
 |-----------|-------------|
 | No secrets in repo | Only env var names in `.env.example` |
 | Kill switch required | `AGENT_ENABLED` must be in `configuration.env_vars` with `required: true` |
-| Registry update required | `deliverables.registry_path` must be created/updated with `agent_module_map` |
 | Core/Adapters separation | Core logic must not import adapter-specific modules |
+| Module embedding required | Agent code lives under `modules/<module_id>/...` (not a standalone module) |
+| Explicit approvals required | Stage A and Stage B must be approved before `apply --apply` |
+| Flow binding required | `.system/modular/flow_graph.yaml` must contain the target `flow_id` + `node_id` before Stage F |
 
 ---
 
 ## 6) Post-Scaffold: Module System Integration
 
-After applying the scaffold, you **MUST** run the following commands to integrate the agent into the modular system:
-
-Before running commands:
-- Ensure `agents/registry.json` includes `agent_module_map` for LLM scope.
-- Update `modules/<module_id>/MANIFEST.yaml` for each mapped module with the `run`/`health` interfaces and `implements` links if applicable.
+After Stage C (`apply --apply`), you **MUST** run Stage F to integrate the agent into the modular system:
 
 ```bash
-# 1. Rebuild instance registry (registers the new module)
-node .ai/scripts/modulectl.js registry-build
-
-# 2. Update flow implementation index (associates interfaces with flow nodes)
-node .ai/scripts/flowctl.js update-from-manifests
-
-# 3. Validate flow graph consistency
-node .ai/scripts/flowctl.js lint
-
-# 4. Rebuild project context registry
-node .ai/scripts/contextctl.js build
+node .ai/skills/workflows/agent/agent_builder/scripts/agent-builder.js integrate-modular --workdir <WORKDIR> --repo-root . --apply
 ```
 
-**Why?**
+This will:
+- Validate the flow/node exists in `.system/modular/flow_graph.yaml` (it will not edit the flow graph).
+- Update `modules/<module_id>/MANIFEST.yaml` with `run`/`health` interfaces and implements binding.
+- Optionally scaffold an integration scenario in `modules/integration/scenarios.yaml`.
+- Rebuild derived registries/indexes via ctl scripts (`modulectl`, `flowctl`, `contextctl`, `integrationctl`).
 
-| Step | Purpose |
-|------|---------|
-| `modulectl.js registry-build` | Updates `.system/modular/instance_registry.yaml` |
-| `flowctl.js update-from-manifests` | Links agent interfaces to business flow nodes |
-| `flowctl.js lint` | Ensures flow graph and bindings are consistent |
-| `contextctl.js build` | Updates project-level context for AI navigation |
+**Dry-run support:** omit `--apply` to preview what Stage F would change.
+
+**If flow/node missing:** Stage F emits `flow-change-request.md` under the module’s interact dir and stops.
 
 ---
 

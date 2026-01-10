@@ -11,7 +11,7 @@ This handbook provides design principles, decision trees, boundary conditions, a
 **Principle**: Business logic must be isolated from integration concerns.
 
 ```
-agents/<agent_id>/
+modules/<module_id>/src/agents/<agent_id>/
 ├── src/
 │   ├── core/           # Provider-agnostic logic
 │   │   ├── run.js      # Main orchestration
@@ -22,8 +22,8 @@ agents/<agent_id>/
 │   │   └── errors.js        # Error types
 │   │
 │   └── adapters/       # Integration-specific code
-│       ├── http/       # HTTP + WebSocket server
-│       ├── worker/     # Async job processing
+│       ├── http/       # HTTP + WebSocket server (+ optional SSE endpoint)
+│       ├── worker/     # Async job processing (placeholder)
 │       ├── sdk/        # In-process API
 │       ├── cron/       # Scheduled execution
 │       └── pipeline/   # CI/ETL integration
@@ -36,7 +36,7 @@ agents/<agent_id>/
 
 **Enforcement**: `deliverables.core_adapter_separation` must be `"required"` in blueprint.
 
-**Module scope**: Agent assets live under `agents/`, while `module_id` mappings define the LLM working scope for semantic consistency. Record mappings in `agents/registry.json` under `agent_module_map` so automation and reviewers can see which module contexts apply.
+**Module scope**: Agent assets live under `modules/<module_id>/src/agents/<agent_id>/`. Contract artifacts are written to `modules/<module_id>/interact/agents/<agent_id>/` and recorded in `modules/<module_id>/interact/registry.json` for module-local discovery and context tooling.
 
 ### 1.2 Blueprint as Single Source of Truth
 
@@ -52,10 +52,10 @@ agents/<agent_id>/
 ```
 kind, version, meta, agent, scope, integration, interfaces, api,
 schemas, contracts, model, configuration, conversation, budgets,
-data_flow, observability, security, acceptance, deliverables
+data_flow, observability, security, acceptance, modular, deliverables
 ```
 
-### 1.3 Five-Stage Flow Rationale
+### 1.3 Six-Stage Flow Rationale
 
 | Stage | Purpose | Reversibility |
 |-------|---------|---------------|
@@ -64,6 +64,7 @@ data_flow, observability, security, acceptance, deliverables
 | C (Scaffold) | Generate initial structure | Partial (no overwrite) |
 | D (Implement) | Fill in real logic | Incremental |
 | E (Verify) | Prove correctness | N/A |
+| F (Integrate) | Patch module SSOT + rebuild derived | Partial (SSOT-managed) |
 
 **Why Explicit Approvals**: Prevents costly mistakes. Stages A and B are in temp workdir, so errors are cheap. Stage C writes to repo, so approval ensures user commitment.
 

@@ -893,13 +893,24 @@ function validateBlueprint(blueprint) {
     if (!r) continue;
     req(['run','health'].includes(r.name), `api.routes.name must be run|health (got ${r.name}).`);
     req(typeof r.path === 'string' && r.path.startsWith('/'), `api.routes[].path must start with "/": ${r.name}`);
-    req(['get','post','put','patch','delete'].includes(String(r.method || '').toLowerCase()), `api.routes[].method invalid: ${r.name}`);
+    const m = String(r.method || '').toLowerCase();
+    req(['get','post','put','patch','delete'].includes(m), `api.routes[].method invalid: ${r.name}`);
     req(typeof r.request_schema_ref === 'string' && schemaRefPattern.test(r.request_schema_ref),
       `api.routes[${r.name}].request_schema_ref must be format #/schemas/Name (got "${r.request_schema_ref}").`);
     req(typeof r.response_schema_ref === 'string' && schemaRefPattern.test(r.response_schema_ref),
       `api.routes[${r.name}].response_schema_ref must be format #/schemas/Name (got "${r.response_schema_ref}").`);
     req(typeof r.error_schema_ref === 'string' && schemaRefPattern.test(r.error_schema_ref),
       `api.routes[${r.name}].error_schema_ref must be format #/schemas/Name (got "${r.error_schema_ref}").`);
+
+    // Scaffold invariant: the HTTP adapter serves fixed run/health routes under base_path.
+    if (r.name === 'health') {
+      req(m === 'get', 'api.routes["health"].method must be "get".');
+      req(r.path === '/health', 'api.routes["health"].path must be "/health".');
+    }
+    if (r.name === 'run') {
+      req(m === 'post', 'api.routes["run"].method must be "post".');
+      req(r.path === '/run', 'api.routes["run"].path must be "/run".');
+    }
   }
 
   // Schemas must exist
@@ -1169,6 +1180,9 @@ function validateBlueprint(blueprint) {
   for (const i of ifaces) {
     if (!i) continue;
     req(['http','worker','sdk','cron','pipeline','cli'].includes(i.type), `interfaces[].type invalid: ${i.type}`);
+    if (i.type === 'cli') {
+      warnings.push('[STAGE_D_REQUIRED] interfaces[].type="cli" is accepted as an extension point, but the scaffold does not generate a CLI adapter. You MUST implement the CLI entrypoint in Stage D.');
+    }
     req(typeof i.entrypoint === 'string' && i.entrypoint.trim(), `interfaces[${i.type}].entrypoint is required (string).`);
     req(typeof i.request_schema_ref === 'string' && schemaRefPattern.test(i.request_schema_ref),
       `interfaces[${i.type}].request_schema_ref is required (format: #/schemas/Name).`);
@@ -3240,63 +3254,92 @@ const path = require('path');
     repo_root: repoRoot,
     agent_module_path: bp.deliverables.agent_module_path,
     scenarios: results,
-    summary
+    summary,
+    environment: {
+      node_version: process.version,
+      platform: process.platform,
+      workdir
+    }
   };
 
   // Write JSON evidence
   const evidencePath = path.join(artifactsDirE, 'verification-evidence.json');
   writeJson(evidencePath, evidence);
 
-  // Generate Markdown report
-  const reportLines = [];
-  reportLines.push(`# ${bp.agent.name} Verification Report`);
-  reportLines.push('');
-  reportLines.push('## Summary');
-  reportLines.push('');
-  reportLines.push(`- **Agent ID**: ${bp.agent.id}`);
-  reportLines.push(`- **Verified At**: ${verifiedAt}`);
-  reportLines.push(`- **Total Scenarios**: ${summary.total}`);
-  reportLines.push(`- **Passed**: ${summary.passed}`);
-  reportLines.push(`- **Failed**: ${summary.failed}`);
-  reportLines.push(`- **Skipped**: ${summary.skipped}`);
-  reportLines.push('');
-  reportLines.push(`**Result**: ${summary.failed === 0 ? 'PASS' : 'FAIL'}`);
-  reportLines.push('');
-  reportLines.push('## Scenario Details');
-  reportLines.push('');
-
+  // Generate Markdown report (template-driven)
+  const scenarioDetailsLines = [];
   for (const r of results) {
     const icon = r.status === 'passed' ? '[PASS]' : r.status === 'failed' ? '[FAIL]' : '[SKIP]';
-    reportLines.push(`### ${icon} ${r.title} (${r.priority})`);
-    reportLines.push('');
-    reportLines.push(`- Status: **${r.status}**`);
-    reportLines.push(`- Duration: ${r.duration_ms}ms`);
-    reportLines.push(`- Kind: ${r.execution && r.execution.kind ? r.execution.kind : ''}`);
-    reportLines.push('');
+    scenarioDetailsLines.push(`### ${icon} ${r.title} (${r.priority})`);
+    scenarioDetailsLines.push('');
+    scenarioDetailsLines.push(`- Status: **${r.status}**`);
+    scenarioDetailsLines.push(`- Duration: ${r.duration_ms}ms`);
+    scenarioDetailsLines.push(`- Kind: ${r.execution && r.execution.kind ? r.execution.kind : ''}`);
+    scenarioDetailsLines.push('');
     if (r.checks.length > 0) {
-      reportLines.push('**Checks**:');
-      reportLines.push('');
-      reportLines.push('| Check | Result | Actual |');
-      reportLines.push('|-------|--------|--------|');
+      scenarioDetailsLines.push('**Checks**:');
+      scenarioDetailsLines.push('');
+      scenarioDetailsLines.push('| Check | Result | Actual |');
+      scenarioDetailsLines.push('|-------|--------|--------|');
       for (const c of r.checks) {
         const checkIcon = c.result ? 'PASS' : 'FAIL';
-        reportLines.push(`| ${c.check} | ${checkIcon} | ${c.actual} |`);
+        scenarioDetailsLines.push(`| ${c.check} | ${checkIcon} | ${c.actual || ''} |`);
       }
-      reportLines.push('');
+      scenarioDetailsLines.push('');
+    }
+    if (r.execution && r.execution.error) {
+      scenarioDetailsLines.push('**Error**:');
+      scenarioDetailsLines.push('');
+      scenarioDetailsLines.push('```');
+      scenarioDetailsLines.push(String(r.execution.error));
+      scenarioDetailsLines.push('```');
+      scenarioDetailsLines.push('');
     }
   }
 
-  reportLines.push('---');
-  reportLines.push('');
-  reportLines.push('*Generated by agent-builder.js verify command*');
+  const templatesRoot = loadTemplatesRoot();
+  const reportTemplatePath = path.join(templatesRoot, 'stage-e', 'verification-report.template.md');
+  let reportText = '';
+
+  if (exists(reportTemplatePath)) {
+    reportText = renderTemplate(readText(reportTemplatePath), {
+      agent_name: bp.agent.name,
+      agent_id: bp.agent.id,
+      verified_at: verifiedAt,
+      total: summary.total,
+      passed: summary.passed,
+      failed: summary.failed,
+      skipped: summary.skipped,
+      overall_result: summary.failed === 0 ? 'PASS' : 'FAIL',
+      scenario_details_md: scenarioDetailsLines.join('\n')
+    });
+  } else {
+    // Fallback to a simple built-in report if templates are unavailable.
+    const fallback = [];
+    fallback.push(`# ${bp.agent.name} Verification Report`);
+    fallback.push('');
+    fallback.push(`- Agent ID: ${bp.agent.id}`);
+    fallback.push(`- Verified At: ${verifiedAt}`);
+    fallback.push(`- Total: ${summary.total} Passed: ${summary.passed} Failed: ${summary.failed} Skipped: ${summary.skipped}`);
+    fallback.push(`- Result: ${summary.failed === 0 ? 'PASS' : 'FAIL'}`);
+    fallback.push('');
+    fallback.push('## Scenario Details');
+    fallback.push('');
+    fallback.push(scenarioDetailsLines.join('\n'));
+    fallback.push('');
+    fallback.push('---');
+    fallback.push('');
+    fallback.push('*Generated by agent-builder.js verify command*');
+    reportText = fallback.join('\n');
+  }
 
   const reportPath = path.join(artifactsDirE, 'verification-report.md');
-  writeText(reportPath, reportLines.join('\n'));
+  writeText(reportPath, reportText);
 
   // Also copy to docs directory if it exists
   if (exists(docsDir)) {
     writeJson(path.join(docsDir, 'verification-evidence.json'), evidence);
-    writeText(path.join(docsDir, 'verification-report.md'), reportLines.join('\n'));
+    writeText(path.join(docsDir, 'verification-report.md'), reportText);
   }
 
   // Update state

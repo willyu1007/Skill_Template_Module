@@ -3,34 +3,27 @@
   "agent_name": "Example Agent",
   "verified_at": "2025-01-01T12:00:00.000Z",
   "repo_root": "/path/to/repo",
-  "agent_module_path": "agents/example-agent",
+  "agent_module_path": "modules/example.module/src/agents/example-agent",
   "scenarios": [
     {
-      "title": "HTTP run returns a structured response",
-      "priority": "P0",
+      "title": "HTTP health endpoint returns ok",
+      "priority": "P1",
       "status": "passed",
       "checks": [
         {
-          "check": "HTTP server adapter exists",
+          "check": "Agent module directory exists",
           "result": true,
-          "actual": "agents/example-agent/src/adapters/http/server.js"
+          "actual": "modules/example.module/src/agents/example-agent"
         },
         {
-          "check": "Core run module exists",
+          "check": ".env.example exists",
           "result": true,
-          "actual": "agents/example-agent/src/core/run.js"
-        },
-        {
-          "check": "Request/Response schemas exist",
-          "result": true,
-          "actual": "present"
-        },
-        {
-          "check": "contract_version in manifest",
-          "result": true,
-          "actual": "present"
+          "actual": "modules/example.module/src/agents/example-agent/.env.example"
         }
       ],
+      "execution": {
+        "kind": "http_health"
+      },
       "duration_ms": 45
     },
     {
@@ -44,6 +37,9 @@
           "actual": "present"
         }
       ],
+      "execution": {
+        "kind": "http_run"
+      },
       "duration_ms": 12
     }
   ],

@@ -23,6 +23,7 @@ npm run start
 ### Endpoints
 - Health: `GET http://localhost:$PORT{{api_base_path}}/health`
 - Run (blocking): `POST http://localhost:$PORT{{api_base_path}}/run`
+- Run (SSE streaming): `POST http://localhost:$PORT{{api_base_path}}/run/stream`
 - WebSocket (streaming): `WS ws://localhost:$PORT{{api_base_path}}/ws`
 
 ## Worker (placeholder)

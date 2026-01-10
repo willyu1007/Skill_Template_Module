@@ -20,6 +20,12 @@ If enabled by the interface config:
 - client sends `RunRequest` JSON
 - server emits `RunEvent` messages + final completion
 
+### Streaming (SSE)
+- `POST {{api_base_path}}/run/stream`
+- client sends `RunRequest` JSON
+- server responds with `text/event-stream`
+- server emits `RunEvent` messages + final completion
+
 ## Attachments
 
 ### Worker
@@ -38,4 +44,3 @@ If enabled by the interface config:
 - mode: {{failure_mode}}
 - rollback/disable: {{rollback_method}}
 - kill switch: `AGENT_ENABLED` (required)
-

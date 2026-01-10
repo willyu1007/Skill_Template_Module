@@ -27,6 +27,7 @@ For the canonical JSON Schema, see:
 - `observability`
 - `security`
 - `acceptance`
+- `modular`
 - `deliverables`
 
 > Optional blocks may include `tools`, `operations`, `prompting`, `lifecycle`, and others.
@@ -55,6 +56,8 @@ For the canonical JSON Schema, see:
 | `interfaces[].exposure_level` | `none`, `progress`, `debug` |
 | `interfaces[].streaming.protocol` | `websocket`, `sse`, `chunked_jsonl` (default: `websocket` for HTTP streaming) |
 
+> Note: `cli` is accepted by the schema as an extension point, but the default scaffold does not generate a dedicated CLI adapter. If you use `interfaces[].type="cli"`, implement the entrypoint in Stage D.
+
 ### Conversation / Memory
 
 | Field | Allowed Values | Default |
@@ -75,4 +78,3 @@ For the canonical JSON Schema, see:
 - [Usage Guide](usage.md) — main workflow overview
 - [Adapter Behaviors](adapter-behaviors.md) — entrypoint runtime details
 - [Conversation Modes](conversation-modes.md) — memory strategy details
-
