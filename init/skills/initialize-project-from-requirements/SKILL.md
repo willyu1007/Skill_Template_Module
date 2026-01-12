@@ -85,18 +85,20 @@ Note: the Context system is not installed from `addons/`. Even if `addons.contex
    - Validation is recorded by script commands in `init/.init-state.json`.
    - Advancing stages MUST be done via the explicit `approve` command (do not hand-edit the state file to skip stages).
 2. Do not advance stages without explicit user approval.
-3. Context system (core capability) enable switch:
+3. **No workdocs during initialization**: Do NOT create workdocs task bundles during the init workflow. The init pipeline has its own state tracking. Workdocs are intended for post-init development tasks only.
+4. Context system (core capability) enable switch:
     - `addons.contextAwareness` is the built-in enable switch; default is enabled unless explicitly `false`.
     - The pipeline does not install Context from `/addons/<addonId>/payload` (Context is not an add-on; it is core).
     - Non-core add-ons (packaging/deployment/release/observability) ARE installed from `addons/` when enabled in the blueprint.
     - `blueprint.context.*` is configuration-only; the setting does not trigger installation.
-4. The manifest schema MUST be the "flat schema".
+5. The manifest schema MUST be the "flat schema".
    - Do not use `collections.current` or similar nested structures.
-5. Single source of truth for config generation: `scripts/scaffold-configs.cjs`.
-6. **Add-ons default ON**: All optional add-ons (packaging, deployment, release, observability) are **enabled by default**. Use opt-out model (ask user to disable, not enable).
-7. **Phase 6 documentation confirmation is REQUIRED**: After `apply` completes, the LLM MUST ask the user whether to update `AGENTS.md` with tech stack info. See `templates/llm-init-guide.md` Phase 6.
-8. **Post-init add-on source cleanup confirmation**: After initialization completes (after `approve --stage C`), ask the user whether to keep the `addons/` directory. If the user wants to remove `addons/`, run:
-   - `node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand`
+6. Single source of truth for config generation: `scripts/scaffold-configs.cjs`.
+7. **Add-ons default ON**: All optional add-ons (packaging, deployment, release, observability) are **enabled by default**. Use opt-out model (ask user to disable, not enable).
+8. **Phase 6 documentation update is REQUIRED**: After `apply` completes, the LLM MUST ask the user whether to update **both** `README.md` and `AGENTS.md` with tech stack info. See `templates/llm-init-guide.md` Phase 6.
+9. **Phase 7 skill retention is REQUIRED**: After documentation update, generate a skill retention table in `init/skill-retention-table.md` from `templates/skill-retention-table.template.md`, let user review and select skills to delete, then execute deletion via `delete-skills.cjs`. See `templates/llm-init-guide.md` Phase 7.
+10. **Post-init add-on source cleanup confirmation**: After skill retention is finalized (after `approve --stage C`), ask the user whether to keep the `addons/` directory. If the user wants to remove `addons/`, run:
+    - `node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand`
 
 ---
 
@@ -156,7 +158,8 @@ The skill supports an LLM (AI assistant) guiding a user through the entire initi
 Phase 0.5: Domain glossary alignment (optional) → Phase 1: Requirements interview
     → Phase 2: Tech stack selection → Phase 3: Blueprint generation
     → Phase 4: Add-on config (default ON) → Phase 5: Config generation + apply
-    → Phase 6: Documentation update confirmation
+    → Phase 6: Documentation update (README.md + AGENTS.md)
+    → Phase 7: Skill retention confirmation
 ```
 
 ### Phase 0.5: Domain glossary alignment (optional, recommended)

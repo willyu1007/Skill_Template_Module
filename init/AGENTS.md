@@ -8,6 +8,12 @@ Key principles:
 - Do not advance stages without explicit user approval.
 - Do not hand-edit `init/.init-state.json` to change stages; use the pipeline commands.
 
+## Init workflow rules
+
+1. **No workdocs during initialization**: Do NOT create workdocs task bundles during the init workflow. The init pipeline has its own state tracking (`init/.init-state.json`). Workdocs are for post-init development tasks only.
+2. **Stage-by-stage validation**: Every stage must pass validation before advancing.
+3. **User approval required**: Each stage transition requires explicit user approval.
+
 ---
 
 ## Canonical command entry point
@@ -144,27 +150,67 @@ To disable an add-on in the blueprint:
 }
 ```
 
-## Documentation confirmation (after apply)
+## Post-init documentation update (README.md + AGENTS.md)
 
-After Stage C `apply` completes, the LLM **must** ask:
+After Stage C `apply` completes, update **both** `README.md` and `AGENTS.md` together.
 
-```
-Would you like me to add the tech stack information to the project AGENTS.md?
-```
+### README.md update
 
-If user agrees, update `AGENTS.md` with:
-- Tech Stack table (language, package manager, frameworks, database, API style)
+Update the root `README.md` with project-specific information:
+- Project name and description
+- Tech stack summary
+- Quick start instructions
+- Key scripts / commands
+
+### AGENTS.md update
+
+Update `AGENTS.md` with:
+- Tech Stack table
 - Enabled Add-ons table
 
-**Rules**:
-- Preserve existing content (Key Directories, Control Scripts, Common Tasks, Task Protocol, Rules)
-- Insert new sections **before** `## Key Directories`
+**Insert position**: Before `## Key Directories`, preserve all existing content.
 
 See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 6 for detailed template.
 
+---
+
+## Post-init skill retention
+
+After documentation update, present a skill retention table so the user can decide which skills to keep.
+
+### Flow
+
+1. **Generate retention table**: Create `init/skill-retention-table.md` from `templates/skill-retention-table.template.md`, listing all skills from `.ai/skills/` with descriptions (translate to user's language if needed).
+
+2. **User review**: Ask the user to review the table and list skills they want to delete.
+
+3. **Preview deletion**: Run with `--dry-run` first:
+   ```bash
+   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --dry-run
+   ```
+
+4. **Execute deletion**: After user confirms the preview:
+   ```bash
+   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --yes
+   ```
+
+5. **Sync wrappers**: After deletion, regenerate provider wrappers:
+   ```bash
+   node .ai/scripts/sync-skills.cjs --scope current --providers both
+   ```
+
+### Notes
+
+- If multiple skills share the same name, use the full path (e.g., `workflows/agent/agent_builder`).
+- The `agent_builder` skill can be removed via this flow if the project does not need agent proxy scaffolding.
+
+See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 7 for detailed flow.
+
+---
+
 ## Add-ons directory cleanup (after completion)
 
-After Stage C approval (`approve --stage C`), ask the user whether to keep the add-on source directory `addons/`.
+After Stage C approval (`approve --stage C`) and skill retention is finalized, ask the user whether to keep the add-on source directory `addons/`.
 
 If the user chooses to remove it:
 

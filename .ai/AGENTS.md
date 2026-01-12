@@ -43,5 +43,6 @@ AI/LLM MUST NOT:
 
 - Lint skills: `node .ai/scripts/lint-skills.cjs --strict`
 - Sync stubs: `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
+- Delete skills: `node .ai/scripts/delete-skills.cjs --skill <name|path> --yes`
 - LLM config key gate: `node .ai/skills/workflows/llm/llm_engineering/scripts/check-llm-config-keys.cjs`
 - LLM registry sanity: `node .ai/skills/workflows/llm/llm_engineering/scripts/validate-llm-registry.cjs`

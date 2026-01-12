@@ -13,8 +13,9 @@ The document provides step-by-step guidance for an AI assistant to help a user c
 5. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
 6. [Phase 4: Add-on recommendations](#phase-4-add-on-recommendations)
 7. [Phase 5: Config generation](#phase-5-config-generation)
-8. [Phase 6: Documentation update confirmation](#phase-6-documentation-update-confirmation)
-9. [Decision tree reference](#decision-tree-reference)
+8. [Phase 6: Documentation update (README.md + AGENTS.md)](#phase-6-documentation-update-readmemd--agentsmd)
+9. [Phase 7: Skill retention confirmation](#phase-7-skill-retention-confirmation)
+10. [Decision tree reference](#decision-tree-reference)
 
 ---
 
@@ -57,7 +58,12 @@ User starts initialization
          │
          ▼
 ┌─────────────────────────────┐
-│ Phase 6: Doc update confirm  │  ← ask user to update AGENTS.md
+│ Phase 6: Doc update          │  ← update README.md + AGENTS.md
+└────────┬────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│ Phase 7: Skill retention     │  ← review/prune skills for project needs
 └────────┬────────────────────┘
          │
          ▼
@@ -453,9 +459,9 @@ src/
 
 ---
 
-## Phase 6: Documentation update confirmation
+## Phase 6: Documentation update (README.md + AGENTS.md)
 
-After `apply` completes successfully, the LLM **must** ask the user whether to update the project `AGENTS.md` with tech stack information.
+After `apply` completes successfully, the LLM **must** ask the user whether to update **both** the root `README.md` and `AGENTS.md` with project-specific and tech stack information.
 
 ### When to ask
 
@@ -464,21 +470,58 @@ Ask immediately after `apply` completes and before running `approve --stage C`.
 ### LLM action
 
 ```
-Initialization completed. Would you like me to add the tech stack information to the project AGENTS.md?
+Initialization completed. Would you like me to update the project documentation?
 
-This will record:
-- Programming language and package manager
-- Frontend/backend frameworks
-- Database type
-- API style
-- Enabled add-ons
+I will update:
+1. README.md - with project name, description, tech stack summary, and quick start
+2. AGENTS.md - with tech stack table and enabled add-ons
 
-The existing AGENTS.md content (Key Directories, Control Scripts, Common Tasks, etc.) will be preserved.
+The existing AGENTS.md structure (Key Directories, Control Scripts, etc.) will be preserved.
 
 [Yes / No]
 ```
 
-### Update rules
+### README.md update rules
+
+1. **Overwrite allowed**: The root `README.md` can be fully replaced with project-specific content.
+
+2. **Content to include**:
+
+```markdown
+# {{project.name}}
+
+{{project.description}}
+
+## Tech Stack
+
+| Category | Choice |
+|----------|--------|
+| Language | {{repo.language}} |
+| Package Manager | {{repo.packageManager}} |
+| Frontend | {{capabilities.frontend.framework or "N/A"}} |
+| Backend | {{capabilities.backend.framework or "N/A"}} |
+| Database | {{capabilities.database.kind or "N/A"}} |
+
+## Quick Start
+
+\`\`\`bash
+# Install dependencies
+{{packageManagerInstallCommand}}
+
+# Start development
+{{packageManagerDevCommand}}
+\`\`\`
+
+## Project Structure
+
+Brief description of key directories based on the scaffolded layout.
+
+## AI Assistants
+
+Read `AGENTS.md` for AI-specific guidance.
+```
+
+### AGENTS.md update rules
 
 1. **Preserve existing content**: Do NOT overwrite or remove:
    - Key Directories table
@@ -517,12 +560,104 @@ The existing AGENTS.md content (Key Directories, Control Scripts, Common Tasks, 
 
 ### LLM-first documentation principles
 
-When updating AGENTS.md, follow these principles:
+When updating documentation, follow these principles:
 
 - **Semantic density**: Each line should carry meaningful information
 - **Structured format**: Use tables and lists for quick LLM parsing
 - **Token efficient**: Avoid redundant descriptions; key info first
-- **Preserve constraints**: Never remove template repo's core rules
+- **Preserve constraints**: Never remove template repo's core rules in AGENTS.md
+
+---
+
+## Phase 7: Skill retention confirmation
+
+After documentation update (Phase 6), present a skill retention table so the user can decide which skills to keep for their project.
+
+### When to ask
+
+Ask after Phase 6 documentation update completes and before cleanup steps.
+
+### LLM action
+
+1. **Generate retention table**: Create `init/skill-retention-table.md` from the template `templates/skill-retention-table.template.md`, listing all skills from `.ai/skills/` with descriptions.
+
+2. **Present to user**:
+
+```
+Here are the available skills in this project. Please review and let me know which ones you want to remove.
+
+[Display the generated skill-retention-table.md content]
+
+List the skill names you want to delete (comma-separated), or press Enter to keep all.
+```
+
+3. **If user provides skills to delete**:
+
+   a. Preview first (dry-run):
+   ```bash
+   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --dry-run
+   ```
+
+   b. Show preview output and ask for confirmation:
+   ```
+   These skills will be deleted:
+   [list from dry-run output]
+
+   Confirm deletion? [Yes / No]
+   ```
+
+   c. If user confirms, execute deletion:
+   ```bash
+   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --yes
+   ```
+
+   d. Regenerate provider wrappers:
+   ```bash
+   node .ai/scripts/sync-skills.cjs --scope current --providers both
+   ```
+
+4. **If user keeps all skills**: Continue to next step (cleanup).
+
+### Retention table format
+
+The generated `init/skill-retention-table.md` should follow this structure:
+
+```markdown
+# Skill Retention Table
+
+Review the skills below and decide which to keep for your project.
+
+## Workflows
+
+| Skill | Description |
+|-------|-------------|
+| plan-maker | Create implementation plans and roadmaps |
+| create-workdocs-plan | Create module/integration workdocs task bundles |
+| agent_builder | Scaffold module-embedded agent components |
+| ... | ... |
+
+## Standards
+
+| Skill | Description |
+|-------|-------------|
+| naming-conventions | Apply consistent naming conventions |
+| git-commit-conventions | Apply Git commit/branch/PR conventions |
+| ... | ... |
+
+## Scaffold
+
+| Skill | Description |
+|-------|-------------|
+| initialize-module-instance | Create new module instances |
+| manage-project-context | Maintain context registries |
+| ... | ... |
+```
+
+### Notes
+
+- Translate descriptions to the user's preferred language if needed.
+- If multiple skills share the same name, display the full path to avoid ambiguity.
+- The `agent_builder` skill can be removed if the project does not need agent proxy scaffolding.
 
 ---
 
@@ -611,15 +746,43 @@ AI: Great, all add-ons enabled. Running apply...
 
 [apply completes]
 
-AI: Initialization completed. Would you like me to add the tech stack information to the project AGENTS.md?
+AI: Initialization completed. Would you like me to update the project documentation?
 
-This will record the language, frameworks, database, and enabled add-ons. The existing template content will be preserved.
+I will update:
+1. README.md - with project name, description, tech stack summary, and quick start
+2. AGENTS.md - with tech stack table and enabled add-ons
 
 User: Yes
 
-AI: Done. AGENTS.md updated with:
-- Tech Stack table
-- Enabled Add-ons table
+AI: Done. Documentation updated:
+- README.md: project info, tech stack, quick start
+- AGENTS.md: Tech Stack table, Enabled Add-ons table
+
+Now let's review the available skills. Here's the retention table:
+
+[displays skill-retention-table.md content]
+
+List the skill names you want to delete (comma-separated), or press Enter to keep all.
+
+User: agent_builder
+
+AI: Previewing deletion...
+
+[runs: node .ai/scripts/delete-skills.cjs --skills "agent_builder" --dry-run]
+
+These skills will be deleted:
+- workflows/agent/agent_builder (SSOT + provider stubs)
+
+Confirm deletion? [Yes / No]
+
+User: Yes
+
+AI: Deleting skills and syncing wrappers...
+
+[runs: node .ai/scripts/delete-skills.cjs --skills "agent_builder" --yes]
+[runs: node .ai/scripts/sync-skills.cjs --scope current --providers both]
+
+Done. Skills pruned and wrappers synced.
 
 Next: run `approve --stage C` to complete initialization.
 
@@ -638,9 +801,11 @@ If the user chooses **No**, run:
 ## Notes
 
 1. **Do not skip phases**: complete each phase in order
-2. **Write to files**: record every decision and answer in the corresponding docs
-3. **Validate outputs**: use `check-docs` and `validate` to validate artifacts
-4. **Get explicit approval**: the user must explicitly approve each stage before advancing
-5. **Add-ons default ON**: all add-ons are enabled by default; ask user to disable if needed
-6. **Documentation confirmation**: always ask user about AGENTS.md update after apply completes
-7. **Add-ons directory cleanup**: after init completes, ask whether to keep `addons/`; if not, run `cleanup-addons`
+2. **No workdocs during init**: do NOT create workdocs task bundles during initialization; the init pipeline has its own state tracking
+3. **Write to files**: record every decision and answer in the corresponding docs
+4. **Validate outputs**: use `check-docs` and `validate` to validate artifacts
+5. **Get explicit approval**: the user must explicitly approve each stage before advancing
+6. **Add-ons default ON**: all add-ons are enabled by default; ask user to disable if needed
+7. **Documentation update (Phase 6)**: always ask user about README.md + AGENTS.md update after apply completes
+8. **Skill retention (Phase 7)**: always generate retention table and let user prune unwanted skills before finalizing
+9. **Add-ons directory cleanup**: after skill retention completes, ask whether to keep `addons/`; if not, run `cleanup-addons`
