@@ -35,6 +35,7 @@ const IGNORE_DIRS = new Set([
   '.hg',
   '.svn',
   '__pycache__',
+  'backup',
   'node_modules',
   '.next',
   '.nuxt',

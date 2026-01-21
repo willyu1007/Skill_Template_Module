@@ -2,19 +2,31 @@
 /**
  * contextctl.mjs
  *
- * Context artifacts and registry management for the Context Awareness feature.
+ * Project context registry management for a module-first repository.
+ *
+ * SSOT registries:
+ * - docs/context/project.registry.json                 (project-level SSOT)
+ * - modules/<module_id>/interact/registry.json         (module-level SSOT)
+ *
+ * Derived registry:
+ * - docs/context/registry.json                         (project-level aggregated view)
+ *
+ * Context Awareness feature adds:
+ * - docs/context/config/environment-registry.json
+ * - config/environments/*.yaml.template
  *
  * Commands:
  *   init              Initialize docs/context skeleton (idempotent)
- *   add-artifact      Add an artifact to the registry
- *   remove-artifact   Remove an artifact from the registry
- *   touch             Update checksums after editing artifacts
- *   list              List all registered artifacts
- *   verify            Verify context layer consistency
+ *   add-artifact      Add an artifact entry to an SSOT registry
+ *   remove-artifact   Remove an artifact entry from an SSOT registry
+ *   touch             Recompute checksums in SSOT registries
+ *   build             Build docs/context/registry.json (DERIVED)
+ *   list              List artifacts (SSOT or derived)
+ *   verify            Verify SSOT registries and checksums
  *   help              Show help
- *   add-env           Add a new environment
- *   list-envs         List all environments
- *   verify-config     Verify environment configuration
+ *   add-env           Add a new environment (context awareness feature)
+ *   list-envs         List all environments (context awareness feature)
+ *   verify-config     Verify environment configuration (context awareness feature)
  */
 
 import fs from 'node:fs';
@@ -40,33 +52,43 @@ Commands:
     Initialize docs/context skeleton (idempotent).
 
   add-artifact
-    --id <string>               Artifact ID (required)
-    --type <openapi|db-schema|db|bpmn|json|yaml|markdown>  Artifact type (required)
-    --path <string>             Path to artifact file (required)
+    --module-id <id>            Target module registry (default: project)
+    --artifact-id <id>          Artifact id (required; unique within module)
+    --type <type>               Artifact type (required; e.g. openapi|db-schema|bpmn|json|yaml|markdown)
+    --path <path>               Repo-relative path to artifact file (required)
     --mode <contract|generated> Artifact mode (default: contract)
     --format <string>           Optional format hint (e.g., openapi-3.1)
     --tags <csv>                Optional tags (comma-separated)
     --repo-root <path>          Repo root (default: cwd)
-    Add an artifact to the context registry.
+    Add an artifact entry to an SSOT registry and compute checksum (if file exists).
 
   remove-artifact
-    --id <string>               Artifact ID to remove (required)
+    --module-id <id>            Target module registry (default: project)
+    --artifact-id <id>          Artifact id to remove (required)
     --repo-root <path>          Repo root (default: cwd)
-    Remove an artifact from the registry.
+    Remove an artifact entry from an SSOT registry.
 
   touch
+    --module-id <id>            If set, only touch that registry (default: all)
     --repo-root <path>          Repo root (default: cwd)
-    Update checksums for all registered artifacts.
+    Recompute checksums and update updatedAt in SSOT registries.
+
+  build
+    --repo-root <path>          Repo root (default: cwd)
+    --no-refresh                Do not modify SSOT registries (skip touch)
+    Build docs/context/registry.json (DERIVED).
 
   list
     --repo-root <path>          Repo root (default: cwd)
     --format <text|json>        Output format (default: text)
-    List all registered artifacts.
+    --module-id <id>            SSOT registry to list (default: project)
+    --derived                   List derived registry (docs/context/registry.json)
+    List artifacts from an SSOT registry or from the derived view.
 
   verify
     --repo-root <path>          Repo root (default: cwd)
     --strict                    Treat warnings as errors
-    Verify context layer consistency.
+    Verify SSOT registries and (optionally) checksums without modifying files.
 
   add-env
     --id <string>               Environment ID (required)
@@ -86,7 +108,8 @@ Commands:
 
 Examples:
   node .ai/skills/features/context-awareness/scripts/contextctl.mjs init
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact --id my-api --type openapi --path docs/context/api/my-api.yaml
+  node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact --module-id billing.api --artifact-id openapi --type openapi --path modules/billing.api/interact/openapi.yaml
+  node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
   node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
 `;
   console.log(msg.trim());
@@ -133,17 +156,15 @@ function toPosixPath(p) {
   return String(p).replace(/\\/g, '/');
 }
 
-function resolvePath(base, p) {
-  if (!p) return null;
-  if (path.isAbsolute(p)) return p;
-  return path.resolve(base, p);
+function readJson(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw);
 }
 
-function readJson(filePath) {
+function readJsonOrNull(filePath) {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
+    return readJson(filePath);
+  } catch {
     return null;
   }
 }
@@ -151,6 +172,10 @@ function readJson(filePath) {
 function writeJson(filePath, data) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+}
+
+function isoNow() {
+  return new Date().toISOString();
 }
 
 function ensureDir(dirPath) {
@@ -176,54 +201,12 @@ function computeChecksumSha256(filePath) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-function looksLikeSha256Hex(v) {
-  return typeof v === 'string' && /^[a-f0-9]{64}$/i.test(v);
+function isValidModuleId(id) {
+  return /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.test(String(id || ''));
 }
 
-function normalizeRegistry(raw) {
-  const now = new Date().toISOString();
-  const version = Number(raw?.version) || 1;
-  const updatedAt = raw?.updatedAt || raw?.lastUpdated || now;
-  const artifacts = Array.isArray(raw?.artifacts) ? raw.artifacts : [];
-
-  const normalizedArtifacts = artifacts
-    .filter((a) => a && typeof a === 'object')
-    .map((a) => {
-      const id = String(a.id || '').trim();
-      const type = String(a.type || '').trim();
-      const artifactPath = String(a.path || '').trim();
-      if (!id || !type || !artifactPath) return null;
-
-      const checksumSha256 =
-        (looksLikeSha256Hex(a.checksumSha256) && a.checksumSha256.toLowerCase()) ||
-        (looksLikeSha256Hex(a.checksum) && a.checksum.toLowerCase()) ||
-        undefined;
-
-      const mode = (String(a.mode || 'contract').trim().toLowerCase() === 'generated') ? 'generated' : 'contract';
-      const format = a.format ? String(a.format) : undefined;
-      const tags = Array.isArray(a.tags) ? a.tags.map((t) => String(t)) : undefined;
-      const lastUpdated = a.lastUpdated || a.addedAt || undefined;
-      const source = a.source && typeof a.source === 'object' ? a.source : undefined;
-
-      return {
-        id,
-        type,
-        path: toPosixPath(artifactPath),
-        mode,
-        ...(format ? { format } : {}),
-        ...(tags ? { tags } : {}),
-        ...(checksumSha256 ? { checksumSha256 } : {}),
-        ...(lastUpdated ? { lastUpdated } : {}),
-        ...(source ? { source } : {})
-      };
-    })
-    .filter(Boolean);
-
-  return {
-    version,
-    updatedAt,
-    artifacts: normalizedArtifacts
-  };
+function isValidArtifactId(id) {
+  return /^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$/.test(String(id || ''));
 }
 
 function normalizeEnvRegistry(raw) {
@@ -285,31 +268,200 @@ function getContextDir(repoRoot) {
   return path.join(repoRoot, 'docs', 'context');
 }
 
-function getRegistryPath(repoRoot) {
+function getDerivedRegistryPath(repoRoot) {
   return path.join(getContextDir(repoRoot), 'registry.json');
+}
+
+function getProjectRegistryPath(repoRoot) {
+  return path.join(getContextDir(repoRoot), 'project.registry.json');
+}
+
+function registryPathForModule(repoRoot, moduleId) {
+  if (!moduleId || moduleId === 'project') return getProjectRegistryPath(repoRoot);
+  return path.join(repoRoot, 'modules', moduleId, 'interact', 'registry.json');
+}
+
+function discoverModuleRegistryPaths(repoRoot) {
+  const modulesDir = path.join(repoRoot, 'modules');
+  if (!fs.existsSync(modulesDir)) return [];
+  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
+  const out = [];
+  for (const e of entries) {
+    if (!e.isDirectory()) continue;
+    if (e.name === 'integration') continue;
+    const p = path.join(modulesDir, e.name, 'interact', 'registry.json');
+    if (fs.existsSync(p)) out.push(p);
+  }
+  return out.sort((a, b) => a.localeCompare(b));
+}
+
+function loadModuleRegistry(absPath) {
+  const data = readJsonOrNull(absPath);
+  if (!data || typeof data !== 'object') {
+    return { ok: false, registry: null, warnings: [], errors: [`Failed to read JSON: ${absPath}`] };
+  }
+  return { ok: true, registry: data, warnings: [], errors: [] };
+}
+
+function validateRegistryStructure(reg, absPath) {
+  const warnings = [];
+  const errors = [];
+
+  if (!reg || typeof reg !== 'object') {
+    errors.push(`Registry is not an object: ${absPath}`);
+    return { warnings, errors };
+  }
+
+  if (reg.version !== 1) warnings.push(`Unexpected version in ${absPath} (expected 1)`);
+  if (!reg.moduleId || typeof reg.moduleId !== 'string') errors.push(`Missing moduleId in ${absPath}`);
+  if (reg.moduleId && !isValidModuleId(reg.moduleId)) warnings.push(`Invalid moduleId "${reg.moduleId}" in ${absPath}`);
+  if (!Array.isArray(reg.artifacts)) errors.push(`Missing artifacts list in ${absPath}`);
+
+  if (Array.isArray(reg.artifacts)) {
+    const seen = new Set();
+    for (const a of reg.artifacts) {
+      if (!a || typeof a !== 'object') {
+        errors.push(`Artifact entry must be an object: ${absPath}`);
+        continue;
+      }
+      const aid = a.artifactId ?? a.id;
+      if (!aid || typeof aid !== 'string') errors.push(`Artifact missing artifactId: ${absPath}`);
+      else {
+        if (seen.has(aid)) errors.push(`Duplicate artifactId "${aid}" in ${absPath}`);
+        seen.add(aid);
+        if (!isValidArtifactId(aid)) warnings.push(`artifactId "${aid}" has unusual characters (recommended: /^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$/)`);
+      }
+      if (!a.type || typeof a.type !== 'string') errors.push(`Artifact "${aid}" missing type in ${absPath}`);
+      if (!a.path || typeof a.path !== 'string') errors.push(`Artifact "${aid}" missing path in ${absPath}`);
+      if (a.mode && !['contract', 'generated'].includes(a.mode)) warnings.push(`Artifact "${aid}" has unknown mode "${a.mode}" in ${absPath}`);
+    }
+  }
+
+  return { warnings, errors };
+}
+
+function touchRegistry(repoRoot, absPath, { apply } = { apply: true }) {
+  const l = loadModuleRegistry(absPath);
+  const warnings = [...l.warnings];
+  const errors = [...l.errors];
+  if (!l.ok) return { warnings, errors, changed: false };
+
+  const registry = l.registry;
+  const v = validateRegistryStructure(registry, absPath);
+  warnings.push(...v.warnings);
+  errors.push(...v.errors);
+
+  let changed = false;
+
+  if (Array.isArray(registry.artifacts)) {
+    for (const a of registry.artifacts) {
+      const aid = a.artifactId ?? a.id;
+      const rel = a.path;
+      if (!rel) continue;
+
+      const abs = path.join(repoRoot, rel);
+      if (!fs.existsSync(abs)) {
+        warnings.push(`[${registry.moduleId}] artifact missing file: ${rel} (artifactId: ${aid})`);
+        continue;
+      }
+
+      const actual = computeChecksumSha256(abs);
+      if (a.checksumSha256 !== actual) {
+        warnings.push(`[${registry.moduleId}] checksum mismatch for ${aid} (${apply ? 'updating' : 'not updating'})`);
+        if (apply) {
+          a.checksumSha256 = actual;
+          a.lastUpdated = isoNow();
+          changed = true;
+        }
+      }
+    }
+  }
+
+  if (apply) {
+    registry.updatedAt = isoNow();
+    writeJson(absPath, registry);
+  }
+
+  return { warnings, errors, changed };
+}
+
+function buildDerivedRegistry(repoRoot, { refresh } = { refresh: true }) {
+  const warnings = [];
+  const errors = [];
+
+  const registries = [];
+  const projectPath = getProjectRegistryPath(repoRoot);
+  if (!fs.existsSync(projectPath)) {
+    errors.push(`Missing project registry: ${projectPath}`);
+  } else {
+    registries.push(projectPath);
+  }
+  registries.push(...discoverModuleRegistryPaths(repoRoot));
+
+  if (refresh) {
+    for (const p of registries) {
+      const t = touchRegistry(repoRoot, p, { apply: true });
+      warnings.push(...t.warnings);
+      errors.push(...t.errors);
+    }
+  } else {
+    for (const p of registries) {
+      const l = loadModuleRegistry(p);
+      if (!l.ok) {
+        errors.push(...l.errors);
+        continue;
+      }
+      const v = validateRegistryStructure(l.registry, p);
+      warnings.push(...v.warnings);
+      errors.push(...v.errors);
+    }
+  }
+
+  const artifacts = [];
+  for (const p of registries) {
+    const l = loadModuleRegistry(p);
+    if (!l.ok) continue;
+    const reg = l.registry;
+    const moduleId = reg.moduleId;
+    for (const a of reg.artifacts || []) {
+      const artifactId = a.artifactId ?? a.id;
+      const id = `${moduleId}:${artifactId}`;
+      const item = {
+        id,
+        moduleId,
+        artifactId,
+        type: a.type,
+        path: a.path,
+        mode: a.mode ?? 'contract'
+      };
+      if (a.format) item.format = a.format;
+      if (Array.isArray(a.tags) && a.tags.length > 0) item.tags = a.tags;
+      if (a.checksumSha256) item.checksumSha256 = a.checksumSha256;
+      if (a.lastUpdated) item.lastUpdated = a.lastUpdated;
+      if (a.source) item.source = a.source;
+      artifacts.push(item);
+    }
+  }
+
+  artifacts.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+
+  const derived = {
+    version: 1,
+    updatedAt: isoNow(),
+    artifacts
+  };
+
+  return { derived, warnings, errors };
 }
 
 function getEnvRegistryPath(repoRoot) {
   return path.join(getContextDir(repoRoot), 'config', 'environment-registry.json');
 }
 
-function loadRegistry(repoRoot) {
-  const registryPath = getRegistryPath(repoRoot);
-  const data = readJson(registryPath);
-  if (!data) return normalizeRegistry(null);
-  return normalizeRegistry(data);
-}
-
-function saveRegistry(repoRoot, registry) {
-  const normalized = normalizeRegistry(registry);
-  normalized.updatedAt = new Date().toISOString();
-  writeJson(getRegistryPath(repoRoot), normalized);
-}
-
 function loadEnvRegistry(repoRoot) {
   const envRegistryPath = getEnvRegistryPath(repoRoot);
-  const data = readJson(envRegistryPath);
-  if (!data) return normalizeEnvRegistry(null);
+  const data = readJsonOrNull(envRegistryPath);
+  if (!data) return null;
   return normalizeEnvRegistry(data);
 }
 
@@ -317,6 +469,15 @@ function saveEnvRegistry(repoRoot, envRegistry) {
   const normalized = normalizeEnvRegistry(envRegistry);
   normalized.updatedAt = new Date().toISOString();
   writeJson(getEnvRegistryPath(repoRoot), normalized);
+}
+
+function isContextAwarenessEnabled(repoRoot) {
+  const statePath = path.join(repoRoot, '.ai', 'project', 'state.json');
+  const state = readJsonOrNull(statePath);
+  if (!state || typeof state !== 'object') return false;
+  if (state.context?.enabled === true) return true;
+  if (state.features?.contextAwareness === true) return true;
+  return false;
 }
 
 // ============================================================================
@@ -346,32 +507,29 @@ function cmdInit(repoRoot, dryRun) {
 
   // Create INDEX.md
   const indexPath = path.join(contextDir, 'INDEX.md');
-  const indexContent = `# Context Index
+  const indexContent = `# Project context index
 
-This directory contains structured context artifacts for AI/LLM consumption.
+This directory provides a **project-level** view of curated context artifacts.
 
-## Entry Points
+## Important
 
-- \`registry.json\` - Artifact registry with checksums
-- \`config/environment-registry.json\` - Environment configuration
+- \`docs/context/registry.json\` is a **DERIVED artifact**.
+  - Do not edit it by hand.
+  - Regenerate it with: \`node .ai/skills/features/context-awareness/scripts/contextctl.mjs build\`
 
-## Artifact Types
+## Sources of truth
 
-| Directory | Purpose |
-|-----------|---------|
-| \`api/\` | OpenAPI/Swagger specifications |
-| \`db/\` | Database schema mirrors |
-| \`process/\` | BPMN/workflow definitions |
-| \`config/\` | Environment and runtime configuration |
+Project context is aggregated bottom-up from:
 
-## Usage
+1. Project-level registry (SSOT)
+   - \`docs/context/project.registry.json\`
+2. Module registries (SSOT)
+   - \`modules/<module_id>/interact/registry.json\`
 
-AI/LLM should:
-1. Read this INDEX.md first
-2. Check registry.json for available artifacts
-3. Load specific artifacts as needed
+## Rules
 
-All context changes go through \`contextctl.mjs\` commands.
+- Prefer script-driven updates (contextctl) over manual edits.
+- Never store secrets in context artifacts.
 `;
 
   if (dryRun) {
@@ -380,18 +538,22 @@ All context changes go through \`contextctl.mjs\` commands.
     actions.push(writeFileIfMissing(indexPath, indexContent));
   }
 
-  // Create registry.json
-  const registryPath = getRegistryPath(repoRoot);
-  if (!fs.existsSync(registryPath) && !dryRun) {
-    const registry = {
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      artifacts: []
-    };
-    writeJson(registryPath, registry);
-    actions.push({ op: 'write', path: registryPath });
+  // Create project-level SSOT registry
+  const projectRegPath = getProjectRegistryPath(repoRoot);
+  if (!fs.existsSync(projectRegPath) && !dryRun) {
+    writeJson(projectRegPath, { version: 1, moduleId: 'project', updatedAt: isoNow(), artifacts: [] });
+    actions.push({ op: 'write', path: projectRegPath });
   } else if (dryRun) {
-    actions.push({ op: 'write', path: registryPath, mode: 'dry-run' });
+    actions.push({ op: 'write', path: projectRegPath, mode: 'dry-run' });
+  }
+
+  // Create derived registry skeleton
+  const derivedPath = getDerivedRegistryPath(repoRoot);
+  if (!fs.existsSync(derivedPath) && !dryRun) {
+    writeJson(derivedPath, { version: 1, updatedAt: '1970-01-01T00:00:00Z', artifacts: [] });
+    actions.push({ op: 'write', path: derivedPath });
+  } else if (dryRun) {
+    actions.push({ op: 'write', path: derivedPath, mode: 'dry-run' });
   }
 
   // Create environment registry
@@ -427,58 +589,7 @@ All context changes go through \`contextctl.mjs\` commands.
     actions.push({ op: 'write', path: envRegistryPath, mode: 'dry-run' });
   }
 
-  // Create registry schema
-  const schemaPath = path.join(contextDir, 'registry.schema.json');
-  const schemaContent = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Project Context Registry",
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["version", "updatedAt", "artifacts"],
-    "properties": {
-      "version": { "type": "integer", "const": 1 },
-      "updatedAt": { "type": "string", "description": "ISO 8601 timestamp" },
-      "artifacts": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["id", "type", "path", "mode"],
-          "properties": {
-            "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$" },
-            "type": { "type": "string" },
-            "path": { "type": "string" },
-            "mode": { "type": "string", "enum": ["contract", "generated"] },
-            "format": { "type": "string" },
-            "tags": { "type": "array", "items": { "type": "string" } },
-            "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-            "lastUpdated": { "type": "string", "description": "ISO 8601 timestamp" },
-            "source": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "kind": { "type": "string", "enum": ["manual", "command"] },
-                "command": { "type": "string" },
-                "cwd": { "type": "string" },
-                "notes": { "type": "string" }
-              }
-            }
-          }
-        }
-      }
-    }
-  };
-
-  if (dryRun) {
-    actions.push({ op: 'write', path: schemaPath, mode: 'dry-run' });
-  } else {
-    if (!fs.existsSync(schemaPath)) {
-      writeJson(schemaPath, schemaContent);
-      actions.push({ op: 'write', path: schemaPath });
-    } else {
-      actions.push({ op: 'skip', path: schemaPath, reason: 'exists' });
-    }
-  }
+  // Do not overwrite existing schemas; init only creates missing skeletons.
 
   console.log('[ok] Context layer initialized.');
   for (const action of actions) {
@@ -502,190 +613,244 @@ function parseCsv(csv) {
     .filter(Boolean);
 }
 
-function cmdAddArtifact(repoRoot, id, type, artifactPath, mode, format, tagsCsv) {
-  if (!id) die('[error] --id is required');
+function cmdAddArtifact(repoRoot, opts) {
+  const moduleId = opts['module-id'] || 'project';
+  const artifactId = opts['artifact-id'] || opts.id;
+  const type = opts.type;
+  const relPath = opts.path;
+  const mode = opts.mode || 'contract';
+  const format = opts.format || null;
+  const tags = parseCsv(opts.tags);
+
+  if (!artifactId || !isValidArtifactId(artifactId)) {
+    die('[error] --artifact-id is required (recommended pattern: /^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$/)');
+  }
   if (!type) die('[error] --type is required');
-  if (!artifactPath) die('[error] --path is required');
+  if (!relPath) die('[error] --path is required');
+  if (!['contract', 'generated'].includes(mode)) die('[error] --mode must be contract|generated');
 
-  const normalizedType = normalizeArtifactType(type);
-  const validTypes = ['openapi', 'db-schema', 'bpmn', 'json', 'yaml', 'markdown'];
-  if (!validTypes.includes(normalizedType)) {
-    die(`[error] --type must be one of: ${validTypes.join(', ')} (or legacy alias: db)`);
+  const registryPath = registryPathForModule(repoRoot, moduleId);
+  if (!fs.existsSync(registryPath)) {
+    die(`[error] registry not found: ${registryPath} (run modulectl init or contextctl init)`);
   }
 
-  const fullPath = resolvePath(repoRoot, artifactPath);
-  if (!fs.existsSync(fullPath)) {
-    die(`[error] Artifact file not found: ${artifactPath}`);
+  const reg = readJson(registryPath);
+  reg.artifacts = Array.isArray(reg.artifacts) ? reg.artifacts : [];
+  if (reg.artifacts.find((a) => (a.artifactId ?? a.id) === artifactId)) {
+    die(`[error] artifactId already exists: ${artifactId}`);
   }
 
-  const registry = loadRegistry(repoRoot);
-  
-  // Check if artifact already exists
-  const existing = registry.artifacts.find(a => a.id === id);
-  if (existing) {
-    die(`[error] Artifact with id "${id}" already exists. Use remove-artifact first.`);
-  }
+  const absArtifact = path.join(repoRoot, relPath);
+  const checksum = fs.existsSync(absArtifact) ? computeChecksumSha256(absArtifact) : null;
 
-  const checksumSha256 = computeChecksumSha256(fullPath);
-  const relativePath = toPosixPath(path.relative(repoRoot, fullPath));
-  const now = new Date().toISOString();
-  const normalizedMode = String(mode || 'contract').trim().toLowerCase() === 'generated' ? 'generated' : 'contract';
-  const tags = parseCsv(tagsCsv);
-
-  registry.artifacts.push({
-    id,
-    type: normalizedType,
-    path: relativePath,
-    mode: normalizedMode,
+  reg.artifacts.push({
+    artifactId,
+    type: normalizeArtifactType(type),
+    path: toPosixPath(relPath),
+    mode,
     ...(format ? { format: String(format) } : {}),
     ...(tags.length > 0 ? { tags } : {}),
-    checksumSha256,
-    lastUpdated: now,
-    source: {
-      kind: 'command',
-      command: 'contextctl add-artifact',
-      cwd: '.'
-    }
+    ...(checksum ? { checksumSha256: checksum } : {}),
+    lastUpdated: isoNow()
   });
 
-  saveRegistry(repoRoot, registry);
-  console.log(`[ok] Added artifact: ${id} (${normalizedType}) -> ${relativePath}`);
+  reg.updatedAt = isoNow();
+  writeJson(registryPath, reg);
+
+  console.log(`[ok] added artifact "${artifactId}" to ${path.relative(repoRoot, registryPath)}`);
+
+  // Refresh derived view without mutating SSOT again.
+  cmdBuild(repoRoot, { 'no-refresh': true });
 }
 
-function cmdRemoveArtifact(repoRoot, id) {
-  if (!id) die('[error] --id is required');
+function cmdRemoveArtifact(repoRoot, opts) {
+  const moduleId = opts['module-id'] || 'project';
+  const artifactId = opts['artifact-id'] || opts.id;
+  if (!artifactId) die('[error] --artifact-id is required');
 
-  const registry = loadRegistry(repoRoot);
-  const index = registry.artifacts.findIndex(a => a.id === id);
-  
-  if (index === -1) {
-    die(`[error] Artifact with id "${id}" not found.`);
-  }
+  const registryPath = registryPathForModule(repoRoot, moduleId);
+  if (!fs.existsSync(registryPath)) die(`[error] registry not found: ${registryPath}`);
 
-  const removed = registry.artifacts.splice(index, 1)[0];
-  saveRegistry(repoRoot, registry);
-  console.log(`[ok] Removed artifact: ${id} (was at ${removed.path})`);
+  const reg = readJson(registryPath);
+  reg.artifacts = Array.isArray(reg.artifacts) ? reg.artifacts : [];
+  const before = reg.artifacts.length;
+  reg.artifacts = reg.artifacts.filter((a) => (a.artifactId ?? a.id) !== artifactId);
+  if (reg.artifacts.length === before) die(`[error] artifactId not found: ${artifactId}`);
+
+  reg.updatedAt = isoNow();
+  writeJson(registryPath, reg);
+
+  console.log(`[ok] removed artifact "${artifactId}" from ${path.relative(repoRoot, registryPath)}`);
+
+  // Refresh derived view without mutating SSOT again.
+  cmdBuild(repoRoot, { 'no-refresh': true });
 }
 
-function cmdTouch(repoRoot) {
-  const registry = loadRegistry(repoRoot);
-  let updated = 0;
+function cmdTouch(repoRoot, opts) {
+  const moduleId = opts['module-id'] || null;
 
-  for (const artifact of registry.artifacts) {
-    const fullPath = resolvePath(repoRoot, artifact.path);
-    const newChecksum = computeChecksumSha256(fullPath);
-    
-    if (newChecksum && newChecksum !== artifact.checksumSha256) {
-      artifact.checksumSha256 = newChecksum;
-      artifact.lastUpdated = new Date().toISOString();
-      updated++;
-      console.log(`  [updated] ${artifact.id}: ${newChecksum}`);
-    }
-  }
-
-  if (updated > 0) {
-    saveRegistry(repoRoot, registry);
-    console.log(`[ok] Updated ${updated} checksum(s).`);
+  const targets = [];
+  if (moduleId) {
+    targets.push(registryPathForModule(repoRoot, moduleId));
   } else {
-    console.log('[ok] All checksums are up to date.');
+    targets.push(getProjectRegistryPath(repoRoot));
+    targets.push(...discoverModuleRegistryPaths(repoRoot));
+  }
+
+  const warnings = [];
+  const errors = [];
+  let changedAny = false;
+
+  for (const p of targets) {
+    if (!fs.existsSync(p)) {
+      warnings.push(`Missing registry: ${p}`);
+      continue;
+    }
+    const t = touchRegistry(repoRoot, p, { apply: true });
+    warnings.push(...t.warnings);
+    errors.push(...t.errors);
+    if (t.changed) changedAny = true;
+  }
+
+  if (warnings.length > 0) {
+    console.log(`Warnings (${warnings.length}):`);
+    for (const w of warnings) console.log(`- ${w}`);
+  }
+  if (errors.length > 0) {
+    console.log(`\nErrors (${errors.length}):`);
+    for (const e of errors) console.log(`- ${e}`);
+    process.exit(1);
+  }
+
+  console.log(`[ok] touch complete (changed: ${changedAny})`);
+}
+
+function cmdBuild(repoRoot, opts) {
+  const refresh = !opts['no-refresh'];
+  const outPath = getDerivedRegistryPath(repoRoot);
+
+  const { derived, warnings, errors } = buildDerivedRegistry(repoRoot, { refresh });
+  writeJson(outPath, derived);
+
+  console.log(`[ok] wrote ${path.relative(repoRoot, outPath)} (refresh: ${refresh})`);
+
+  if (warnings.length > 0) {
+    console.log(`\nWarnings (${warnings.length}):`);
+    for (const w of warnings) console.log(`- ${w}`);
+  }
+  if (errors.length > 0) {
+    console.log(`\nErrors (${errors.length}):`);
+    for (const e of errors) console.log(`- ${e}`);
+    process.exit(1);
   }
 }
 
-function cmdList(repoRoot, format) {
-  const registry = loadRegistry(repoRoot);
+function cmdList(repoRoot, opts, format) {
+  const derived = !!opts.derived;
+  const moduleId = opts['module-id'] || 'project';
 
+  if (derived) {
+    const outPath = getDerivedRegistryPath(repoRoot);
+    if (!fs.existsSync(outPath)) die(`[error] derived registry not found: ${path.relative(repoRoot, outPath)} (run: contextctl build)`);
+    const reg = readJson(outPath);
+    if (format === 'json') {
+      console.log(JSON.stringify(reg, null, 2));
+      return;
+    }
+    const artifacts = Array.isArray(reg?.artifacts) ? reg.artifacts : [];
+    console.log(`Derived Context Artifacts (${artifacts.length} total):`);
+    console.log(`Updated at: ${reg.updatedAt || 'unknown'}\n`);
+    for (const a of artifacts) {
+      console.log(`  [${a.type}] ${a.id}`);
+      console.log(`    Path: ${a.path}`);
+      console.log(`    Mode: ${a.mode}`);
+      if (a.checksumSha256) console.log(`    Checksum: ${a.checksumSha256}`);
+    }
+    return;
+  }
+
+  const registryPath = registryPathForModule(repoRoot, moduleId);
+  if (!fs.existsSync(registryPath)) die(`[error] registry not found: ${path.relative(repoRoot, registryPath)}`);
+  const reg = readJson(registryPath);
   if (format === 'json') {
-    console.log(JSON.stringify(registry, null, 2));
+    console.log(JSON.stringify(reg, null, 2));
     return;
   }
 
-  console.log(`Context Artifacts (${registry.artifacts.length} total):`);
-  console.log(`Updated at: ${registry.updatedAt || 'unknown'}\n`);
-
-  if (registry.artifacts.length === 0) {
-    console.log('  (no artifacts registered)');
-    return;
-  }
-
-  for (const artifact of registry.artifacts) {
-    console.log(`  [${artifact.type}] ${artifact.id}`);
-    console.log(`    Path: ${artifact.path}`);
-    console.log(`    Mode: ${artifact.mode}`);
-    console.log(`    Checksum: ${artifact.checksumSha256 || 'none'}`);
+  const artifacts = Array.isArray(reg?.artifacts) ? reg.artifacts : [];
+  console.log(`SSOT Artifacts (${artifacts.length} total) [moduleId=${reg.moduleId || moduleId}]:`);
+  console.log(`Updated at: ${reg.updatedAt || 'unknown'}\n`);
+  for (const a of artifacts) {
+    const aid = a.artifactId ?? a.id;
+    console.log(`  [${a.type}] ${aid}`);
+    console.log(`    Path: ${a.path}`);
+    console.log(`    Mode: ${a.mode || 'contract'}`);
+    if (a.checksumSha256) console.log(`    Checksum: ${a.checksumSha256}`);
   }
 }
 
 function cmdVerify(repoRoot, strict) {
-  const errors = [];
+  const paths = [getProjectRegistryPath(repoRoot), ...discoverModuleRegistryPaths(repoRoot)];
   const warnings = [];
-  const contextDir = getContextDir(repoRoot);
+  const errors = [];
 
-  // Check context directory exists
-  if (!fs.existsSync(contextDir)) {
-    errors.push('docs/context directory does not exist. Run: contextctl init');
-  }
+  for (const p of paths) {
+    if (!fs.existsSync(p)) {
+      warnings.push(`Missing registry: ${p}`);
+      continue;
+    }
+    const l = loadModuleRegistry(p);
+    if (!l.ok) {
+      errors.push(...l.errors);
+      continue;
+    }
+    const v = validateRegistryStructure(l.registry, p);
+    warnings.push(...v.warnings);
+    errors.push(...v.errors);
 
-  // Check registry exists
-  const registryPath = getRegistryPath(repoRoot);
-  if (!fs.existsSync(registryPath)) {
-    errors.push('registry.json does not exist. Run: contextctl init');
-  } else {
-    const registry = loadRegistry(repoRoot);
-
-    // Verify each artifact
-    for (const artifact of registry.artifacts) {
-      const fullPath = resolvePath(repoRoot, artifact.path);
-      
-      if (!fs.existsSync(fullPath)) {
-        errors.push(`Artifact file missing: ${artifact.path} (id: ${artifact.id})`);
+    for (const a of l.registry.artifacts || []) {
+      const rel = a.path;
+      if (!rel) continue;
+      const abs = path.join(repoRoot, rel);
+      if (!fs.existsSync(abs)) {
+        warnings.push(`[${l.registry.moduleId}] missing file: ${rel}`);
         continue;
       }
-
-      const currentChecksum = computeChecksumSha256(fullPath);
-      if (artifact.checksumSha256 && currentChecksum !== artifact.checksumSha256) {
-        warnings.push(`Checksum mismatch for ${artifact.id}: expected ${artifact.checksumSha256}, got ${currentChecksum}. Run: contextctl touch`);
+      if (a.checksumSha256) {
+        const actual = computeChecksumSha256(abs);
+        if (actual !== a.checksumSha256) warnings.push(`[${l.registry.moduleId}] checksum mismatch: ${(a.artifactId ?? a.id)}`);
       }
     }
   }
 
-  // Check environment registry
-  const envRegistryPath = getEnvRegistryPath(repoRoot);
-  if (!fs.existsSync(envRegistryPath)) {
-    warnings.push('environment-registry.json does not exist.');
-  }
-
-  // Check INDEX.md
-  const indexPath = path.join(contextDir, 'INDEX.md');
-  if (!fs.existsSync(indexPath)) {
-    warnings.push('INDEX.md does not exist.');
-  }
-
-  // Report results
-  const ok = errors.length === 0 && (!strict || warnings.length === 0);
-
-  if (errors.length > 0) {
-    console.log('\nErrors:');
-    for (const e of errors) console.log(`  - ${e}`);
+  // Feature-level verification: env registry and INDEX.md
+  if (isContextAwarenessEnabled(repoRoot)) {
+    const envRegistryPath = getEnvRegistryPath(repoRoot);
+    if (!fs.existsSync(envRegistryPath)) warnings.push('environment-registry.json does not exist (run: contextctl init).');
+    const indexPath = path.join(getContextDir(repoRoot), 'INDEX.md');
+    if (!fs.existsSync(indexPath)) warnings.push('INDEX.md does not exist (run: contextctl init).');
   }
 
   if (warnings.length > 0) {
-    console.log('\nWarnings:');
-    for (const w of warnings) console.log(`  - ${w}`);
+    console.log(`Warnings (${warnings.length}):`);
+    for (const w of warnings) console.log(`- ${w}`);
+  }
+  if (errors.length > 0) {
+    console.log(`\nErrors (${errors.length}):`);
+    for (const e of errors) console.log(`- ${e}`);
   }
 
-  if (ok) {
-    console.log('[ok] Context layer verification passed.');
-  } else {
-    console.log('[error] Context layer verification failed.');
-  }
+  if (errors.length > 0) process.exit(1);
+  if (strict && warnings.length > 0) process.exit(1);
 
-  process.exit(ok ? 0 : 1);
+  console.log('\n[ok] context verification passed.');
 }
 
 function cmdAddEnv(repoRoot, id, description) {
   if (!id) die('[error] --id is required');
 
   const envRegistry = loadEnvRegistry(repoRoot);
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
   
   // Check if environment already exists
   const existing = envRegistry.environments.find(e => e.id === id);
@@ -715,6 +880,7 @@ function cmdAddEnv(repoRoot, id, description) {
 
 function cmdListEnvs(repoRoot, format) {
   const envRegistry = loadEnvRegistry(repoRoot);
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
 
   if (format === 'json') {
     console.log(JSON.stringify(envRegistry, null, 2));
@@ -734,6 +900,7 @@ function cmdListEnvs(repoRoot, format) {
 
 function cmdVerifyConfig(repoRoot, envId) {
   const envRegistry = loadEnvRegistry(repoRoot);
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
   const errors = [];
   const warnings = [];
 
@@ -797,16 +964,19 @@ function main() {
       cmdInit(repoRoot, !!opts['dry-run']);
       break;
     case 'add-artifact':
-      cmdAddArtifact(repoRoot, opts['id'], opts['type'], opts['path'], opts['mode'], opts['format'], opts['tags']);
+      cmdAddArtifact(repoRoot, opts);
       break;
     case 'remove-artifact':
-      cmdRemoveArtifact(repoRoot, opts['id']);
+      cmdRemoveArtifact(repoRoot, opts);
       break;
     case 'touch':
-      cmdTouch(repoRoot);
+      cmdTouch(repoRoot, opts);
+      break;
+    case 'build':
+      cmdBuild(repoRoot, opts);
       break;
     case 'list':
-      cmdList(repoRoot, format);
+      cmdList(repoRoot, opts, format);
       break;
     case 'verify':
       cmdVerify(repoRoot, !!opts['strict']);

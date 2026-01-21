@@ -93,7 +93,7 @@ Depending on `blueprint.features`, Stage C may also materialize:
    - `blueprint.context.*` is configuration only and does not trigger enabling by itself.
 4. The manifest schema is the **flat schema** (do not use older nested shapes like `collections.current`).
 5. Config generation has a single SSOT: `scripts/scaffold-configs.mjs`.
-6. Do not create dev-docs task bundles during initialization; use dev-docs after init completes.
+6. Do not create workdocs task bundles during initialization; use workdocs after init completes.
 
 ---
 

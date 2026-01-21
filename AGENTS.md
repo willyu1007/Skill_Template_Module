@@ -27,7 +27,7 @@ Read `init/AGENTS.md` for project initialization instructions.
 | Module instances | `node .ai/scripts/modulectl.mjs` |
 | Flow SSOT + derived indexes/graphs | `node .ai/scripts/flowctl.mjs` |
 | Integration scenarios | `node .ai/scripts/integrationctl.mjs` |
-| Context registries | `node .ai/scripts/contextctl.mjs` |
+| Context registries | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
 
 ## Coding Standards (RECOMMEND)
 
@@ -35,11 +35,11 @@ Read `init/AGENTS.md` for project initialization instructions.
 
 ## Coding Workflow (MUST)
 
-- Before modifying code/config for a non-trivial task, apply the Decision Gate in `.ai/skills/modules/workdocs/AGENTS.md` and create/update the workdocs task bundle as required.
+- Before modifying code/config for a non-trivial task, apply the Decision Gate in `.ai/skills/module/workdocs/AGENTS.md` and create/update the workdocs task bundle as required.
 - If the user asks for planning artifacts (plan/roadmap/milestones) before coding:
   - If the task meets the Decision Gate, use `.ai/skills/workflows/planning/plan-maker` first, then ask for confirmation to proceed with implementation.
   - If the task is trivial (< 30 min), provide an in-chat plan (do NOT create workdocs).
-  - If the task needs context preservation (multi-session, handoff) or qualifies as complex, follow `.ai/skills/modules/workdocs/AGENTS.md`.
+  - If the task needs context preservation (multi-session, handoff) or qualifies as complex, follow `.ai/skills/module/workdocs/AGENTS.md`.
 
 ## Rules
 - For LLM engineering tasks, open `.ai/llm-config/AGENTS.md`

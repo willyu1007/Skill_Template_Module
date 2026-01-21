@@ -123,7 +123,7 @@ After Stage C approval, explicitly ask whether to record key project facts in `A
 **If user says "update agents"**:
 
 1. Read current root `AGENTS.md`
-2. Preserve template repo structure (Key Directories, Routing, Global Rules, `.ai/` reference, `dev-docs/` reference)
+2. Preserve template repo structure (Key Directories, Routing, Global Rules, `.ai/` reference, `workdocs/` reference)
 3. Add project-specific info from blueprint:
    - Replace template intro paragraph + update Project Type section body (`project.name` + `project.description`)
    - Tech Stack table (`repo.language`, `repo.packageManager`, `repo.layout`, frameworks)

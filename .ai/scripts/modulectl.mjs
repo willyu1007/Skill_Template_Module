@@ -365,7 +365,11 @@ function cmdInit(repoRoot, opts) {
   cmdRegistryBuild(repoRoot, { 'modules-dir': 'modules', out: '.system/modular/instance_registry.yaml', format: 'text' }, { quiet: true });
 
   // Rebuild project context registry (derived)
-  const ctx = spawnSync('node', ['.ai/scripts/contextctl.mjs', 'build'], { cwd: repoRoot, stdio: 'inherit' });
+  const ctx = spawnSync(
+    'node',
+    ['.ai/skills/features/context-awareness/scripts/contextctl.mjs', 'build', '--repo-root', repoRoot],
+    { cwd: repoRoot, stdio: 'inherit' }
+  );
   if (ctx.status !== 0) {
     console.error('[warn] contextctl build failed (module created, but project context registry not updated).');
   }

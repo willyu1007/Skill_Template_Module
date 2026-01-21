@@ -7,7 +7,7 @@ Key principles:
 - Do not skip stages.
 - Do not advance stages without explicit user approval.
 - Do not hand-edit `init/.init-state.json` to change stages; use the pipeline commands.
-- Do not create dev-docs task bundles during initialization; use dev-docs after init completes.
+- Do not create workdocs task bundles during initialization; use workdocs after init completes.
 
 ---
 
@@ -137,7 +137,7 @@ The root `AGENTS.md` contains template repo structure that MUST be kept:
 | Routing table | YES | Task dispatch |
 | Global Rules | YES | Cross-cutting constraints |
 | `.ai/` reference | YES | SSOT location |
-| `dev-docs/` reference | YES | Complex task pattern |
+| `workdocs/` reference | YES | Task documentation system |
 
 ### What to add
 
@@ -161,7 +161,7 @@ From `init/project-blueprint.json`:
    - If the `## Tech Stack` section does not exist: insert the `## Tech Stack` section immediately after `## Project Type`.
 5. Update the existing `## Key Directories` table:
    - Add project code directories first (`src/` or `apps/`/`packages/` based on `repo.layout`).
-   - Preserve the template navigation rows (`.ai/`, `dev-docs/`, etc.) and their entry points.
+   - Preserve the template navigation rows (`.ai/`, `modules/` (workdocs), etc.) and their entry points.
 6. Preserve `## Routing` and `## Global Rules` content unchanged (these are the critical constraints).
 7. Show a diff and get explicit user approval before writing.
 

@@ -466,7 +466,7 @@ After the user approves the Stage C results (scaffold/config/packs/wrappers/`REA
 If user says "yes":
 
 1. Update root `AGENTS.md` with project-specific facts from the blueprint.
-2. Preserve the template repo structure and constraints (Key Directories, Routing, Global Rules, `.ai/`, `dev-docs/`).
+2. Preserve the template repo structure and constraints (Key Directories, Routing, Global Rules, `.ai/`, `workdocs/`).
 3. Show a diff and request explicit approval before writing.
 
 If user says "no": proceed without changing `AGENTS.md`.

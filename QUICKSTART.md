@@ -181,7 +181,7 @@ Context is maintained bottom-up:
 Register a module-local artifact (example: OpenAPI):
 
 ```bash
-node .ai/scripts/contextctl.js add-artifact \
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
   --module-id billing.api \
   --artifact-id openapi \
   --type openapi \
@@ -192,8 +192,8 @@ node .ai/scripts/contextctl.js add-artifact \
 Rebuild and verify:
 
 ```bash
-node .ai/scripts/contextctl.js build
-node .ai/scripts/contextctl.js verify --strict
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
 ```
 
 ---
@@ -257,8 +257,8 @@ node .ai/scripts/flowctl.mjs lint --strict
 node .ai/scripts/flowctl.mjs graph
 node .ai/scripts/integrationctl.mjs validate --strict
 node .ai/scripts/integrationctl.mjs compile
-node .ai/scripts/contextctl.js build
-node .ai/scripts/contextctl.js verify --strict
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
 ```
 
 ---
@@ -270,7 +270,6 @@ If you're using an AI assistant integrated with the repo, you can ask the assist
 - Module creation: `initialize-module-instance`
 - Flow graph maintenance: `maintain-flow-graph`
 - Integration scenarios: `manage-integration-scenarios`
-- Context registries: `manage-project-context`
 - Modular SSOT consistency: `maintain-flow-graph` + `manage-integration-scenarios`
 
 Example prompts you can give the assistant:
@@ -278,7 +277,7 @@ Example prompts you can give the assistant:
 - “Use `initialize-module-instance` to create `billing.api` with an HTTP interface for `billing_flow.create_invoice`, then rebuild registries.”
 - “Use `maintain-flow-graph` to add `billing_flow` (nodes + edges) and run `flowctl lint --strict`.”
 - “Use `manage-integration-scenarios` to scaffold a scenario for `billing_flow` and compile it. Prefer `use_binding` if needed.”
-- “Use `manage-project-context` to register `modules/billing.api/interact/openapi.yaml` and rebuild `docs/context/registry.json`.”
+- “Register `modules/billing.api/interact/openapi.yaml` via `contextctl add-artifact`, then rebuild `docs/context/registry.json`.”
 
 ---
 
@@ -289,6 +288,6 @@ Example prompts you can give the assistant:
 
 Templates / examples (for reference):
 
-- Example module: `.ai/skills/scaffold/modules/initialize-module-instance/examples/example-api/`
-- Example flow graphs: `.ai/skills/scaffold/flow/maintain-flow-graph/examples/`
-- Example integration scenarios: `.ai/skills/scaffold/integration/manage-integration-scenarios/examples/`
+- Example module: `.ai/skills/module/initialize-module-instance/examples/example-api/`
+- Example flow graphs: `.ai/skills/module/maintain-flow-graph/examples/`
+- Example integration scenarios: `.ai/skills/module/manage-integration-scenarios/examples/`

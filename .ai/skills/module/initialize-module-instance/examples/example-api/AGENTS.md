@@ -38,9 +38,9 @@ Example API module demonstrating the module-first template structure.
 
 - Keep changes local to module unless cross-cutting
 - After manifest changes, run:
-  - `node .ai/scripts/modulectl.js registry-build`
-  - `node .ai/scripts/flowctl.js update-from-manifests`
-  - `node .ai/scripts/flowctl.js lint`
+  - `node .ai/scripts/modulectl.mjs registry-build`
+  - `node .ai/scripts/flowctl.mjs update-from-manifests`
+  - `node .ai/scripts/flowctl.mjs lint`
 - Use workdocs for multi-step tasks (see `workdocs/README.md`)
 
 ## Description
@@ -70,7 +70,7 @@ Registry: `interact/registry.json`
 Add artifact example:
 
 ```bash
-node .ai/scripts/contextctl.js add-artifact \
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
   --artifact-id openapi \
   --type openapi \
   --path modules/example.api/interact/openapi.yaml \
@@ -82,8 +82,7 @@ node .ai/scripts/contextctl.js add-artifact \
 Scenarios: `modules/integration/scenarios.yaml`
 
 ```bash
-node .ai/scripts/integrationctl.js validate
-node .ai/scripts/integrationctl.js compile
-node .ai/scripts/integrationctl.js run --execute
+node .ai/scripts/integrationctl.mjs validate
+node .ai/scripts/integrationctl.mjs compile
+node .ai/scripts/integrationctl.mjs run --execute
 ```
-

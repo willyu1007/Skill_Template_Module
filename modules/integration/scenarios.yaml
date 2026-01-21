@@ -16,6 +16,6 @@
 #   node .ai/scripts/integrationctl.mjs run --execute
 #
 # For examples, see:
-#   .ai/skills/scaffold/integration/manage-integration-scenarios/examples/
+#   .ai/skills/module/manage-integration-scenarios/examples/
 
 scenarios: []

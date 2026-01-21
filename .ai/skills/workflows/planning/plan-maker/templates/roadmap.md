@@ -95,11 +95,12 @@ Rules:
 | <risk> | <low/med/high> | <low/med/high> | <...> | <...> | <...> |
 
 ## Optional detailed documentation layout (convention)
-If you maintain a detailed dev documentation bundle for the task, the repository convention is:
+If you maintain a detailed workdocs bundle for the task, the repository convention is:
 
 ```
-dev-docs/active/<task>/
+modules/<module_id>/workdocs/active/<task_slug>/
   roadmap.md              # Macro-level planning (plan-maker)
+  requirement.md          # Optional requirements alignment (plan-maker)
   00-overview.md
   01-plan.md
   02-architecture.md
@@ -108,7 +109,21 @@ dev-docs/active/<task>/
   05-pitfalls.md
 ```
 
-The roadmap document can be used as the macro-level input for the other files. The plan-maker skill does not create or update those files.
+For cross-module work, use:
+
+```
+modules/integration/workdocs/active/<task_slug>/
+  roadmap.md
+  requirement.md          # Optional
+  00-overview.md
+  01-plan.md
+  02-architecture.md
+  03-implementation-notes.md
+  04-verification.md
+  05-pitfalls.md
+```
+
+The roadmap document can be used as the macro-level input for the other files. The plan-maker skill does not create or update the other files.
 
 Suggested mapping:
 - The roadmap's **Goal/Non-goals/Scope** → `00-overview.md`

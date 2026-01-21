@@ -6,8 +6,23 @@ The reference describes an optional file layout convention for maintaining task-
 When a task requires detailed documentation (architecture notes, implementation notes, verification logs), the repository convention is to use a flat structure under the task directory:
 
 ```
-dev-docs/active/<task>/
+modules/<module_id>/workdocs/active/<task_slug>/
   roadmap.md              # Macro-level planning (plan-maker)
+  requirement.md          # Optional requirements alignment (plan-maker)
+  00-overview.md
+  01-plan.md
+  02-architecture.md
+  03-implementation-notes.md
+  04-verification.md
+  05-pitfalls.md
+```
+
+For cross-module integration work:
+
+```
+modules/integration/workdocs/active/<task_slug>/
+  roadmap.md
+  requirement.md          # Optional
   00-overview.md
   01-plan.md
   02-architecture.md
@@ -17,7 +32,7 @@ dev-docs/active/<task>/
 ```
 
 Notes:
-- The plan-maker skill **only** produces `roadmap.md`. The skill does not create or update the other files.
+- The plan-maker skill produces `roadmap.md` and may also produce `requirement.md`. The skill does not create or update the other files.
 - The detailed bundle is intended to be a long-lived, high-fidelity record for collaboration and handoff.
 
 ## Suggested mapping

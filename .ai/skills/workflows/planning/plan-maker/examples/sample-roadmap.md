@@ -115,8 +115,9 @@ This section is a non-binding, early hypothesis to align expected project-struct
 If a detailed bundle is required, create:
 
 ```
-dev-docs/active/<task>/
+modules/<module_id>/workdocs/active/<task_slug>/
   roadmap.md              # Macro-level planning (plan-maker)
+  requirement.md          # Optional requirements alignment (plan-maker)
   00-overview.md
   01-plan.md
   02-architecture.md

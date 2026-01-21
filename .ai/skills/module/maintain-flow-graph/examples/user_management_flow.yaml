@@ -2,8 +2,8 @@
 #
 # Copy this into `.system/modular/flow_graph.yaml` as a starting point.
 # After editing, run:
-#   node .ai/scripts/flowctl.js lint
-#   node .ai/scripts/flowctl.js graph
+#   node .ai/scripts/flowctl.mjs lint
+#   node .ai/scripts/flowctl.mjs graph
 
 flows:
   - id: user_management
@@ -54,4 +54,3 @@ flows:
       - from: list_users
         to: get_user
         description: "Select user from list"
-

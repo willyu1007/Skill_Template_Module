@@ -67,22 +67,22 @@ The domain glossary alignment step is **MustAsk but not blocking** — user can 
 ### Step 1 — Initialize the module skeleton
 
 ```bash
-node .ai/scripts/modulectl.js init --module-id <module_id> --module-type <module_type> --description "<desc>" --apply
+node .ai/scripts/modulectl.mjs init --module-id <module_id> --module-type <module_type> --description "<desc>" --apply
 ```
 
 ### Step 2 — Verify manifests and module-local SSOT
 
 ```bash
-node .ai/scripts/modulectl.js verify --strict
+node .ai/scripts/modulectl.mjs verify --strict
 ```
 
 ### Step 3 — Rebuild derived registries/graphs
 
 ```bash
-node .ai/scripts/modulectl.js registry-build
-node .ai/scripts/flowctl.js update-from-manifests
-node .ai/scripts/flowctl.js lint
-node .ai/scripts/contextctl.js build
+node .ai/scripts/modulectl.mjs registry-build
+node .ai/scripts/flowctl.mjs update-from-manifests
+node .ai/scripts/flowctl.mjs lint
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 ```
 
 ### Step 4 — Documentation confirmation (Required)
@@ -150,7 +150,7 @@ New modules are expected to include `modules/<module_id>/workdocs/AGENTS.md`, wi
 
 ## Verification
 
-- Run `node .ai/scripts/modulectl.js verify` and `node .ai/scripts/contextctl.js build`.
+- Run `node .ai/scripts/modulectl.mjs verify` and `node .ai/skills/features/context-awareness/scripts/contextctl.mjs build`.
 
 ## Boundaries
 

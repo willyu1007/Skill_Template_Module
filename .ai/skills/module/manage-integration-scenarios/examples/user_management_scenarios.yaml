@@ -2,8 +2,8 @@
 #
 # Copy relevant scenarios into `modules/integration/scenarios.yaml`.
 # After editing, run:
-#   node .ai/scripts/integrationctl.js validate
-#   node .ai/scripts/integrationctl.js compile
+#   node .ai/scripts/integrationctl.mjs validate
+#   node .ai/scripts/integrationctl.mjs compile
 
 scenarios:
   # ============================================================================
@@ -131,4 +131,3 @@ scenarios:
         # No endpoint yet - this node is planned
         expect:
           status: 204
-

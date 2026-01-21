@@ -51,8 +51,8 @@ npx tsc --noEmit
 npm test -- --grep "pagination"
 
 # Integration test (if scenarios exist)
-node .ai/scripts/integrationctl.js validate
-node .ai/scripts/integrationctl.js compile
+node .ai/scripts/integrationctl.mjs validate
+node .ai/scripts/integrationctl.mjs compile
 
 # Lint
 npm run lint
@@ -70,4 +70,3 @@ npm run lint
 |------|--------|-------|
 | 2025-01-02 | Started | Created workdocs, defined types |
 | 2025-01-02 | In Progress | Cursor utility implemented |
-

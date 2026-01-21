@@ -2,8 +2,8 @@
 #
 # Copy this into `.system/modular/flow_graph.yaml` as a starting point.
 # After editing, run:
-#   node .ai/scripts/flowctl.js lint
-#   node .ai/scripts/flowctl.js graph
+#   node .ai/scripts/flowctl.mjs lint
+#   node .ai/scripts/flowctl.mjs graph
 
 flows:
   - id: order_processing
@@ -63,4 +63,3 @@ flows:
       - from: create_order
         to: cancel_order
         description: "Customer cancels immediately"
-

@@ -9,10 +9,10 @@
 # - Deprecate instead of renaming: use status: deprecated
 #
 # After editing, run:
-#   node .ai/scripts/flowctl.js lint
-#   node .ai/scripts/flowctl.js graph
+#   node .ai/scripts/flowctl.mjs lint
+#   node .ai/scripts/flowctl.mjs graph
 #
 # For examples, see:
-#   .ai/skills/scaffold/flow/maintain-flow-graph/examples/
+#   .ai/skills/module/maintain-flow-graph/examples/
 
 flows: []

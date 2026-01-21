@@ -31,7 +31,7 @@ init/                         # Project bootstrap kit (Stage A/B/C)
 
 .ai/
   skills/                     # SSOT skills (edit here only)
-  scripts/                    # Control scripts + sync-skills.cjs
+  scripts/                    # Control scripts + sync-skills.mjs
 
 .codex/skills/                # Generated wrappers (DO NOT EDIT)
 .claude/skills/               # Generated wrappers (DO NOT EDIT)
@@ -42,9 +42,9 @@ init/                         # Project bootstrap kit (Stage A/B/C)
 - `node .ai/scripts/modulectl.mjs` — module instances + instance registry build
 - `node .ai/scripts/flowctl.mjs` — flow SSOT lint + derived indexes/graphs
 - `node .ai/scripts/integrationctl.mjs` — integration scenarios validate/compile/run
-- `node .ai/scripts/contextctl.js` — context registries + derived view
-- `node .ai/scripts/projectctl.js` — project state (context mode, stage)
-- `node .ai/scripts/skillsctl.js` — skill packs + wrapper sync
+- `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` — context registries + derived view
+- `node .ai/scripts/projectctl.mjs` — project state (context mode, stage)
+- `node .ai/skills/_meta/skillpacksctl.mjs` — skill packs + wrapper sync
 
 ## Key rules (SSOT + wrappers)
 
@@ -53,11 +53,11 @@ init/                         # Project bootstrap kit (Stage A/B/C)
 - After changing `.ai/skills/`, regenerate wrappers:
 
 ```bash
-node .ai/scripts/sync-skills.cjs --scope current --providers both
+node .ai/scripts/sync-skills.mjs --scope current --providers both
 ```
 
 ## Optional add-ons
 
-Non-core add-ons are available under `addons/` (packaging, deployment, release, observability). See:
+Optional features (packaging, deployment, release, observability, etc.) are documented under:
 
-- `init/addon-docs/convention.md`
+- `init/feature-docs/README.md`

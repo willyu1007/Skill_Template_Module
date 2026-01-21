@@ -29,7 +29,7 @@ You MUST provide:
 - **Portability constraints**:
   - whether to remove provider-specific terms,
   - whether project paths/scripts should be generalized,
-  - any allowed exceptions (for example, "dev-docs may keep repo-specific layout").
+  - any allowed exceptions (for example, "workdocs may keep repo-specific layout").
 
 You SHOULD provide:
 - Desired **taxonomy** (optional): up to two tiers (e.g., `backend/common`, `frontend/components`, `workflows/common`).
@@ -89,7 +89,7 @@ If your repo has additional syncing rules (provider stubs, monorepo layouts), tr
 ## Boundaries
 - You MUST NOT include secrets, credentials, or internal-only URLs in generated skills.
 - You MUST NOT copy large logs or whole source documents verbatim into `SKILL.md`.
-- You SHOULD avoid hard-coded repository paths unless the target is explicitly "dev-docs" with a known layout.
+- You SHOULD avoid hard-coded repository paths unless the target is explicitly a known repo-local convention (for example `workdocs/`) with an agreed layout.
 - You MUST keep each `SKILL.md` <= 500 lines by moving detail into `reference.md`, `examples/`, and `templates/`.
 
 ## Verification

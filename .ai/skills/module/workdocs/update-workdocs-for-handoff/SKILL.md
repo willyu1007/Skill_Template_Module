@@ -83,7 +83,7 @@ A handoff-ready workdocs set including:
 - If the work involved modular SSOT, run:
   - `node .ai/scripts/flowctl.mjs lint`
   - `node .ai/scripts/integrationctl.mjs validate`
-  - `node .ai/scripts/contextctl.mjs verify`
+  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify`
 
 ## Boundaries
 

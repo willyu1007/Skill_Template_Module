@@ -15,7 +15,7 @@ The repository is **module-first**:
 
 ## Decision gate (MUST)
 
-Use this skill when **any** of the following is true:
+Use `create-workdocs-plan` when **any** of the following is true:
 - Expected duration > 2 hours, or likely to span multiple sessions
 - Work requires explicit handoff / context recovery documentation
 - High-risk or cross-cutting change:
@@ -27,7 +27,7 @@ Use this skill when **any** of the following is true:
 - Unclear scope requiring discovery before implementation
 - Meaningful architectural / flow decision needed
 
-**Skip** this skill when **all** of the following are true:
+**Skip** `create-workdocs-plan` when **all** of the following are true:
 - Trivial fix (< 30 min, well-defined scope)
 - Single-file change (including adjacent tests / docs in same module)
 - Simple refactor with clear scope (even if touching multiple files)
@@ -91,7 +91,7 @@ A directory with a workdocs bundle:
 
 ## Execution sync rules (what "good" looks like)
 
-Even though this skill is docs-only, it is designed to make execution **robust**:
+Even though `create-workdocs-plan` is docs-only, it is designed to make execution **robust**:
 - During implementation, keep these files current:
   - `01-plan.md` (check off completed items; add newly discovered TODOs)
   - `03-implementation-notes.md` (what changed + decisions + deviations)
@@ -107,7 +107,7 @@ Even though this skill is docs-only, it is designed to make execution **robust**
 - If the task touches modular SSOT (flow/manifests/scenarios), run:
   - `node .ai/scripts/flowctl.mjs lint`
   - `node .ai/scripts/integrationctl.mjs validate`
-  - `node .ai/scripts/contextctl.mjs verify`
+  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify`
 
 ## Boundaries
 

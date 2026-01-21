@@ -21,8 +21,8 @@ npm run build
 npm test
 
 # Update module registry after manifest changes
-node .ai/scripts/modulectl.js registry-build
-node .ai/scripts/contextctl.js build
+node .ai/scripts/modulectl.mjs registry-build
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 ```
 
 ## Related Flow Nodes
@@ -43,4 +43,3 @@ node .ai/scripts/contextctl.js build
 
 - No external package dependencies added
 - Uses built-in `Buffer` for base64 encoding
-
