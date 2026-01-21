@@ -15,20 +15,31 @@
 ### Assumptions (if unanswered)
 - A1: We already have a feature-flag provider and client library available in the codebase (risk: medium)
 
-## Workdocs scope
-- Scope: module
-- Module id: checkout
-- Task slug: add-checkout-feature-flag
-- Roadmap path: `modules/checkout/workdocs/active/add-checkout-feature-flag/roadmap.md`
-
 ## Scope and impact
-- Affected modules: checkout (UI + API entry points)
-- Cross-module/integration concerns: none expected
-- Modular SSOT touchpoints (if any): none expected (runtime flag only)
-- Derived artifacts to regenerate (if any): none expected
+- Affected areas/modules: checkout UI, checkout API entry points
 - External interfaces/APIs: none (flagged behavior only)
 - Data/storage impact: minimal (flag evaluation only)
 - Backward compatibility: old checkout remains default until ramped
+
+## Project structure change preview (may be empty)
+This section is a non-binding, early hypothesis to align expected project-structure impact.
+
+### Existing areas likely to change (may be empty)
+- Modify:
+  - `frontend/checkout/` — gate routing + UI behind the flag
+  - `backend/checkout/` — gate server-side entry points behind the flag
+- Delete:
+  - (none)
+- Move/Rename:
+  - (none)
+
+### New additions (landing points) (may be empty)
+- New module(s) (preferred):
+  - `shared/feature-flags/` — shared flag evaluation helpers
+- New interface(s)/API(s) (when relevant):
+  - `FeatureFlagClient` — `shared/feature-flags/` — unify flag evaluation call sites
+- New file(s) (optional):
+  - `shared/feature-flags/checkout-flags.ts` — checkout-related flag keys and helpers
 
 ## Milestones
 1. **Milestone 1**: Flag scaffolding exists
@@ -41,7 +52,7 @@
    - Deliverable: ramp plan + dashboards/alerts
    - Acceptance criteria: clear rollback procedure; monitoring confirms stability
 
-## Phased execution plan
+## Step-by-step plan (phased)
 
 ### Phase 0 — Discovery
 - Objective: Confirm existing flag provider and integration points
@@ -88,7 +99,6 @@
   - Immediate flag disable; revert deployments if systemic issues
 
 ## Verification and acceptance criteria
-- Automated checks (modular): N/A (no SSOT changes expected)
 - Automated tests: unit + integration relevant to checkout routing
 - Manual checks: end-to-end purchase flow smoke test
 - Acceptance criteria:
@@ -101,22 +111,21 @@
 | Flag provider not available on backend | medium | high | add backend flag client or proxy | integration test | disable flag / revert |
 | Partial gating causes inconsistent state | low | high | centralize routing decision | e2e tests | disable flag |
 
-## Companion workdocs (convention)
-This roadmap provides macro-level planning. For implementation details, use `create-workdocs-plan` to generate:
+## Optional detailed documentation layout (convention)
+If a detailed bundle is required, create:
 
 ```
-modules/checkout/workdocs/active/add-checkout-feature-flag/
-  roadmap.md              # This file (macro-level planning)
-  00-overview.md          # Goal, non-goals, acceptance criteria
-  01-plan.md              # Implementation plan (specific steps)
-  02-architecture.md      # Architecture design
-  03-implementation-notes.md  # Current status + TODOs
-  04-verification.md      # Verification commands + results
-  05-pitfalls.md          # "Do not repeat" lessons
+dev-docs/active/<task>/
+  roadmap.md              # Macro-level planning (plan-maker)
+  00-overview.md
+  01-plan.md
+  02-architecture.md
+  03-implementation-notes.md
+  04-verification.md
+  05-pitfalls.md
 ```
 
 ## To-dos
 - [ ] Confirm flag system and rollout capability
 - [ ] Confirm success metrics and dashboards
 - [ ] Confirm rollout schedule and owners
-

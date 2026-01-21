@@ -7,17 +7,5 @@
   ],
   "backup_dir": ".ai/.backups/skills-landing",
   "default_overwrite": "changed",
-  "default_prune": false,
-  "provider_roots": {
-    "codex": {
-      "path": ".codex/skills",
-      "enabled": true,
-      "flatten": true
-    },
-    "claude": {
-      "path": ".claude/skills",
-      "enabled": true,
-      "flatten": true
-    }
-  }
+  "default_prune": false
 }

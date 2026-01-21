@@ -9,13 +9,13 @@ description: Execute dependency-aware code refactors (moves, extraction, import 
 Perform non-trivial refactors without breaking builds by planning dependency changes, applying incremental edits, and verifying continuously.
 
 ## When to use
-Use execute-code-refactor when:
+Use the execute-code-refactor skill when:
 - Reorganizing file/folder structures
 - Breaking large modules/components into smaller units
 - Updating imports after moves
 - Standardizing repeated patterns across the codebase
 
-Avoid using execute-code-refactor when:
+Avoid using the skill when:
 - You only need a refactor plan (use a planning workflow)
 - The task is primarily behavior changes rather than structural refactor
 

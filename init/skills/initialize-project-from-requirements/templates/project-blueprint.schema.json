@@ -6,7 +6,8 @@
   "required": [
     "version",
     "project",
-    "repo"
+    "repo",
+    "db"
   ],
   "properties": {
     "version": {
@@ -43,7 +44,9 @@
     "repo": {
       "type": "object",
       "required": [
-        "layout"
+        "layout",
+        "language",
+        "packageManager"
       ],
       "properties": {
         "layout": {
@@ -60,8 +63,17 @@
             "javascript",
             "python",
             "go",
+            "c",
+            "cpp",
+            "c-xmake",
+            "cpp-xmake",
+            "react-native",
             "java",
+            "kotlin",
             "dotnet",
+            "rust",
+            "ruby",
+            "php",
             "other"
           ]
         },
@@ -73,10 +85,16 @@
             "yarn",
             "pip",
             "poetry",
+            "pipenv",
+            "uv",
             "go",
             "maven",
             "gradle",
             "dotnet",
+            "xmake",
+            "cargo",
+            "bundler",
+            "composer",
             "other"
           ]
         }
@@ -233,60 +251,64 @@
               "backend",
               "frontend",
               "standards",
-              "scaffold",
+              "testing",
               "context-core"
             ]
           },
-          "description": "Skill packs to enable. 'context-core' and 'scaffold' are provided by context-awareness add-on."
+          "description": "Skill packs to enable (must exist under .ai/skills/_meta/packs/)."
         }
       }
     },
-    "addons": {
+    "features": {
       "type": "object",
-      "description": "Optional add-ons toggles. Enable add-ons based on project needs.",
+      "description": "Optional feature flags. When enabled, init will materialize the corresponding templates into the repo (e.g., ops/, db/, docs/context/) and run the relevant control scripts (Node under .ai/scripts and/or Python under .ai/skills/features/**/scripts).",
       "properties": {
         "contextAwareness": {
           "type": "boolean",
-          "description": "Enable the context-awareness add-on (API/DB/BPMN contracts for LLM)."
+          "description": "Enable the context-awareness feature (API/DB/BPMN contracts for LLM)."
         },
-        "context-awareness": {
+        "database": {
           "type": "boolean",
-          "description": "Alias for contextAwareness."
+          "description": "Enable the database feature (DB schema SSOT scaffolding; behavior depends on db.ssot)."
         },
-        "dbMirror": {
+        "ui": {
           "type": "boolean",
-          "description": "Enable the db-mirror add-on (database schema mirroring and migrations)."
+          "description": "Enable the UI feature (UI SSOT + UI context contract scaffolding)."
         },
-        "db-mirror": {
+        "environment": {
           "type": "boolean",
-          "description": "Alias for dbMirror."
+          "description": "Enable the environment feature (env contract SSOT scaffolding + generated non-secret artifacts)."
         },
         "packaging": {
           "type": "boolean",
-          "description": "Enable the packaging add-on (container/artifact packaging)."
+          "description": "Enable the packaging feature (container/artifact packaging)."
         },
         "deployment": {
           "type": "boolean",
-          "description": "Enable the deployment add-on (multi-environment deployment)."
+          "description": "Enable the deployment feature (multi-environment deployment)."
         },
         "release": {
           "type": "boolean",
-          "description": "Enable the release add-on (version and changelog management)."
+          "description": "Enable the release feature (version and changelog management)."
+        },
+        "ci": {
+          "type": "boolean",
+          "description": "Enable the CI feature (CI templates + conventions; requires ci.provider)."
         },
         "observability": {
           "type": "boolean",
-          "description": "Enable the observability add-on (metrics/logs/traces contracts)."
+          "description": "Enable the observability feature (metrics/logs/traces contracts)."
         }
       },
       "additionalProperties": true
     },
     "context": {
       "type": "object",
-      "description": "Context management configuration (effective when context-awareness add-on is enabled).",
+      "description": "Context management configuration (effective when context-awareness feature is enabled).",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Context management config flag (does not install the add-on)."
+          "description": "Context management config flag (does not install the feature)."
         },
         "mode": {
           "type": "string",
@@ -308,7 +330,7 @@
     },
     "db": {
       "type": "object",
-      "description": "Database configuration (effective when db-mirror add-on is enabled).",
+      "description": "Database configuration. Always include db.enabled and db.ssot; other fields apply depending on ssot (none/repo-prisma/database).",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -334,16 +356,37 @@
         "migrationTool": {
           "type": "string",
           "description": "Migration tool preference (e.g., prisma, knex, flyway)."
+        },
+        "ssot": {
+          "type": "string",
+          "enum": [
+            "none",
+            "repo-prisma",
+            "database"
+          ],
+          "description": "Database schema SSOT mode. none: unmanaged; repo-prisma: prisma/schema.prisma; database: real DB with repo mirrors."
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "required": [
+        "ssot",
+        "enabled"
+      ]
     },
     "ci": {
       "type": "object",
-      "description": "CI configuration (for project CI preferences; see testing skills for CI integration).",
+      "description": "CI configuration (used for CI planning and documentation).",
       "properties": {
         "enabled": {
           "type": "boolean"
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitlab"
+          ],
+          "description": "Primary CI provider SSOT (required when features.ci=true)."
         },
         "platform": {
           "type": "string",
@@ -375,7 +418,7 @@
     },
     "packaging": {
       "type": "object",
-      "description": "Packaging configuration (effective when packaging add-on is enabled).",
+      "description": "Packaging configuration (effective when packaging feature is enabled).",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -405,7 +448,7 @@
     },
     "deploy": {
       "type": "object",
-      "description": "Deployment configuration (effective when deployment add-on is enabled).",
+      "description": "Deployment configuration (effective when deployment feature is enabled).",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -454,7 +497,7 @@
     },
     "release": {
       "type": "object",
-      "description": "Release configuration (effective when release add-on is enabled).",
+      "description": "Release configuration (effective when release feature is enabled).",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -490,7 +533,7 @@
     },
     "observability": {
       "type": "object",
-      "description": "Observability configuration (effective when observability add-on is enabled).",
+      "description": "Observability configuration (effective when observability feature is enabled).",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -516,7 +559,7 @@
     },
     "devops": {
       "type": "object",
-      "description": "Legacy DevOps scaffolding switches. Prefer using specific add-ons instead.",
+      "description": "Legacy DevOps scaffolding switches. Prefer using specific features instead.",
       "properties": {
         "enabled": {
           "type": "boolean"

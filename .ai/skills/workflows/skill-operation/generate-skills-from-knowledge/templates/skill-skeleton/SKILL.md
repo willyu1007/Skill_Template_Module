@@ -1,66 +1,61 @@
 ---
-name: skill-name
-description: [TODO: High-signal description. Start with action verb. Include trigger phrases and when-to-use guidance.]
+name: {{skill-name}}
+description: {{One sentence that helps the agent choose the skill - include trigger phrases and when-to-use guidance.}}
 ---
 
-# Skill Title
+# {{Human Readable Title}}
 
 ## Purpose
 
-[TODO: 1-2 sentences explaining what the skill enables and what problem it solves.]
+{{1-2 sentences: what problem does the skill solve?}}
 
 ## When to use
 
 Use the skill when:
-- [TODO: Positive trigger scenario 1]
-- [TODO: Positive trigger scenario 2]
+- {{Primary trigger condition}}
+- {{Secondary trigger condition}}
 
 Do not use the skill when:
-- [TODO: Negative trigger - when to use a different approach]
+- {{Negative trigger - when to skip}}
 
 ## Inputs
 
-You MUST provide:
-- [TODO: Required input 1]
-- [TODO: Required input 2]
-
-You MAY provide:
-- [TODO: Optional input]
+- **{{input_name}}**: {{description of required input}}
+- **{{input_name_2}}**: {{optional input}}
 
 ## Outputs
 
-The expected outputs are:
-- [TODO: Primary output artifact]
-- [TODO: Secondary output or report]
+- {{Description of expected artifacts, file changes, or reports}}
 
 ## Steps
 
-### Scenario A: [Primary workflow]
+### Scenario A: {{Primary use case}}
 
-1. [TODO: First step - imperative verb]
-2. [TODO: Second step]
-3. [TODO: Third step]
+1. {{First step - imperative verb}}
+2. {{Second step}}
+3. {{Third step}}
 
-### Scenario B: [Alternative workflow] (optional)
+### Scenario B: {{Alternative use case}} (optional)
 
-1. [TODO: Alternative first step]
-2. [TODO: Continue as needed]
+1. {{First step}}
+2. {{Second step}}
 
 ## Verification
 
-- [ ] [TODO: Verification checklist item 1]
-- [ ] [TODO: Verification checklist item 2]
-- [ ] [TODO: Output artifacts exist and are valid]
+- [ ] {{Concrete verification command or check}}
+- [ ] {{Expected outcome or pass criteria}}
+- [ ] Run: `node .ai/scripts/lint-skills.mjs --strict`
 
 ## Boundaries
 
-- MUST NOT [TODO: Critical safety constraint]
-- MUST NOT [TODO: Another hard constraint]
-- SHOULD NOT [TODO: Soft recommendation]
-- SHOULD [TODO: Best practice]
+- MUST NOT {{critical constraint}}
+- MUST NOT edit `.codex/skills/` or `.claude/skills/` directly (generated)
+- SHOULD NOT {{recommended constraint}}
+- {{Additional safety or scope constraints}}
 
 ## Included assets
 
-- [TODO: List supporting files, or "None" if no assets]
-- Example: `./scripts/helper.py` - description
-- Example: `./templates/output.template.json` - description
+- `./scripts/` - {{placeholder for executable helpers, if any}}
+- `./reference.md` - {{placeholder for deep details, rationale, tradeoffs}}
+- `./examples/` - {{placeholder for scenario-specific examples}}
+- `./templates/` - {{placeholder for reusable snippets/skeletons}}

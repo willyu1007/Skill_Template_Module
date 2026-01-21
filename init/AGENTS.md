@@ -7,12 +7,7 @@ Key principles:
 - Do not skip stages.
 - Do not advance stages without explicit user approval.
 - Do not hand-edit `init/.init-state.json` to change stages; use the pipeline commands.
-
-## Init workflow rules
-
-1. **No workdocs during initialization**: Do NOT create workdocs task bundles during the init workflow. The init pipeline has its own state tracking (`init/.init-state.json`). Workdocs are for post-init development tasks only.
-2. **Stage-by-stage validation**: Every stage must pass validation before advancing.
-3. **User approval required**: Each stage transition requires explicit user approval.
+- Do not create dev-docs task bundles during initialization; use dev-docs after init completes.
 
 ---
 
@@ -21,240 +16,188 @@ Key principles:
 Run from repo root:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs <command> [options]
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs <command> [options]
 ```
 
 ---
 
 ## Stage flow (validation + approval)
 
-### Phase 0.5 — Domain glossary alignment (optional, before Stage A)
-
-Before starting Stage A requirements interview, ask the user:
-
-```
-Before we define requirements, would you like to align on key domain terms?
-
-This helps ensure we use consistent terminology throughout the project.
-If yes, I'll help you build a domain glossary (domain-glossary.md).
-
-[Yes / Skip for now]
-```
-
-**If user says Yes**:
-1. Ask for key domain terms (3-10 terms):
-   - "What are the key business/domain terms in this project?"
-   - For each term: "How would you define <term>? Any synonyms or non-examples?"
-2. Write to `init/stage-a-docs/domain-glossary.md`
-3. Continue to Stage A
-
-**If user says Skip**:
-- Continue to Stage A (`domain-glossary.md` will still be created by `start` and can be filled later)
-
-This step is **MustAsk but not blocking** — user can skip and fill in later.
-
 ### Stage A (requirements docs)
-1) Run start to create templates:
+
+Run `start` to begin initialization. The command automatically creates all templates:
+
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs start --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .
 ```
 
-The command automatically creates:
-- `init/stage-a-docs/requirements.md`
-- `init/stage-a-docs/non-functional-requirements.md`
-- `init/stage-a-docs/domain-glossary.md`
-- `init/stage-a-docs/risk-open-questions.md`
-- `init/project-blueprint.json`
+The command creates:
+- `init/stage-a-docs/` - Stage A doc templates:
+  - `requirements.md`
+  - `non-functional-requirements.md`
+  - `domain-glossary.md`
+  - `risk-open-questions.md`
+- `init/project-blueprint.json` - Blueprint template
 
-2) Fill in the Stage A docs, then validate:
+1) Edit the Stage A doc templates, then validate:
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --strict
-```
-
-3) After user approval:
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage A --repo-root .
-```
-
-### Stage B (blueprint)
-1) Edit `init/project-blueprint.json`, then validate:
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --strict
 ```
 
 2) After user approval:
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage B --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .
+```
+
+### Stage B (blueprint)
+
+1) Edit `init/project-blueprint.json`, then validate:
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
+```
+
+2) After user approval:
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .
 ```
 
 ### Stage C (apply)
+
 Apply scaffold/configs/skill packs/wrapper sync:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs apply --providers both
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --repo-root . --providers both
 ```
 
 After user approval:
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage C --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
 ```
 
 ---
 
-## Core notes (context system)
+## Stage C troubleshooting (EPERM)
 
-In the module-first template, the context system is **built-in** (not an add-on):
+If Stage C `apply` fails with an `EPERM` error while writing `.codex/skills/` or `.claude/skills/`, re-run the same `apply` command in an elevated shell. Do not change the blueprint between attempts.
 
-- `docs/context/project.registry.json` (SSOT)
-- `modules/<module_id>/interact/registry.json` (SSOT)
-- `docs/context/registry.json` (derived)
-- Scripts: `contextctl.js`, `projectctl.js`
+---
 
-The init pipeline will treat context as **enabled by default** and will:
+## Feature notes (context awareness)
 
-- initialize project state via `projectctl.js`
-- initialize/build context via `contextctl.js`
+If the blueprint enables context awareness (`features.contextAwareness: true`), Stage C `apply` will:
+- copy templates from `.ai/skills/features/context-awareness/templates/` into the repo (copy-if-missing; non-destructive)
+- run `.ai/skills/features/context-awareness/scripts/contextctl.mjs init`
+- run `.ai/scripts/projectctl.mjs init` and `set-context-mode` (if projectctl exists)
 
-If you explicitly disable context in a blueprint (for unusual use cases), you can set:
+`context.*` is configuration only and does not trigger enabling by itself.
 
-```json
-{
-  "addons": {
-    "contextAwareness": false
-  }
-}
+See `.ai/skills/features/context-awareness/` for details.
+
+---
+
+## Post-init: Skill retention (required)
+
+After Stage C completes, ensure `init/skill-retention-table.template.md` exists (generated from the template). Fill the table with skills from `.ai/skills/` and translate the Description column if needed. Ask the user which skills to keep/delete (record TBD if undecided).
+
+Confirm deletions **before** running:
+
+```bash
+node .ai/scripts/sync-skills.mjs --dry-run --delete-skills "<csv>"
 ```
 
-The setting will skip context-related steps, but the files remain present (core capability).
+After confirmation, re-run with `--yes` to delete. Optional removals (like `agent-builder`) should go through the same flow:
 
-## Add-on default behavior
-
-All optional add-ons are **enabled by default** (opt-out model):
-
-| Add-on | Key | Purpose |
-|--------|-----|---------|
-| Packaging | `packaging` | Container/artifact build |
-| Deployment | `deployment` | Multi-environment deploy |
-| Release | `release` | Version/changelog management |
-| Observability | `observability` | Metrics/logs/traces contracts |
-
-The LLM should ask: "Do you want to **disable** any add-ons?" (not "enable").
-
-To disable an add-on in the blueprint:
-
-```json
-{
-  "addons": {
-    "packaging": false
-  }
-}
+```bash
+node .ai/scripts/sync-skills.mjs --delete-skills "<csv>" --yes
 ```
 
-## Post-init documentation update (README.md + AGENTS.md)
+---
 
-After Stage C `apply` completes, update **both** `README.md` and `AGENTS.md` together.
+## Post-init: Update Root README.md and AGENTS.md
+
+After Stage C completes and skill retention is confirmed, ask the user if they want to update the root `README.md` and `AGENTS.md` with project-specific info.
+
+### When to ask
+
+At Stage C completion checkpoint, present option: "update agents" to record tech stack in root AGENTS.md and refresh root README.md.
 
 ### README.md update
 
-Update the root `README.md` with project-specific information:
-- Project name and description
-- Tech stack summary
-- Quick start instructions
-- Key scripts / commands
+- If `README.md` was not generated during Stage C, update it at the end alongside `AGENTS.md`.
+- Use `init/project-blueprint.json` as the source of truth.
+- Show a diff and request explicit user approval before writing.
 
-### AGENTS.md update
+### What to preserve
 
-Update `AGENTS.md` with:
-- Tech Stack table
-- Enabled Add-ons table
+The root `AGENTS.md` contains template repo structure that MUST be kept:
 
-**Insert position**: Before `## Key Directories`, preserve all existing content.
+| Section | Keep? | Reason |
+|---------|-------|--------|
+| Key Directories table | YES | LLM navigation |
+| Routing table | YES | Task dispatch |
+| Global Rules | YES | Cross-cutting constraints |
+| `.ai/` reference | YES | SSOT location |
+| `dev-docs/` reference | YES | Complex task pattern |
 
-See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 6 for detailed template.
+### What to add
+
+From `init/project-blueprint.json`:
+
+| Add | Source field | Example |
+|-----|--------------|---------|
+| Project Type | `project.name`, `project.description` | "my-app - E-commerce platform" |
+| Tech Stack table | `repo.language`, `repo.packageManager`, `repo.layout` | TypeScript, pnpm, monorepo |
+| Enabled capabilities | `capabilities.frontend.enabled`, etc. | frontend, backend, database |
+| Project directories | derived from `repo.layout` | `apps/`, `packages/` or `src/` |
+
+### How to update
+
+1. Read current root `AGENTS.md` and treat the document as a **project doc** (not a template doc).
+2. Replace the template intro paragraph (the one that says the repo is a template) with a 1-2 line project summary.
+3. Update the existing `## Project Type` section body (do NOT add a duplicate section):
+   - `{{project.name}} - {{project.description}}` (one line)
+4. Ensure there is exactly one `## Tech Stack` section:
+   - If the `## Tech Stack` section exists: replace the table with the latest values from the blueprint.
+   - If the `## Tech Stack` section does not exist: insert the `## Tech Stack` section immediately after `## Project Type`.
+5. Update the existing `## Key Directories` table:
+   - Add project code directories first (`src/` or `apps/`/`packages/` based on `repo.layout`).
+   - Preserve the template navigation rows (`.ai/`, `dev-docs/`, etc.) and their entry points.
+6. Preserve `## Routing` and `## Global Rules` content unchanged (these are the critical constraints).
+7. Show a diff and get explicit user approval before writing.
+
+Idempotency: re-running the update SHOULD only refresh values and MUST NOT create duplicate sections/tables.
+
+### Format rules
+
+- One fact per line (semantic density)
+- Use tables for structured data (tech stack, directories)
+- Prefer short terms in tables ("TS" over "TypeScript" is acceptable)
+- No redundant prose; headers provide context
 
 ---
-
-## Post-init skill retention
-
-After documentation update, present a skill retention table so the user can decide which skills to keep.
-
-### Flow
-
-1. **Generate retention table**: Create `init/skill-retention-table.md` from `templates/skill-retention-table.template.md`, listing all skills from `.ai/skills/` with descriptions (translate to user's language if needed).
-
-2. **User review**: Ask the user to review the table and list skills they want to delete.
-
-3. **Preview deletion**: Run with `--dry-run` first:
-   ```bash
-   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --dry-run
-   ```
-
-4. **Execute deletion**: After user confirms the preview:
-   ```bash
-   node .ai/scripts/delete-skills.cjs --skills "<csv-list>" --yes
-   ```
-
-5. **Sync wrappers**: After deletion, regenerate provider wrappers:
-   ```bash
-   node .ai/scripts/sync-skills.cjs --scope current --providers both
-   ```
-
-### Notes
-
-- If multiple skills share the same name, use the full path (e.g., `workflows/agent/agent_builder`).
-- The `agent_builder` skill can be removed via this flow if the project does not need agent proxy scaffolding.
-
-See `skills/initialize-project-from-requirements/templates/llm-init-guide.md` Phase 7 for detailed flow.
-
----
-
-## Add-ons directory cleanup (after completion)
-
-After Stage C approval (`approve --stage C`) and skill retention is finalized, ask the user whether to keep the add-on source directory `addons/`.
-
-If the user chooses to remove it:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand
-```
 
 ## Cleanup
 
 Only after completion and user confirmation:
 
-**Option A: Remove `init/` only (no archive)**
+**Option A: Remove `init/` only (all init files deleted)**
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init --repo-root . --apply --i-understand
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
+  --repo-root . --apply --i-understand
 ```
 
-**Option B: Archive to docs/project/ then remove `init/`** (recommended)
+**Option B: Archive all to `docs/project/` + remove `init/`** (recommended if maintaining docs)
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
-  --repo-root . \
-  --apply \
-  --i-understand \
-  --archive
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
+  --repo-root . --apply --i-understand --archive
 ```
 
-The command archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
+The command archives Stage A docs and blueprint from `init/` to `docs/project/` before removing `init/`.
 
-**Option C: Archive + prune unused add-ons**
 
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
-  --repo-root . \
-  --apply \
-  --i-understand \
-  --archive \
-  --cleanup-addons
-```
-
-### Archive options
-
-| Option | Effect |
-|--------|--------|
-| `--archive` | Archive all (Stage A docs + Blueprint) to `docs/project/` |
-| `--archive-docs` | Archive Stage A docs only |
-| `--archive-blueprint` | Archive Blueprint only |
+**Selective archive options:**
+- `--archive` - Archive all (docs + blueprint)
+- `--archive-docs` - Archive Stage A docs only
+- `--archive-blueprint` - Archive blueprint only

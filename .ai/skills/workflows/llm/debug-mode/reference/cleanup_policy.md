@@ -24,6 +24,7 @@ Cleanup is mandatory in two cases:
    - `DEBUG-MODE: BEGIN`
    - `DEBUG-MODE: END`
    - `[DBG:`
+   - Note: if the project used structured `run_id` fields and messages do not contain `[DBG:...]`, cleanup relies on removing the `DEBUG-MODE: BEGIN/END` blocks. Do not grep `run_id` across the repo (avoid false positives).
 5) Re-run the minimal validation commands (if available):
    - build / lint / unit tests (or at least the relevant module tests).
 6) Final review:

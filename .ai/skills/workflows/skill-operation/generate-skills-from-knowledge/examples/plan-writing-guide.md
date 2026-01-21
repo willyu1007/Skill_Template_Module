@@ -14,7 +14,7 @@ Provide:
 - the list of source documents
 - your portability constraints (provider-agnostic, no repo paths, etc.)
 - your desired taxonomy (if any)
-- what you consider “workdocs exception” (if applicable)
+- what you consider “dev-docs exception” (if applicable)
 
 Prompt template:
 

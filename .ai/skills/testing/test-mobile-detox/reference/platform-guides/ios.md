@@ -191,8 +191,8 @@ Real device testing requires:
 ### Example Config Section
 
 ```javascript
-// detox.config.js
-module.exports = {
+// detox.config.mjs
+export default {
   devices: {
     simulator: {
       type: 'ios.simulator',

@@ -14,6 +14,11 @@
       "enum": ["A", "B", "C", "complete"],
       "description": "Current stage of initialization"
     },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when init state was created"
+    },
     "stage-a": {
       "type": "object",
       "description": "Stage A: Requirements interview progress",
@@ -22,6 +27,7 @@
           "type": "object",
           "description": "MUST-ask questions (all required before Stage A completion)",
           "properties": {
+            "terminologyAlignment": { "$ref": "#/$defs/questionState" },
             "onePurpose": { "$ref": "#/$defs/questionState" },
             "userRoles": { "$ref": "#/$defs/questionState" },
             "mustRequirements": { "$ref": "#/$defs/questionState" },
@@ -30,17 +36,7 @@
             "constraints": { "$ref": "#/$defs/questionState" },
             "successMetrics": { "$ref": "#/$defs/questionState" }
           },
-          "required": ["onePurpose", "userRoles", "mustRequirements", "outOfScope", "userJourneys", "constraints", "successMetrics"]
-        },
-        "branches": {
-          "type": "object",
-          "description": "Branch modules (conditional based on capabilities)",
-          "properties": {
-            "api": { "$ref": "#/$defs/branchState" },
-            "database": { "$ref": "#/$defs/branchState" },
-            "bpmn": { "$ref": "#/$defs/branchState" },
-            "ciQuality": { "$ref": "#/$defs/branchState" }
-          }
+          "required": ["terminologyAlignment", "onePurpose", "userRoles", "mustRequirements", "outOfScope", "userJourneys", "constraints", "successMetrics"]
         },
         "docsWritten": {
           "type": "object",
@@ -74,12 +70,12 @@
     },
     "stage-c": {
       "type": "object",
-      "description": "Stage C: Scaffold and skills",
+      "description": "Stage C: Scaffold/config generation/skills sync progress",
       "properties": {
-        "scaffoldPreviewed": { "type": "boolean" },
         "scaffoldApplied": { "type": "boolean" },
+        "configsGenerated": { "type": "boolean" },
         "manifestUpdated": { "type": "boolean" },
-        "wrapperssynced": { "type": "boolean" },
+        "wrappersSynced": { "type": "boolean" },
         "userApproved": { "type": "boolean" }
       }
     },
@@ -103,21 +99,10 @@
         "asked": { "type": "boolean" },
         "answered": { "type": "boolean" },
         "writtenTo": { 
-          "type": "string",
+          "type": ["string", "null"],
           "description": "Which doc file this answer was written to"
         }
-      }
-    },
-    "branchState": {
-      "type": "object",
-      "properties": {
-        "applicable": { 
-          "type": "boolean",
-          "description": "Whether this branch applies to this project"
-        },
-        "completed": { "type": "boolean" }
       }
     }
   }
 }
-

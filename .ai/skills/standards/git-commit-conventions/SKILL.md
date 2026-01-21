@@ -17,7 +17,7 @@ Goals:
 
 ## When to use
 
-Use git-commit-conventions when:
+Use this skill when:
 - Writing commit messages
 - Creating branches
 - Opening pull requests / merge requests
@@ -164,7 +164,7 @@ Follow commit message format:
 
 ```markdown
 ## Summary
-Brief description of what the PR does.
+Brief description of what this PR does.
 
 ## Changes
 - Change 1

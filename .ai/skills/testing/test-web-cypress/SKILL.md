@@ -50,9 +50,9 @@ description: Cypress Web UI E2E automation: bootstrap, author specs, run/debug, 
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-web-cypress/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-web-cypress/scripts/validate-skill.mjs`
 
 - If you changed **tests/config**:
   - `npx cypress --version`
@@ -64,7 +64,6 @@ description: Cypress Web UI E2E automation: bootstrap, author specs, run/debug, 
 - Do not introduce a second Web UI framework if Cypress is the chosen tool for the suite.
 - Do not rely on production data or production credentials.
 - Do not disable assertions to "make tests pass"; fix the determinism issue.
-
 
 ## Reconnaissance-then-action workflow (borrowed)
 

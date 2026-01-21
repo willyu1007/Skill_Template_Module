@@ -3,16 +3,15 @@
   "version": "1.0.0",
   "description": "Core context awareness skills for managing project context artifacts",
   "includePrefixes": [
-    "context/",
-    "scaffold/context"
+    "features/context-awareness"
   ],
   "dependencies": [],
   "scripts": {
-    "init": "node .ai/scripts/contextctl.js init && node .ai/scripts/projectctl.js init",
-    "verify": "node .ai/scripts/contextctl.js verify --strict && node .ai/scripts/projectctl.js verify"
+    "init": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs init && node .ai/scripts/projectctl.mjs init",
+    "verify": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict && node .ai/scripts/projectctl.mjs verify"
   },
   "metadata": {
-    "author": "context-awareness-module",
+    "author": "context-awareness-addon",
     "tags": [
       "context",
       "core",

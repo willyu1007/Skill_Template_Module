@@ -18,7 +18,7 @@ Bootstrap Cypress E2E testing with:
 
 ## Steps
 1) **Detect existing Cypress setup**
-   - Look for: `cypress.config.*`, `cypress/` folder, `cypress` in `package.json`.
+   - Look for: `cypress.config.mjs` (preferred), `.ts`, `.js`, or `cypress/` folder.
    - If it exists, do not re-init; only align artifacts + conventions.
 
 2) **Install Cypress**
@@ -36,7 +36,7 @@ Bootstrap Cypress E2E testing with:
      - configure `e2e.specPattern` accordingly.
 
 4) **Configure baseUrl + retries**
-   - In `cypress.config.*`:
+   - In `cypress.config.mjs` (ESM, preferred) or `.ts`/`.js`:
      - set `e2e.baseUrl` via env var (pick one and standardize):
        - `CYPRESS_baseUrl` (Cypress config override)
        - `BASE_URL` (recommended for consistency across suites)
@@ -67,7 +67,7 @@ Bootstrap Cypress E2E testing with:
      - auth variables (as secrets, never committed)
 
 ## Outputs
-- Cypress config aligned to artifact contract
+- Cypress config (`cypress.config.mjs` preferred, or `.ts`/`.js`) aligned to artifact contract
 - Cypress test layout (default `cypress/` or repo-specific `tests/.../cypress/`) with at least one smoke test
 - A deterministic CI entrypoint command (`test:e2e:cypress` or equivalent)
 - Artifacts produced under `artifacts/cypress/`
@@ -89,7 +89,7 @@ Bootstrap Cypress E2E testing with:
 |---------|----------------|----------|
 | `npx cypress verify` fails | Missing system dependencies | Run `npx cypress install --force` |
 | Electron app won't launch | Display server missing (Linux) | Use `xvfb-run` or set `DISPLAY` |
-| Config file not found | Wrong config extension/location | Use `cypress.config.js` or `.ts` in project root |
+| Config file not found | Wrong config extension/location | Use `cypress.config.mjs` (preferred), `.ts`, or `.js` in project root |
 | Videos not recording | Config disabled or disk space | Check `video: true` in config |
 
 ### Common Issues

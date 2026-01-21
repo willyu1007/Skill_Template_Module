@@ -9,6 +9,12 @@ Provide a consistent, low-risk, and **removable** instrumentation strategy for `
   - `DEBUG-MODE: END <run_id>`
 - Every debug log line MUST include:
   - `[DBG:<run_id>]` (or a structured field with the same run_id)
+
+When using structured logging:
+- Prefer the field name `run_id` (exact) so it can be matched deterministically.
+- SHOULD also include `[DBG:<run_id>]` in the human-readable message when feasible (easier grepping / copy-paste fallback).
+
+See `reference/terminal_evidence_collection.md` for supported run_id marker formats used during evidence extraction.
 - Instrumentation must be **minimal**, **targeted**, and **reversible**.
 
 ## Run ID

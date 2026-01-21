@@ -1,0 +1,40 @@
+# Database Mirror (DB is SSOT) - AI Guidance
+
+## Conclusions (read first)
+
+- The **real database** is the Single Source of Truth (SSOT).
+- `db/` holds **repo-local mirrors** so the LLM can understand the schema without DB access.
+- `db/schema/tables.json` is a **generated snapshot** (normalized-db-schema-v2).
+- AI/LLM MUST NOT treat `db/schema/tables.json` as a hand-edited desired state.
+
+## Where the DB schema comes from
+
+Typical end-to-end flow:
+
+1. Human runs `prisma db pull` against the target DB (updates `prisma/schema.prisma`).
+2. Import Prisma schema into the mirror:
+   - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`
+3. Sync the mirror into LLM context (docs/context):
+   - `node .ai/scripts/dbssotctl.mjs sync-to-context`
+
+## Directory structure
+
+- `db/schema/tables.json` - **current-state** mirror snapshot (generated)
+- `db/workdocs/` - desired-state proposals, risk notes, rollout and verification plans
+- `db/migrations/` - optional SQL files for human execution/tracking (not authoritative)
+- `db/config/db-environments.json` - environment metadata (NO secrets)
+- `db/samples/` - sample/seed artifacts (optional)
+
+## Allowed AI actions
+
+- Read and reference the mirror (`db/schema/tables.json`).
+- Draft desired-state changes in `db/workdocs/`.
+- Generate placeholder migration SQL files for humans (optional).
+- Keep `docs/context/db/schema.json` updated by running `dbssotctl` (best effort).
+
+## Forbidden AI actions
+
+- Direct database connections.
+- Executing arbitrary SQL.
+- Editing `db/schema/tables.json` manually (use `dbctl import-prisma`).
+- Storing credentials anywhere in the repo.

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "includePrefixes": [
+    "workflows/",
+    "standards/",
+    "scaffold/",
+    "context/",
+    "scaffold/context"
+  ],
+  "includeSkills": [],
+  "excludeSkills": []
+}

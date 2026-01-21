@@ -1,12 +1,14 @@
 # Stage C: Scaffold + configs + skills
 
+> **SSOT**: For the full command reference, see `init/skills/initialize-project-from-requirements/SKILL.md`.
+
 Stage C applies the blueprint to the repository:
 
 - create minimal directory scaffold
-- generate configuration files (SSOT: `scripts/scaffold-configs.cjs`)
-- enable skill packs (manifest / skillsctl scheme A)
-- sync provider wrappers (`.ai/scripts/sync-skills.cjs`)
-- optionally install/initialize add-ons (context awareness)
+- generate configuration files (SSOT: `init/skills/initialize-project-from-requirements/scripts/scaffold-configs.mjs`)
+- enable skill packs (prefers `skillpacksctl` when available)
+- sync provider wrappers (`.ai/scripts/sync-skills.mjs`)
+- materialize/initialize optional features (context awareness, db mirror, packaging, deployment, release, observability)
 - optionally create DevOps convention scaffold (`ops/`)
 
 ---
@@ -16,19 +18,19 @@ Stage C applies the blueprint to the repository:
 Before writing anything, you can preview the scaffold plan:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs scaffold \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs scaffold \
   --repo-root .
 ```
 
 To actually create the scaffold files/folders (minimal set only):
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs scaffold \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs scaffold \
   --repo-root . \
   --apply
 ```
 
-> Default `--blueprint` is `init/project-blueprint.json`.
+Note: `scaffold` only creates directories/placeholders. It does not generate configs, enable packs, sync wrappers, or materialize features.
 
 ---
 
@@ -37,37 +39,22 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 From repo root:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs apply \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply \
   --repo-root . \
   --providers both
 ```
-
-> Default `--blueprint` is `init/project-blueprint.json`.
 
 ### What `apply` does
 
 1. Validates the blueprint (same as `validate`)
 2. Optionally validates Stage A docs (when `--require-stage-a` is set)
-3. Applies scaffold (idempotent; “write-if-missing” for docs)
-4. Generates config files via `scripts/scaffold-configs.cjs`
-5. Context system (core):
-   - runs `node .ai/scripts/contextctl.js init`
-   - runs `node .ai/scripts/projectctl.js init` and `set-context-mode`
-
-   (These steps are performed unless the blueprint explicitly disables `addons.contextAwareness`.)
+3. Applies scaffold (idempotent; "write-if-missing" for docs)
+4. Generates config files via `init/skills/initialize-project-from-requirements/scripts/scaffold-configs.mjs`
+5. Materializes enabled features by copying templates from `.ai/skills/features/**/templates/` and running the corresponding control scripts (repo-level under `.ai/scripts/`, feature-local under `.ai/skills/features/**/scripts/`).
 6. Enables skill packs:
-   - If `.ai/scripts/skillsctl.js` exists: **scheme A** (packs enabled via skillsctl)
+   - If `.ai/skills/_meta/skillpacksctl.mjs` exists: **scheme A** (packs enabled via skillpacksctl)
    - Else: additive update of `.ai/skills/_meta/sync-manifest.json` includePrefixes
-7. Syncs provider wrappers via `.ai/scripts/sync-skills.cjs`
-8. Runs modular core build (module-first consistency):
-   - `node .ai/scripts/flowctl.js init`
-   - `node .ai/scripts/integrationctl.js init`
-   - `node .ai/scripts/modulectl.js registry-build`
-   - `node .ai/scripts/flowctl.js update-from-manifests`
-   - `node .ai/scripts/flowctl.js lint`
-   - `node .ai/scripts/flowctl.js graph`
-   - `node .ai/scripts/integrationctl.js validate`
-   - `node .ai/scripts/contextctl.js build`
+7. Syncs provider wrappers via `.ai/scripts/sync-skills.mjs`
 
 ---
 
@@ -87,31 +74,17 @@ These are provider-agnostic placeholders intended to be extended.
 After reviewing the resulting scaffold/configs/skills changes, record approval and mark init complete:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage C --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
 ```
 
 Optional: remove `init/` bootstrap kit after completion:
 
-**Option A: Remove `init/` only (no archive)**
-
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init --repo-root . --apply --i-understand
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand
 ```
 
-**Option B: Archive to docs/project/ then remove `init/`** (recommended)
+If you want to keep Stage A docs + blueprint long-term, prefer:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-init \
-  --repo-root . \
-  --apply \
-  --i-understand \
-  --archive
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand --archive
 ```
-
-This archives Stage A docs and Blueprint to `docs/project/` before deleting `init/`.
-
-| Archive Option | Effect |
-|----------------|--------|
-| `--archive` | Archive all (Stage A docs + Blueprint) |
-| `--archive-docs` | Archive Stage A docs only |
-| `--archive-blueprint` | Archive Blueprint only |

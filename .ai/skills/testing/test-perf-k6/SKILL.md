@@ -14,10 +14,10 @@ description: k6 performance testing: scenario templates, thresholds, CI gating, 
 
 | Task | Open this procedure | Optional examples |
 |---|---|---|
-| Bootstrap k6 perf testing in a repo | `reference/procedures/bootstrap.md` | `reference/examples/thresholds.js` |
-| Add a new scenario (smoke/load/stress/soak) | `reference/procedures/add-scenario.md` | `reference/examples/smoke.js`, `reference/examples/load.js` |
+| Bootstrap k6 perf testing in a repo | `reference/procedures/bootstrap.md` | `reference/examples/thresholds.mjs` |
+| Add a new scenario (smoke/load/stress/soak) | `reference/procedures/add-scenario.md` | `reference/examples/smoke.mjs`, `reference/examples/load.mjs` |
 | Run locally | `reference/procedures/run-local.md` | — |
-| Add CI gating (threshold-based) | `reference/procedures/ci-gate.md` | `reference/examples/thresholds.js` |
+| Add CI gating (threshold-based) | `reference/procedures/ci-gate.md` | `reference/examples/thresholds.mjs` |
 | Interpret regressions | `reference/procedures/interpret-regressions.md` | — |
 
 ## Shared non-negotiables (apply to all procedures)
@@ -51,13 +51,13 @@ description: k6 performance testing: scenario templates, thresholds, CI gating, 
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-perf-k6/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-perf-k6/scripts/validate-skill.mjs`
 
 - If you changed **perf scripts**:
   - `k6 version` (or `docker run --rm grafana/k6 version`)
-  - `k6 run <script.js>`
+  - `k6 run <script.mjs>`
 
 ## Boundaries
 - Do not edit `.codex/skills/` or `.claude/skills/` directly (generated).

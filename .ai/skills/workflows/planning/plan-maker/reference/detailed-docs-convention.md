@@ -1,33 +1,12 @@
-# Workdocs convention and skill coordination
+# Optional detailed documentation convention
 
-The reference describes the file layout for task-level documentation and clarifies how `plan-maker` coordinates with `create-workdocs-plan`.
-
-## Artifact responsibilities
-
-| Artifact | Produced by | Focus |
-|----------|-------------|-------|
-| `roadmap.md` | **plan-maker** | Macro-level: milestones, phases, impact scope, acceptance criteria, risks, rollback strategy |
-| `01-plan.md` | `create-workdocs-plan` | Implementation-level: specific steps, file changes, current status tracking |
+The reference describes an optional file layout convention for maintaining task-level development documentation alongside the roadmap produced by the plan-maker skill.
 
 ## Convention
-
-Module scope:
-
-```
-modules/<module_id>/workdocs/active/<task_slug>/
-  roadmap.md              # Macro-level planning (plan-maker)
-  00-overview.md          # Goal, non-goals, acceptance criteria
-  01-plan.md              # Implementation plan (specific steps)
-  02-architecture.md      # Architecture design
-  03-implementation-notes.md  # Current status + TODOs
-  04-verification.md      # Verification commands + results
-  05-pitfalls.md          # "Do not repeat" lessons
-```
-
-Integration scope:
+When a task requires detailed documentation (architecture notes, implementation notes, verification logs), the repository convention is to use a flat structure under the task directory:
 
 ```
-modules/integration/workdocs/active/<task_slug>/
+dev-docs/active/<task>/
   roadmap.md              # Macro-level planning (plan-maker)
   00-overview.md
   01-plan.md
@@ -37,15 +16,21 @@ modules/integration/workdocs/active/<task_slug>/
   05-pitfalls.md
 ```
 
-## Notes
+Notes:
+- The plan-maker skill **only** produces `roadmap.md`. The skill does not create or update the other files.
+- The detailed bundle is intended to be a long-lived, high-fidelity record for collaboration and handoff.
 
-- The `plan-maker` skill only produces `roadmap.md` and does not create or update the `00-05` bundle files.
-- Use `create-workdocs-plan` to generate the implementation bundle (`00-overview.md` through `05-pitfalls.md`).
-- Both artifacts can coexist in the same workdocs directory.
+## Suggested mapping
+Use the following mapping to avoid duplicating information:
 
-## Typical workflow
+- `roadmap.md` (macro roadmap) → source for:
+  - `00-overview.md`: goal, non-goals, scope, impact
+  - `01-plan.md`: milestones, phases, step sequencing, DoD
+  - `02-architecture.md`: high-level architecture direction and interfaces (details added during execution)
+  - `03-implementation-notes.md`: decisions, deviations, trade-offs, runbooks, links to PRs/commits
+  - `04-verification.md`: verification strategy, commands, expected outcomes, evidence
 
-1. **Strategic alignment**: Use `plan-maker` to create `roadmap.md` when the task needs macro-level planning (milestones, risk assessment, rollback strategy).
-2. **Implementation setup**: Use `create-workdocs-plan` to create the bundle for tracking implementation progress.
-3. **Execution**: Update `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, and `05-pitfalls.md` as work proceeds.
-4. **Handoff**: Use `update-workdocs-for-handoff` before context switch.
+## Guidance
+- Keep `roadmap.md` macro-level and executable: phases, deliverables, verification, rollback.
+- Push deep technical detail (API signatures, schema evolution, edge cases) into the detailed bundle.
+- Record unresolved questions early; update assumptions as soon as they are answered.

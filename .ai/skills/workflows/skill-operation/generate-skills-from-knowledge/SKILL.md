@@ -8,15 +8,15 @@ description: Turn one or more knowledge documents into a provider-agnostic Agent
 ## Purpose
 Convert existing knowledge docs (one or many) into **discoverable, reusable Agent Skills** that follow a consistent, lintable structure and **progressive disclosure**.
 
-The skill is provider-agnostic: the output is plain folders + `SKILL.md` files and can be consumed by any agent runtime that discovers skills from the filesystem.
+The generate-skills-from-knowledge skill is provider-agnostic: the output is plain folders + `SKILL.md` files and can be consumed by any agent runtime that discovers skills from the filesystem.
 
 ## When to use
-Use generate-skills-from-knowledge when you have:
+Use the generate-skills-from-knowledge skill when you have:
 - A set of Markdown/text docs that describe **how work should be done**, and you want to convert them into skills.
 - Legacy "how-to" docs that are too long or too project-specific and need to become **portable** skills.
 - Multiple docs with overlapping guidance and you want to **split/merge** them into capability-oriented skills.
 
-Do not use generate-skills-from-knowledge when:
+Do not use the skill when:
 - The source material is confidential and cannot be copied into a work area.
 - You only need a quick summary; you do not need reusable procedures.
 
@@ -29,7 +29,7 @@ You MUST provide:
 - **Portability constraints**:
   - whether to remove provider-specific terms,
   - whether project paths/scripts should be generalized,
-  - any allowed exceptions (for example, "workdocs may keep repo-specific layout").
+  - any allowed exceptions (for example, "dev-docs may keep repo-specific layout").
 
 You SHOULD provide:
 - Desired **taxonomy** (optional): up to two tiers (e.g., `backend/common`, `frontend/components`, `workflows/common`).
@@ -47,7 +47,11 @@ The expected outputs are:
   - created/updated skills
   - split/merge operations
   - known limitations / follow-ups
-- A lint report (stdout) from `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py lint ...` (recommended)
+- A lint report (stdout) from `python3 ./scripts/skillgen.py lint ...` (recommended)
+
+## Command working directory
+All relative paths in commands (for example `./scripts/skillgen.py` and `./templates/...`) are relative to:
+- `.ai/skills/workflows/skill-operation/generate-skills-from-knowledge/`
 
 ## Steps
 ### Scenario A: Convert docs into a skills bundle (recommended default)
@@ -65,7 +69,7 @@ The expected outputs are:
    - confirm portability constraints (remove provider/project specifics)
    - confirm what will be created vs updated
 5. Run:
-   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py apply --plan <plan.json>` to scaffold the skill directories.
+   - `python3 ./scripts/skillgen.py apply --plan <plan.json>` to scaffold the skill directories.
 6. For each generated skill:
    - rewrite `SKILL.md` to be **high-signal and short**,
    - move large examples into `examples/`,
@@ -73,19 +77,19 @@ The expected outputs are:
    - put deep rationale into `reference.md`,
    - remove cross-skill links ("See also", "Related docs").
 7. Run:
-   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py lint --skills-root <skills_root>` and fix issues until clean.
+   - `python3 ./scripts/skillgen.py lint --skills-root <skills_root>` and fix issues until clean.
 8. Package the bundle (optional):
-   - `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py package --skills-root <skills_root> --out <bundle.zip>`
+   - `python3 ./scripts/skillgen.py package --skills-root <skills_root> --out <bundle.zip>`
 
 ### Scenario B: Convert docs directly into a repository skills root
 Follow Scenario A, but set `skills_root` to the repository's skills SSOT directory.
 
-If your repo has additional syncing rules (provider stubs, monorepo layouts), treat those as **outside** generate-skills-from-knowledge; the skill only produces the SSOT-format skills.
+If your repo has additional syncing rules (provider stubs, monorepo layouts), treat those as **outside** the scope; the skill only produces the SSOT-format skills.
 
 ## Boundaries
 - You MUST NOT include secrets, credentials, or internal-only URLs in generated skills.
 - You MUST NOT copy large logs or whole source documents verbatim into `SKILL.md`.
-- You SHOULD avoid hard-coded repository paths unless the target is explicitly "workdocs" with a known layout.
+- You SHOULD avoid hard-coded repository paths unless the target is explicitly "dev-docs" with a known layout.
 - You MUST keep each `SKILL.md` <= 500 lines by moving detail into `reference.md`, `examples/`, and `templates/`.
 
 ## Verification
@@ -99,11 +103,10 @@ Run the linter and confirm:
 - cross-skill relative links (e.g., `../<other-skill>`) are absent
 
 ## Included assets
-- `./scripts/skillgen.py`: plan/apply/lint/package helper (run via `python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py ...`)
-- `./scripts/init_skill.py`: quick initializer for creating a new skill from scratch
+- `./scripts/skillgen.py`: plan/apply/lint/package helper
+- `./scripts/init_skill.py`: optional helper to scaffold a new skill directory
 - `./templates/conversion-plan.schema.json`: JSON Schema for a conversion plan
 - `./templates/conversion-plan.example.json`: example plan
-- `./templates/skill-skeleton/SKILL.md`: minimal skill template with all required sections
+- `./templates/skill-skeleton/SKILL.md`: copy/pasteable skeleton for manual skill authoring
 - `./examples/quickstart.md`: end-to-end usage example
 - `./examples/plan-writing-guide.md`: how to write a good plan for an LLM
-- `./reference.md`: skill authoring standards and design principles

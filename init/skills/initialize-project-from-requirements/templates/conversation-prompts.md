@@ -1,50 +1,45 @@
-# Conversation Prompts (Stage A requirements interview)
+# Conversation Prompts (Question Bank)
+
+> **Relationship with `llm-init-guide.md`**:
+> - **llm-init-guide.md**: End-to-end process guide with phase-by-phase instructions
+> - **The conversation-prompts.md file**: Question bank and modular prompts for detailed interviews
+> 
+> Use `llm-init-guide.md` for the overall flow; use conversation-prompts.md for detailed question templates.
 
 ## Conclusions (read first)
 
-- Use the template as a **question bank** for Stage A. Start with **A0 (glossary alignment, optional)**, then ask the **MUST-ask** set, then use **branch modules** based on the project's capabilities.
+- Use the document as a **question bank** for Stage A. Ask the **MUST-ask** set first, then use **branch modules** based on the project's capabilities.
 - Every answer MUST be written into a file artifact:
-  - Stage A docs under `init/stage-a-docs/` (working SSOT during init; archived to `docs/project/` after completion)
-  - Stage B blueprint at `init/project-blueprint.json` (working SSOT during init)
-- If the user cannot decide, record the item as **TBD** in `init/stage-a-docs/risk-open-questions.md` with:
+  - Stage A docs under `init/stage-a-docs/` during initialization (human-readable SSOT for intent)
+  - Stage B blueprint at `init/project-blueprint.json` during initialization (machine-readable SSOT for scaffolding / pack selection)
+- If the user cannot decide, record it as **TBD** in `init/stage-a-docs/risk-open-questions.md` with:
   - owner, options, and decision due.
 
-## A0. Domain glossary alignment (optional, before MUST-ask)
-
-Ask before the MUST-ask set:
-
-1. **Glossary alignment prompt**
-   - "Before we define requirements, would you like to align on key domain terms?"
-   - "This helps ensure consistent terminology. [Yes / Skip for now]"
-
-2. **If Yes: term collection**
-   - "What are the 3-10 key domain terms in this project?"
-   - For each term: "How would you define <term>?"
-   - "Any synonyms or non-examples for <term>?"
-
-3. **Write to artifact**
-   - `init/stage-a-docs/domain-glossary.md`
-
-This step is **MustAsk but not blocking** — user can skip and fill in later.
+> **Note**: After initialization completes, use `cleanup-init --archive` to move these files to `docs/project/` for long-term retention.
 
 ## A. MUST-ask (minimal set)
 
-Ask these before writing the first draft of `init/stage-a-docs/requirements.md`:
+Ask the following questions before writing the first draft of `init/stage-a-docs/requirements.md`:
+
+0. **Terminology alignment decision (skip or sync)**
+   - "Do we need to align/confirm domain terminology now?"
+   - If YES (sync): use `init/stage-a-docs/domain-glossary.md` as the SSOT; align terms used in `requirements.md` to the glossary.
+   - If NO (skip): explicitly record “skip terminology sync for now” in `init/stage-a-docs/domain-glossary.md` (and revisit only if terms become ambiguous).
 
 1. **One-line purpose**
    - "In one sentence, what problem does this project solve, for whom, and what is the main outcome?"
 
 2. **Primary user roles**
-   - "Who are the primary users (2–5 roles)?"
+   - "Who are the primary users (2-5 roles)?"
    - "Who is NOT a user?"
 
-3. **In-scope MUST requirements (3–10)**
+3. **In-scope MUST requirements (3-10)**
    - "List the MUST-have capabilities. Each MUST should be testable."
 
 4. **Out-of-scope (explicit OUT)**
    - "List what we will NOT do in this version."
 
-5. **Top user journeys (2–5)**
+5. **Top user journeys (2-5)**
    - "Describe the top user journeys end-to-end."
    - For each journey: "What is the acceptance criterion (AC)?"
 
@@ -80,6 +75,12 @@ Ask if `capabilities.database.enabled == true`.
 - Data size expectations (orders of magnitude)
 - Consistency expectations (strong/eventual)
 - Migration strategy expectations (migrations / schema-less / TBD)
+- **DB schema SSOT mode** (MUST choose one):
+  - `none` (no managed SSOT in repo)
+  - `repo-prisma` (SSOT = `prisma/schema.prisma`; developers manage migrations)
+  - `database` (SSOT = real DB; repo keeps mirrors via introspection)
+
+  → Write to Stage B: `db.ssot` and align `features.database` accordingly.
 - Backup / restore requirements
 
 Write to:
@@ -116,94 +117,148 @@ Write to:
 
 ## C. Answer → Artifact mapping cheat sheet
 
-Use the mapping to avoid "knowledge floating in chat":
+Use this mapping to avoid "knowledge floating in chat":
 
+During initialization (working location):
 - Scope (MUST/OUT) → `init/stage-a-docs/requirements.md` (`## Goals`, `## Non-goals`)
 - User journeys + AC → `init/stage-a-docs/requirements.md` (`## Users and user journeys`)
 - Constraints/NFR → `init/stage-a-docs/non-functional-requirements.md`
+- Terminology alignment decision → `init/stage-a-docs/domain-glossary.md`
 - Glossary terms/entities → `init/stage-a-docs/domain-glossary.md`
 - TBD decisions/risks → `init/stage-a-docs/risk-open-questions.md`
 - Repo layout/pack selection decisions → `init/project-blueprint.json`
 
-## D. Add-on Decision Prompts (default: all enabled)
+After completion (archived to):
+- Stage A docs → `docs/project/`
+- Blueprint → `docs/project/project-blueprint.json`
 
-All add-ons are **enabled by default**. Ask if the user wants to **disable** any (opt-out model).
+## D. Feature Decision Prompts (ask when determining capabilities)
 
-### Default add-ons (all enabled)
+After understanding the project requirements, ask the following to determine which optional features should be enabled:
 
-| Add-on | Key | Purpose |
-|--------|-----|---------|
-| Packaging | `packaging` | Container/artifact build |
-| Deployment | `deployment` | Multi-environment deploy |
-| Release | `release` | Version/changelog management |
-| Observability | `observability` | Metrics/logs/traces contracts |
+### D1. Context Management (context-awareness)
 
-**Note**: Core capabilities (context-awareness, db-mirror) are built-in and always available.
+Ask if the project needs:
+- "Does this project have API contracts (OpenAPI/Swagger) that LLM assistants should understand?"
+- "Does the project have a database schema that needs to be tracked for context?"
+- "Are there business process definitions (BPMN) that describe workflows?"
+- "Should LLM assistants have access to a central registry of project context artifacts?"
 
-### Prompt template
+→ If YES to any: Enable `features.contextAwareness: true`
 
+### D2. Database Schema Management (SSOT choice + database feature)
+
+First decide the DB schema SSOT mode (MUST): `none` / `repo-prisma` / `database`.
+
+Then:
+- If SSOT is `none`: Keep `features.database: false`.
+- Otherwise: Enable `features.database: true` (SSOT scaffolding; behavior depends on `db.ssot`).
+
+### D3. Container/Artifact Packaging (packaging)
+
+Ask if:
+- "Will this project produce container images (Docker)?"
+- "Are there other artifacts to package (CLI binaries, libraries)?"
+- "What target platforms/architectures?"
+
+→ If YES: Enable `features.packaging: true`
+
+### D4. Multi-Environment Deployment (deployment)
+
+Ask if:
+- "Does this project deploy to multiple environments (dev/staging/prod)?"
+- "What deployment model? (K8s, VM, serverless, static)"
+- "Are there rollback requirements?"
+
+→ If YES: Enable `features.deployment: true`
+
+### D5. Release/Version Management (release)
+
+Ask if:
+- "Does this project need automated changelog generation?"
+- "What versioning strategy? (semantic, calendar, custom)"
+- "Are there release approval workflows?"
+
+→ If YES: Enable `features.release: true`
+
+### D6. Observability Contracts (observability)
+
+Ask if:
+- "Does this project need metrics/monitoring definitions?"
+- "Are there logging schema requirements?"
+- "Is distributed tracing needed?"
+
+→ If YES: Enable `features.observability: true`
+
+### D7. UI System SSOT (ui)
+
+Ask if the project needs a stable UI/UX foundation:
+- UI tokens and contract SSOT (so UI changes are deterministic)
+- Generated UI context for LLMs (under `docs/context/ui/`)
+
+→ If YES: Enable `features.ui: true`
+
+### D8. Environment Contract SSOT (environment)
+
+Ask if the project needs a strict env var contract:
+- `env/contract.yaml` as SSOT
+- Generate non-secret developer artifacts (`.env.example`, `docs/env.md`, `docs/context/env/contract.json`)
+
+→ If YES: Enable `features.environment: true`
+
+Write feature decisions to:
+- Stage B: `features.*` section in `init/project-blueprint.json`
+
+Verification (run from repo root):
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
 ```
-The following add-ons will be enabled by default:
 
-| Add-on | Purpose |
-|--------|---------|
-| packaging | Container/artifact packaging |
-| deployment | Multi-environment deployment |
-| release | Version and changelog management |
-| observability | Metrics/logs/traces contracts |
+## E. Technology Stack Selection
 
-Do you want to disable any of these? If so, which ones?
-(Press Enter to keep all enabled)
-```
+After the requirements interview, guide the user through choosing the technology stack.
 
-### Disable conditions (only if user explicitly requests)
+### E1. Primary language
 
-| Add-on | When to disable |
-|--------|-----------------|
-| `packaging` | Library-only project, no containers needed |
-| `deployment` | CLI tool, no deployment needed |
-| `release` | Internal tool, no formal release process |
-| `observability` | Simple app, no metrics/logs requirements |
+**Ask**: "What is the primary implementation language for this project?"
 
-Write add-on decisions to:
-- Stage B: `addons.*` section in `init/project-blueprint.json`
-
-## E. Tech stack selection
-
-After the requirements interview, guide the user to choose the tech stack.
-
-### E1. Programming language
-
-**Ask**: "What is the primary programming language for this project?"
-
-| Language | Has template | Recommended package manager |
-|----------|--------------|----------------------------|
+| Language | Built-in template | Recommended package manager |
+|----------|-------------------|-----------------------------|
 | TypeScript | ✅ | pnpm |
 | JavaScript | ✅ | pnpm |
 | Go | ✅ | go |
 | C/C++ | ✅ | xmake |
+| React Native | ✅ | pnpm |
 | Python | ❌ | poetry |
 | Java | ❌ | gradle |
 | Kotlin | ❌ | gradle |
 | .NET (C#) | ❌ | dotnet |
 | Rust | ❌ | cargo |
-| Other | ❌ | (depends on language) |
+| Other | ❌ | (depends on the language) |
 
 **Decision logic**:
-- Languages marked ✅: generate config using built-in templates
-- Languages marked ❌: the LLM generates config dynamically based on `llm-init-guide.md`
+- Languages marked ✅: use built-in templates to generate configs
+- Languages not marked ✅: have the LLM generate configs dynamically based on `llm-init-guide.md`
+
+**Blueprint mapping (repo.language)**:
+- C/C++: `c` / `cpp` (or `c-xmake` / `cpp-xmake`), package manager `xmake`
+- React Native: `react-native` (TypeScript template), package manager `pnpm`/`npm`/`yarn`
 
 ### E2. Package manager
 
 **Ask**: "Which package manager should we use?"
 
-Offer options based on the chosen language:
+Offer options based on the language:
 - TypeScript/JavaScript: "pnpm (recommended), yarn, npm"
+- React Native: "pnpm (recommended), yarn, npm"
+- C/C++: fixed: use `xmake`
 - Python: "poetry (recommended), pip, pipenv, uv"
 - Java/Kotlin: "gradle (recommended), maven"
-- Go: fixed: `go`
-- Rust: fixed: `cargo`
-- .NET: fixed: `dotnet`
+- Go: fixed: use `go`
+- Rust: fixed: use `cargo`
+- .NET: fixed: use `dotnet`
 
 ### E3. Frontend framework (if `capabilities.frontend.enabled: true`)
 
@@ -229,8 +284,8 @@ Offer options based on the chosen language:
 TypeScript/JavaScript:
 - Express (recommended, simple)
 - Fastify (performance-first)
-- NestJS (enterprise-oriented)
-- Hono (edge-first)
+- NestJS (enterprise)
+- Hono (edge)
 
 Python:
 - FastAPI (recommended, modern)
@@ -249,15 +304,15 @@ Java/Kotlin:
 
 ### E5. Repo layout
 
-**Ask**: "Is this repo a single app or a multi-app/multi-package monorepo?"
+**Ask**: "Is this repo a single app or a multi-app/multi-package setup?"
 
 - **single** - single app
-  - Directory structure: `src/`
-  - Good for: simple projects, single service
+  - Structure: `src/`
+  - Use for: simple projects, single service
   
-- **monorepo** - multi-app/multi-package
-  - Directory structure: `apps/` + `packages/`
-  - Good for: split frontend/backend, shared libraries, multiple services
+- **monorepo** - multiple apps/packages
+  - Structure: `apps/` + `packages/`
+  - Use for: frontend/backend split, shared libraries, multi-service
 
 Write to:
 - Stage B: `repo.layout`, `repo.language`, `repo.packageManager`
@@ -265,19 +320,19 @@ Write to:
 
 ---
 
-## F. Config generation guidance (unsupported languages)
+## F. Config Generation for Unsupported Languages
 
-When the selected language does not have a built-in template, the LLM should generate config files using the rules below.
+When the chosen language has no built-in templates, the LLM should generate configuration files using the rules below.
 
-**Detailed guide**: see `templates/llm-init-guide.md`, "Phase 5: Config generation".
+**Detailed guide**: See "Phase 5: Configuration generation" in `templates/llm-init-guide.md`.
 
 ### F1. Python projects
 
 **Must generate**:
-- `pyproject.toml` - project configuration (including pytest, ruff, mypy settings)
+- `pyproject.toml` - project config (including `pytest`, `ruff`, and `mypy` settings)
 - Directories: `src/{{project_name}}/`, `tests/`
 
-**Optional** (based on the package manager):
+**Optional** (based on package manager):
 - `requirements.txt` (pip)
 - `Pipfile` (pipenv)
 
@@ -319,130 +374,30 @@ target-version = "py311"
 
 **Must generate**:
 - `Cargo.toml`
-- Directories: `src/` (with `main.rs` or `lib.rs`)
+- Directories: `src/` (containing `main.rs` or `lib.rs`)
 
 ### F5. Other languages
 
 For other languages, the LLM should:
-1. Identify the language's standard project structure
-2. Generate the corresponding config files (build system, linter, formatter)
-3. Create a baseline directory structure
+1. Identify the language's standard project layout
+2. Generate appropriate configs (build system, linter, formatter)
+3. Create a minimal directory structure
 4. Add `.gitignore` rules
 
 ---
-
-## G. Documentation Update Confirmation (after apply)
-
-After `apply` completes successfully, ask the user whether to update the project `AGENTS.md`.
-
-### When to ask
-
-Immediately after `apply` completes, before `approve --stage C`.
-
-### Prompt template
-
-```
-Initialization completed successfully.
-
-Would you like me to add the tech stack information to the project AGENTS.md?
-
-This will record:
-- Programming language and package manager
-- Frontend/backend frameworks
-- Database type
-- API style
-- Enabled add-ons
-
-The existing AGENTS.md content (Key Directories, Control Scripts, Common Tasks, Task Protocol, Rules) will be preserved.
-
-[Yes / No]
-```
-
-### If user says Yes
-
-Update `AGENTS.md` following these rules:
-
-1. **Preserve existing content** - Do NOT remove:
-   - Key Directories table
-   - Core Control Scripts table
-   - Optional Add-ons table
-   - Common Tasks section
-   - Task Protocol section
-   - Rules section
-
-2. **Insert position** - Add new sections **before** `## Key Directories`
-
-3. **Content template**:
-
-```markdown
-## Tech Stack
-
-| Category | Choice |
-|----------|--------|
-| Language | {{repo.language}} |
-| Package Manager | {{repo.packageManager}} |
-| Layout | {{repo.layout}} |
-| Frontend | {{capabilities.frontend.framework or "N/A"}} |
-| Backend | {{capabilities.backend.framework or "N/A"}} |
-| Database | {{capabilities.database.kind or "N/A"}} |
-| API Style | {{capabilities.api.style or "N/A"}} |
-
-## Enabled Add-ons
-
-| Add-on | Purpose |
-|--------|---------|
-| packaging | Container/artifact build |
-| deployment | Multi-env deploy |
-| release | Version/changelog |
-| observability | Metrics/logs/traces |
-```
-
-### LLM-first documentation principles
-
-- **Semantic density**: Each line carries meaningful info
-- **Structured format**: Tables/lists for quick parsing
-- **Token efficient**: No redundant text; key info first
-- **Preserve constraints**: Never remove template repo's core rules
-
----
-
-## H. Add-ons Directory Cleanup Confirmation (after approve)
-
-After `approve --stage C` completes, ask the user whether to keep the add-on source directory `addons/`.
-
-### Prompt template
-
-```
-Initialization is complete.
-
-Do you want to keep the add-on sources under `addons/`? (They are not required for day-to-day project operation, but keeping them can help with future add-on re-installs or comparisons.)
-
-[Yes / No]
-```
-
-### If user says No
-
-Run:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs cleanup-addons --repo-root . --apply --i-understand
-```
 
 ## Verification
 
 - After the interview, run Stage A validation:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --repo-root . --docs-root init/stage-a-docs --strict
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --strict
 ```
 
 - After generating blueprint, run Stage B validation:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --blueprint init/project-blueprint.json
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
 ```
 
 - For languages without templates, LLM should generate config files before running `apply`.
-
-- After apply completes, ask user about AGENTS.md update (Module G).
-- After init completes (`approve --stage C`), ask user about `addons/` cleanup (Module H).

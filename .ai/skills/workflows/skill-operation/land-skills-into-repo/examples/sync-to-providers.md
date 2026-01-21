@@ -1,4 +1,4 @@
-# Example: SSOT sync to provider roots
+# Example: Sync SSOT to provider stubs
 
 ## Scenario
 Your repo keeps skills in `.ai/skills/` but you also want the same skills discoverable under:
@@ -7,12 +7,11 @@ Your repo keeps skills in `.ai/skills/` but you also want the same skills discov
 
 ## Commands
 ```bash
-# Plan the sync (no writes)
-python scripts/land_skills.py --repo-root . --sync codex,claude --plan
+# Run from repo root.
 
-# Apply the sync
-python scripts/land_skills.py --repo-root . --sync codex,claude --apply
+# Preview (no writes)
+node .ai/scripts/sync-skills.mjs --scope current --providers both --dry-run
 
-# Verify provider roots too
-python scripts/land_skills.py --repo-root . --verify --verify-provider codex,claude
+# Apply (reset provider roots; requires explicit acknowledgement)
+node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes
 ```

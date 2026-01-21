@@ -18,7 +18,7 @@ Bootstrap Playwright E2E testing with:
 
 ## Steps
 1) **Detect existing Playwright setup**
-   - Look for: `playwright.config.*`, `@playwright/test` in `package.json`, existing `tests/` layout.
+   - Look for: `playwright.config.mjs` (preferred), `.ts`, `.js`, or existing `tests/` layout.
    - If it exists, do not re-init; only align artifacts + conventions.
 
 2) **Install dependencies**
@@ -37,7 +37,8 @@ Bootstrap Playwright E2E testing with:
    - Keep Playwright-specific assets under `tests/web/playwright/`.
 
 4) **Create/align Playwright config**
-   - Ensure these baseline settings exist (exact syntax varies by TS/JS config):
+   - Use `playwright.config.mjs` (ESM, preferred) or `.ts`/`.js`.
+   - Ensure these baseline settings exist:
      - `use.baseURL` (via env var, e.g., `BASE_URL`)
      - `trace: 'on-first-retry'`
      - `screenshot: 'only-on-failure'`
@@ -64,7 +65,7 @@ Bootstrap Playwright E2E testing with:
      - Any auth variables (e.g., `TEST_USER`, `TEST_PASS`) via secrets, never committed.
 
 ## Outputs
-- Playwright config (`playwright.config.*`) aligned to artifact contract
+- Playwright config (`playwright.config.mjs` preferred, or `.ts`/`.js`) aligned to artifact contract
 - `tests/web/playwright/` with an initial smoke spec
 - One deterministic command for CI (`test:e2e:playwright` or equivalent)
 - Artifacts produced under `artifacts/playwright/`
@@ -86,7 +87,7 @@ Bootstrap Playwright E2E testing with:
 |---------|----------------|----------|
 | `npx playwright install` hangs or fails | Network/proxy issues | Set `PLAYWRIGHT_DOWNLOAD_HOST` or use offline cache |
 | Browsers not found after install | Incomplete install | Run `npx playwright install --with-deps` with sudo if needed |
-| Config file not recognized | Wrong file extension | Ensure `playwright.config.ts` (not `.js`) if using TypeScript |
+| Config file not recognized | Wrong file extension | Use `playwright.config.mjs` (ESM preferred), `.ts`, or `.js` |
 | Tests fail with "base URL not set" | Missing env var | Export `BASE_URL` or set in config `use.baseURL` |
 
 ### Common Issues

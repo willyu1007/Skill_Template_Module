@@ -78,6 +78,7 @@ Follow `reference/privacy_redaction.md`:
 - Replace secrets with `***REDACTED***`
 - Use stable placeholders when needed for correlation:
   - `<email:user1>`, `<phone:user1>`
+- MAY store a stable `Terminal map` line in Rolling Summary (example: `backend=<terminal_key>`) to reduce repeated terminal scans. Do not store per-attempt collection metadata.
 
 ## Journal growth (optional compaction)
 If the journal becomes noisy (example thresholds: 200 KB or 400 lines):

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "createdAt": "2025-12-28T23:22:29.594557Z",
+  "updatedAt": "2025-12-28T23:22:29.594557Z",
+  "project": {
+    "stage": "prototype"
+  },
+  "context": {
+    "enabled": true,
+    "mode": "contract"
+  },
+  "modular": {
+    "enabled": true
+  },
+  "metadata": {}
+}

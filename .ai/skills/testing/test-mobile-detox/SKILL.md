@@ -14,7 +14,7 @@ description: Detox mobile E2E automation for React Native: bootstrap, author flo
 
 | Task | Open this procedure | Optional examples |
 |---|---|---|
-| Bootstrap Detox in a React Native repo | `reference/procedures/bootstrap.md` | `reference/examples/detox.config.js` |
+| Bootstrap Detox in a React Native repo | `reference/procedures/bootstrap.md` | `reference/examples/detox.config.mjs` |
 | Add a new Detox E2E test | `reference/procedures/add-test.md` | `reference/examples/smoke.e2e.ts` |
 | Run locally (debug) | `reference/procedures/run-local.md` | — |
 | Triage failures / reduce flaky | `reference/procedures/triage-failures.md` | — |
@@ -50,9 +50,9 @@ description: Detox mobile E2E automation for React Native: bootstrap, author flo
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-mobile-detox/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-mobile-detox/scripts/validate-skill.mjs`
 
 - If you changed **tests/config**:
   - `npx detox --version`

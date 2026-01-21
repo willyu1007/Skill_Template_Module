@@ -14,26 +14,35 @@
 ### Assumptions (if unanswered)
 - A1: <assumption> (risk: <low|medium|high>)
 
-## Workdocs scope
-- Scope: <module|integration>
-- Module id (if scope=module): <module_id>
-- Task slug: <task_slug>
-- Roadmap path:
-  - Module: `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md`
-  - Integration: `modules/integration/workdocs/active/<task_slug>/roadmap.md`
-
 ## Scope and impact
-- Affected modules: <...>
-- Cross-module/integration concerns: <...>
-- Modular SSOT touchpoints (if any):
-  - Module manifests: <...>
-  - Flow graph/bindings: <...>
-  - Integration scenarios: <...>
-  - Context registries: <...>
-- Derived artifacts to regenerate (if any): <...>
+- Affected areas/modules: <...>
 - External interfaces/APIs: <...>
 - Data/storage impact: <...>
 - Backward compatibility: <...>
+
+## Project structure change preview (may be empty)
+This section is a **non-binding, early hypothesis** to help humans confirm expected project-structure impact.
+
+Rules:
+- Prefer **directory-level** paths by default; use file-level paths only when you have clear evidence.
+- Do not guess project-specific paths or interfaces; if you have not inspected the repo, keep `(none)` or use `<TBD>`.
+- If unknown, keep `(none)` or use `<TBD>` and add/keep a **Discovery** step to confirm.
+
+### Existing areas likely to change (may be empty)
+- Modify:
+  - (none)
+- Delete:
+  - (none)
+- Move/Rename:
+  - (none)
+
+### New additions (landing points) (may be empty)
+- New module(s) (preferred):
+  - (none)
+- New interface(s)/API(s) (when relevant):
+  - (none)
+- New file(s) (optional):
+  - (none)
 
 ## Milestones
 1. **Milestone 1**: <name>
@@ -43,8 +52,8 @@
    - Deliverable: <...>
    - Acceptance criteria: <...>
 
-## Phased execution plan
-> Keep each phase small, verifiable, and reversible.
+## Step-by-step plan (phased)
+> Keep each step small, verifiable, and reversible.
 
 ### Phase 0 — Discovery (if needed)
 - Objective: <what you need to learn/confirm>
@@ -62,7 +71,7 @@
 - Verification:
   - <tests/checks/acceptance criteria>
 - Rollback:
-  - <how to revert if the phase causes issues>
+  - <how to revert if this phase causes issues>
 
 ### Phase 2 — <name>
 - Objective:
@@ -85,27 +94,12 @@
 |---|---:|---:|---|---|---|
 | <risk> | <low/med/high> | <low/med/high> | <...> | <...> | <...> |
 
-## Companion workdocs (convention)
-The roadmap provides macro-level planning. For implementation details, use `create-workdocs-plan` to generate:
+## Optional detailed documentation layout (convention)
+If you maintain a detailed dev documentation bundle for the task, the repository convention is:
 
 ```
-modules/<module_id>/workdocs/active/<task_slug>/
-  requirement.md          # (Optional) Requirements alignment
+dev-docs/active/<task>/
   roadmap.md              # Macro-level planning (plan-maker)
-  00-overview.md          # Goal, non-goals, acceptance criteria
-  01-plan.md              # Implementation plan (specific steps)
-  02-architecture.md      # Architecture design
-  03-implementation-notes.md  # Current status + TODOs
-  04-verification.md      # Verification commands + results
-  05-pitfalls.md          # "Do not repeat" lessons
-```
-
-or (integration scope):
-
-```
-modules/integration/workdocs/active/<task_slug>/
-  requirement.md          # (Optional) Requirements alignment
-  roadmap.md              # Macro-level planning
   00-overview.md
   01-plan.md
   02-architecture.md
@@ -114,18 +108,17 @@ modules/integration/workdocs/active/<task_slug>/
   05-pitfalls.md
 ```
 
-## Next step (after roadmap approval)
-After user confirms this roadmap is correct, run `create-workdocs-plan` to generate the implementation bundle.
+The roadmap document can be used as the macro-level input for the other files. The plan-maker skill does not create or update those files.
 
-The following fields will be pre-filled from this roadmap:
-- Goal → `00-overview.md` Goal
-- Non-goals → `00-overview.md` Non-goals
-- Acceptance criteria → `04-verification.md`
+Suggested mapping:
+- The roadmap's **Goal/Non-goals/Scope** → `00-overview.md`
+- The roadmap's **Milestones/Phases** → `01-plan.md`
+- The roadmap's **Architecture direction (high level)** → `02-architecture.md`
+- Decisions/deviations during execution → `03-implementation-notes.md`
+- The roadmap's **Verification** → `04-verification.md`
 
 ## To-dos
 - [ ] Confirm open questions
 - [ ] Confirm milestone ordering and DoD
 - [ ] Confirm verification/acceptance criteria
 - [ ] Confirm rollout/rollback strategy
-- [ ] (After approval) Create implementation workdocs bundle
-

@@ -17,7 +17,7 @@ Goals:
 
 ## When to use
 
-Use code-review-standards when:
+Use the code-review-standards skill when:
 - Reviewing pull requests / merge requests
 - Preparing code for review (self-review checklist)
 - Setting up team review guidelines
@@ -48,7 +48,7 @@ Use code-review-standards when:
 
 ### Correctness
 
-- Does the code do what the code claims to do?
+- Does the code do what it claims to do?
 - Are edge cases handled?
 - Are error conditions handled appropriately?
 
@@ -82,13 +82,13 @@ Use code-review-standards when:
 
 ### Be Specific
 
-- ❌ "The logic is confusing"
+- ❌ "The comment is confusing"
 - ✅ "The variable name `x` doesn't convey its purpose. Consider `userCount` or `activeUsers`"
 
 ### Be Constructive
 
-- ❌ "The approach is wrong"
-- ✅ "This approach may cause issues when X happens. Consider using Y pattern instead"
+- ❌ "The change is wrong"
+- ✅ "The approach may cause issues when X happens. Consider using Y pattern instead"
 
 ### Distinguish Severity
 

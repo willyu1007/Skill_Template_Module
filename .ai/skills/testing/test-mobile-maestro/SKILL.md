@@ -50,9 +50,9 @@ description: Maestro mobile UI automation: YAML flow authoring, stable selectors
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-mobile-maestro/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-mobile-maestro/scripts/validate-skill.mjs`
 
 - If you changed **flows/config**:
   - `maestro --version`

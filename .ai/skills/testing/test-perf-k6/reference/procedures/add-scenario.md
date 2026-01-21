@@ -18,7 +18,7 @@ Add a performance scenario that is:
 ## Steps
 1) **Create a new script file**
    - Place under `tests/perf/k6/scripts/`:
-     - `load_<feature>.js`, `stress_<feature>.js`, etc.
+     - `load_<feature>.mjs`, `stress_<feature>.mjs`, etc.
 
 2) **Define the load model explicitly**
    - Use k6 `options` to define:

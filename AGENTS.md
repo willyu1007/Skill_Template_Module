@@ -5,7 +5,7 @@ This is an **AI-Friendly, Module-First Repository Template**.
 The repository is designed for **LLM-optimized, modular development**:
 - Modules are first-class (`modules/<module_id>/`)
 - Business flows are explicit (SSOT under `.system/modular/`)
-- Context is curated and verifiable (module registries → derived project registry)
+- Context is curated and verifiable (module registries -> derived project registry)
 
 ## First Time?
 
@@ -18,40 +18,28 @@ Read `init/AGENTS.md` for project initialization instructions.
 | `modules/` | **Module instances** + cross-module integration workspace |
 | `.system/modular/` | **Modular system SSOT** (flow graph, bindings, type graph) + derived registries/graphs |
 | `docs/context/` | Context registries (project SSOT + derived aggregated view) |
-| `.ai/skills/` | Skill SSOT (workflows + scaffolding) |
-| `.ai/scripts/` | Control scripts (module/init/context/flow/integration) |
-| `.ai/llm-config/` | LLM engineering governance entry (see `.ai/llm-config/AGENTS.md`) |
-| `.codex/` | Codex wrapper stubs (generated) |
-| `.claude/` | Claude wrapper stubs (generated) |
-| `init/` | Project initialization kit (optional to delete after init) |
-| `addons/` | Optional *non-core* add-on payloads installed on-demand |
 
 ## Core Control Scripts
 
 | Area | Script |
 |---|---|
-| Project state | `node .ai/scripts/projectctl.js` |
-| Module instances | `node .ai/scripts/modulectl.js` |
-| Flow SSOT + derived indexes/graphs | `node .ai/scripts/flowctl.js` |
-| Integration scenarios | `node .ai/scripts/integrationctl.js` |
-| Context registries | `node .ai/scripts/contextctl.js` |
-| Skill packs + wrapper sync | `node .ai/scripts/skillsctl.js` |
-| DB mirror (optional usage) | `node .ai/scripts/dbctl.js` |
+| Project state | `node .ai/scripts/projectctl.mjs` |
+| Module instances | `node .ai/scripts/modulectl.mjs` |
+| Flow SSOT + derived indexes/graphs | `node .ai/scripts/flowctl.mjs` |
+| Integration scenarios | `node .ai/scripts/integrationctl.mjs` |
+| Context registries | `node .ai/scripts/contextctl.mjs` |
 
-## Task Protocol (workdocs discipline)
+## Coding Standards (RECOMMEND)
 
-**Decision gate (MUST)** — before editing code on non-trivial work:
-- Either (A) **resume** an existing task under `modules/<module_id>/workdocs/active/` (or `modules/integration/workdocs/active/`), or
-- (B) **create** a new bundle via `create-workdocs-plan`, or
-- (C) explicitly state “skip workdocs” + a short reason (only acceptable for small, well-defined fixes).
+- **ESM (.mjs)**: All scripts in the repository use ES Modules with `.mjs` extension. Use `import`/`export` syntax, not `require()`.
 
-**Planning vs implementation routing**
-- If the user asks for a planroadmap: use `plan-maker` to write `roadmap.md` first (planning-only).
-- If the task needs context preservation (multi-session, handoff) or qualifies as complex: follow with `create-workdocs-plan` (00–05) and then start coding while continuously syncing workdocs.
+## Coding Workflow (MUST)
 
-**Execution sync (MUST)**
-- Keep these files current during execution: `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, `05-pitfalls.md`.
-- Before context switch/handoff/wrap-up: run `update-workdocs-for-handoff`.
+- Before modifying code/config for a non-trivial task, apply the Decision Gate in `.ai/skills/modules/workdocs/AGENTS.md` and create/update the workdocs task bundle as required.
+- If the user asks for planning artifacts (plan/roadmap/milestones) before coding:
+  - If the task meets the Decision Gate, use `.ai/skills/workflows/planning/plan-maker` first, then ask for confirmation to proceed with implementation.
+  - If the task is trivial (< 30 min), provide an in-chat plan (do NOT create workdocs).
+  - If the task needs context preservation (multi-session, handoff) or qualifies as complex, follow `.ai/skills/modules/workdocs/AGENTS.md`.
 
 ## Rules
 - For LLM engineering tasks, open `.ai/llm-config/AGENTS.md`
@@ -59,3 +47,15 @@ Read `init/AGENTS.md` for project initialization instructions.
 - Treat derived artifacts as **overwritable**.
 - Keep module documentation local: `modules/<module_id>/workdocs/`.
 - Never edit `.codex/` or `.claude/` directly; they are generated.
+
+<!-- DB-SSOT:START -->
+## Database SSOT and schema synchronization
+
+The section is **managed by the init pipeline**. After project initialization it will contain:
+
+- The selected DB schema SSOT mode (`none` / `repo-prisma` / `database`)
+- The correct routing for DB schema change requests
+- The canonical LLM-readable DB schema contract location
+
+If the block is still in its placeholder form, run the init Stage C apply step.
+<!-- DB-SSOT:END -->

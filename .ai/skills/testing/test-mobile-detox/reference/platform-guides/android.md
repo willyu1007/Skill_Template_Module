@@ -143,8 +143,8 @@ android.useAndroidX=true
 ### Example Config Section
 
 ```javascript
-// detox.config.js
-module.exports = {
+// detox.config.mjs
+export default {
   devices: {
     emulator: {
       type: 'android.emulator',

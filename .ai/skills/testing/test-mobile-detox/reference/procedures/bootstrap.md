@@ -18,7 +18,7 @@ Bootstrap Detox E2E testing with:
 
 ## Steps
 1) **Detect existing Detox setup**
-   - Look for: `detox.config.*`, `detox` section in `package.json`, `e2e/` tests.
+   - Look for: `detox.config.mjs` (preferred), `.js`, `.cjs`, or `e2e/` tests.
    - If it exists, do not re-init; align artifacts + conventions.
 
 2) **Install Detox and a test runner**
@@ -32,7 +32,7 @@ Bootstrap Detox E2E testing with:
    - Preferred (if supported by your Detox version):
      - `npx detox init -r jest`
    - If the init command is not available:
-     - Create a `detox.config.js` (or `package.json` config) that defines:
+     - Create a `detox.config.mjs` (ESM, preferred) that defines:
        - app binaries/build commands for iOS/Android
        - device configurations (simulator/emulator)
        - test runner = Jest
@@ -62,7 +62,7 @@ Bootstrap Detox E2E testing with:
    - Launch app and assert a stable “home ready” element is visible by `testID`.
 
 ## Outputs
-- Detox config (`detox.config.*` or equivalent)
+- Detox config (`detox.config.mjs` preferred, or `.js`/`.cjs`)
 - `e2e/` test layout with a smoke test
 - Canonical commands for build + test
 - Artifacts produced under `artifacts/detox/`

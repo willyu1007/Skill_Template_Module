@@ -19,7 +19,7 @@ Use the naming-conventions skill when:
 - Naming skills, workflows, or commands
 - Reviewing code for naming consistency
 - Setting up CI checks for naming standards
-- Writing scripts that generate files or directories
+- **Scripts generating files** (see Script Integration below)
 
 ## Inputs
 
@@ -38,6 +38,27 @@ Use the naming-conventions skill when:
 3. Propose 2–3 candidates and select the one that matches existing local conventions and avoids ambiguous abbreviations.
 4. Apply the chosen name consistently across declarations and references (imports, exports, docs, and tests).
 5. Verify that the resulting names are searchable, unambiguous, and do not collide with existing names.
+
+## Script Integration (MUST)
+
+Scripts that generate files MUST follow the naming conventions defined in the naming-conventions skill.
+
+**Requirements:**
+- Declare a reference to the naming-conventions skill in script header comments
+- Generated file/directory names MUST use kebab-case
+- Validate output names against convention rules before writing
+
+**Reference comment example:**
+```javascript
+/**
+ * @reference .ai/skills/standards/naming-conventions/SKILL.md
+ */
+```
+
+**Implementation guidance:**
+- Import or read the naming-conventions skill path when generating output paths
+- Scripts under `.ai/scripts/` should programmatically validate generated names
+- When scaffolding projects, apply kebab-case to all generated directories/files
 
 ## Global Rules (MUST)
 
@@ -65,7 +86,7 @@ Use the naming-conventions skill when:
 
 Notes:
 - Stubs contain only `SKILL.md` pointers back to `.ai/skills/`
-- Do not edit stub directories directly; regenerate with `.ai/scripts/sync-skills.cjs`
+- Do not edit stub directories directly; regenerate with `.ai/scripts/sync-skills.mjs`
 
 ### Other Top-Level Directories (Recommended)
 
@@ -73,26 +94,24 @@ Notes:
 - `scripts/`: script entrypoints (cross-platform can share the same base name with different suffixes)
 - `init/`: bootstrap materials (if present)
 
-## Temporary Files (MUST)
+### Temporary Directory (MUST)
 
-When scripts need to create temporary environments, caches, or intermediate files:
+Use `.ai/.tmp/` for temporary environments, caches, and generated intermediate files.
 
-- Use: `.ai/.tmp/`
-- This directory is gitignored and safe for ephemeral artifacts
-- Scripts SHOULD clean up their own subdirectories after completion
-- Use unique subdirectory names to avoid collisions (e.g., `.ai/.tmp/<script-name>-<timestamp>/`)
+**Rules:**
+- All temporary files MUST be placed under `.ai/.tmp/`
+- Do NOT create `temp/`, `tmp/`, `temporary/`, or similar directories elsewhere
+- `.ai/.tmp/` SHOULD be added to `.gitignore`
+- Script-generated artifacts, build caches, and intermediate outputs go here
 
-## Script-Generated Files (MUST)
+**Usage examples:**
+- `.ai/.tmp/cache/` - cached data for scripts
+- `.ai/.tmp/build/` - intermediate build outputs
+- `.ai/.tmp/sandbox/` - temporary test environments
 
-Scripts that generate files or directories MUST:
-1. Follow the naming conventions defined in the naming-conventions skill
-2. Use kebab-case for generated directory and file names
-3. Place temporary/intermediate files under `.ai/.tmp/`
-4. Document the expected output paths in the script's header or usage info
-
-Scripts SHOULD:
-- Validate generated names against these rules before writing
-- Provide a `--dry-run` flag to preview generated paths
+**Cleanup:**
+- Scripts are responsible for cleaning up their own temporary files
+- Stale files in `.ai/.tmp/` may be deleted without notice
 
 ## Skill Naming (MUST)
 
@@ -123,6 +142,34 @@ Examples:
 - Workflows are stored as skills
 - Name by intent/process: `refactor-planner`, `release-checklist`
 - Path: `.ai/skills/.../<workflow-name>/SKILL.md`
+
+## Template Placeholder Conventions (MUST)
+
+Use consistent placeholder formats in template files:
+
+| Format | Usage | Example |
+|--------|-------|---------|
+| `<placeholder>` | User-editable content (manual fill) | `<Task Title>`, `<One-sentence goal>` |
+| `{{variable}}` | Script-replaced variables (auto-generated) | `{{agent_id}}`, `{{timestamp}}` |
+| `$ENV_VAR` | Environment variable reference | `$DATABASE_URL`, `$API_KEY` |
+
+**Rules:**
+- `<placeholder>`: Angle brackets indicate the user must replace this content manually
+- `{{variable}}`: Double curly braces indicate scripts will substitute this value automatically
+- Do NOT mix formats in the same context (e.g., don't use `<var>` for script substitution)
+- Template files SHOULD include comments explaining which placeholders are user-filled vs auto-replaced
+
+**Examples:**
+
+```markdown
+# User-filled template (roadmap.md)
+## Goal
+- <One-sentence goal statement>
+
+# Script-generated template (verification-report.md)
+- Agent ID: {{agent_id}}
+- Generated: {{timestamp}}
+```
 
 ## Versioning and Changes (SHOULD)
 

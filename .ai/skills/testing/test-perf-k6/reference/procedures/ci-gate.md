@@ -23,7 +23,7 @@ Gate changes in CI using k6 thresholds with:
    - CI gating requires thresholds; otherwise it becomes “observability only”.
 
 3) **Add a single CI command**
-   - `k6 run tests/perf/k6/scripts/smoke.js --summary-export artifacts/k6/summary.json`
+   - `k6 run tests/perf/k6/scripts/smoke.mjs --summary-export artifacts/k6/summary.json`
 
 4) **Upload artifacts**
    - Always upload `artifacts/k6/` even on failure.

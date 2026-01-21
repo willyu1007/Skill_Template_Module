@@ -1,8 +1,8 @@
 {
   "version": 1,
   "project": {
-    "name": "minimal-project",
-    "description": "Minimal project setup with backend only"
+    "name": "acme-app",
+    "description": "Example minimal project blueprint (valid)."
   },
   "repo": {
     "layout": "single",
@@ -10,24 +10,45 @@
     "packageManager": "pnpm"
   },
   "capabilities": {
+    "database": {
+      "enabled": false
+    },
+    "frontend": {
+      "enabled": false
+    },
     "backend": {
-      "enabled": true,
-      "framework": "express"
+      "enabled": false
+    },
+    "api": {
+      "style": "none"
     }
   },
-  "quality": {
-    "testing": {
-      "unit": true
-    }
+  "db": {
+    "enabled": false,
+    "ssot": "none",
+    "kind": "other",
+    "environments": []
+  },
+  "features": {
+    "contextAwareness": false,
+    "database": false,
+    "ui": false,
+    "environment": false,
+    "packaging": false,
+    "deployment": false,
+    "release": false,
+    "ci": false,
+    "observability": false
   },
   "skills": {
-    "packs": ["workflows", "backend"]
+    "packs": [
+      "workflows",
+      "standards"
+    ]
   },
-  "addons": {
-    "packaging": true,
-    "deployment": true,
-    "release": true,
-    "observability": true
+  "context": {
+    "enabled": false,
+    "mode": "contract",
+    "environments": []
   }
 }
-

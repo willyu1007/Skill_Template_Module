@@ -51,9 +51,9 @@ description: Appium mobile automation: capabilities templates, harness bootstrap
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-mobile-appium/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-mobile-appium/scripts/validate-skill.mjs`
 
 - If you changed **tests/config**:
   - `node -v`

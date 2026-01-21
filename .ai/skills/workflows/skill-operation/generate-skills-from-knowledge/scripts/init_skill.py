@@ -1,218 +1,173 @@
 #!/usr/bin/env python3
 """
-Skill Initializer - Creates a new skill from template
+init_skill.py - Initialize a new skill directory with compliant skeleton files.
 
 Usage:
-    init_skill.py <skill-name> --path <path>
+    python3 init_skill.py <skill-name> --path <target-directory>
 
-Examples:
-    init_skill.py my-new-skill --path .ai/skills/workflows/common
-    init_skill.py data-analyzer --path .ai/skills/backend/data
-    init_skill.py custom-skill --path /custom/location
+Example:
+    python3 init_skill.py my-new-skill --path .ai/skills/workflows/common
+
+This script creates a skill directory with:
+- SKILL.md (with valid YAML frontmatter, required sections)
+- scripts/ directory placeholder
+- reference.md placeholder
+
+The generated skeleton passes `lint-skills.mjs --strict`.
 """
 
+import argparse
+import os
 import sys
 from pathlib import Path
 
-
-SKILL_TEMPLATE = """---
+SKILL_MD_TEMPLATE = """---
 name: {skill_name}
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: [One sentence describing what the skill does and when to use the skill.]
 ---
 
 # {skill_title}
 
 ## Purpose
 
-[TODO: 1-2 sentences explaining what this skill enables]
+[1-2 sentences: what problem does the skill solve?]
 
 ## When to use
 
-Use this skill when:
-- [TODO: Add trigger scenarios]
+Use the skill when:
+- [Primary trigger condition]
+- [Secondary trigger condition]
 
-Do not use this skill when:
-- [TODO: Add negative triggers]
+Do not use the skill when:
+- [Negative trigger - when to skip]
 
 ## Inputs
 
-- [TODO: Required inputs]
+- **[input_name]**: [description of required input]
 
 ## Outputs
 
-- [TODO: Expected outputs]
+- [Description of expected artifacts, file changes, or reports]
 
 ## Steps
 
-1. [TODO: First step]
-2. [TODO: Second step]
-3. [TODO: Continue as needed]
+### Scenario A: [Primary use case]
+
+1. [First step - imperative verb]
+2. [Second step]
+3. [Third step]
+
+### Scenario B: [Alternative use case] (optional)
+
+1. [First step]
+2. [Second step]
 
 ## Verification
 
-- [ ] [TODO: Verification checklist item]
+- [ ] [Concrete verification command or check]
+- [ ] [Expected outcome or pass criteria]
 
 ## Boundaries
 
-- MUST NOT [TODO: Add safety constraints]
-- SHOULD NOT [TODO: Add recommendations]
+- MUST NOT [critical constraint]
+- SHOULD NOT [recommended constraint]
+- [Additional safety or scope constraints]
 
 ## Included assets
 
-- [TODO: List supporting files or "None"]
+- `./scripts/` - [placeholder for executable helpers]
+- `./reference.md` - [placeholder for deep details]
 """
 
-EXAMPLE_SCRIPT = '''#!/usr/bin/env python3
-"""
-Example helper script for {skill_name}
+REFERENCE_MD_TEMPLATE = """# Reference: {skill_title}
 
-This is a placeholder script that can be executed directly.
-Replace with actual implementation or delete if not needed.
+## Overview
+
+[Extended explanation of the skill's purpose and rationale.]
+
+## Key decisions
+
+[Document design choices and tradeoffs here.]
+
+## Edge cases
+
+[Document edge cases and alternative approaches.]
+
+## Extended checklists
+
+[Optional: detailed verification checklists.]
 """
+
+
+def create_skill_directory(skill_name: str, target_path: str) -> None:
+    """Create a new skill directory with skeleton files."""
+
+    # Validate skill name (must be kebab-case)
+    if not skill_name.replace("-", "").isalnum():
+        print(f"Error: Skill name must be kebab-case alphanumeric: {skill_name}")
+        sys.exit(1)
+
+    if skill_name != skill_name.lower():
+        print(f"Error: Skill name must be lowercase: {skill_name}")
+        sys.exit(1)
+
+    # Resolve target path
+    target_dir = Path(target_path).resolve()
+    skill_dir = target_dir / skill_name
+
+    if skill_dir.exists():
+        print(f"Error: Directory already exists: {skill_dir}")
+        sys.exit(1)
+
+    # Create directory structure
+    skill_dir.mkdir(parents=True, exist_ok=False)
+    scripts_dir = skill_dir / "scripts"
+    scripts_dir.mkdir()
+
+    # Generate human-readable title
+    skill_title = skill_name.replace("-", " ").title()
+
+    # Write SKILL.md
+    skill_md_path = skill_dir / "SKILL.md"
+    skill_md_content = SKILL_MD_TEMPLATE.format(
+        skill_name=skill_name, skill_title=skill_title
+    )
+    skill_md_path.write_text(skill_md_content)
+
+    # Write reference.md
+    reference_md_path = skill_dir / "reference.md"
+    reference_md_content = REFERENCE_MD_TEMPLATE.format(skill_title=skill_title)
+    reference_md_path.write_text(reference_md_content)
+
+    # Write .gitkeep in scripts
+    gitkeep_path = scripts_dir / ".gitkeep"
+    gitkeep_path.write_text("")
+
+    print(f"Created skill directory: {skill_dir}")
+    print(f"  - SKILL.md")
+    print(f"  - reference.md")
+    print(f"  - scripts/")
+    print("")
+    print("Next steps:")
+    print(f"  1. Edit {skill_md_path} to fill in placeholders")
+    print(f"  2. Run: node .ai/scripts/lint-skills.mjs --strict")
+
 
 def main():
-    print("This is an example script for {skill_name}")
-    # TODO: Add actual script logic here
-
-if __name__ == "__main__":
-    main()
-'''
-
-EXAMPLE_REFERENCE = """# Reference Documentation for {skill_title}
-
-This is a placeholder for detailed reference documentation.
-Replace with actual reference content or delete if not needed.
-
-## When Reference Docs Are Useful
-
-Reference docs are ideal for:
-- Comprehensive API documentation
-- Detailed workflow guides
-- Complex multi-step processes
-- Information too lengthy for main SKILL.md
-- Content that's only needed for specific use cases
-
-## Structure Suggestions
-
-### API Reference Example
-- Overview
-- Authentication
-- Endpoints with examples
-- Error codes
-- Rate limits
-
-### Workflow Guide Example
-- Prerequisites
-- Step-by-step instructions
-- Common patterns
-- Troubleshooting
-- Best practices
-"""
-
-
-def title_case_skill_name(skill_name):
-    """Convert hyphenated skill name to Title Case for display."""
-    return ' '.join(word.capitalize() for word in skill_name.split('-'))
-
-
-def init_skill(skill_name, path):
-    """
-    Initialize a new skill directory with template SKILL.md.
-
-    Args:
-        skill_name: Name of the skill (kebab-case)
-        path: Path where the skill directory should be created
-
-    Returns:
-        Path to created skill directory, or None if error
-    """
-    # Determine skill directory path
-    skill_dir = Path(path).resolve() / skill_name
-
-    # Check if directory already exists
-    if skill_dir.exists():
-        print(f"Error: Skill directory already exists: {skill_dir}")
-        return None
-
-    # Create skill directory
-    try:
-        skill_dir.mkdir(parents=True, exist_ok=False)
-        print(f"Created skill directory: {skill_dir}")
-    except Exception as e:
-        print(f"Error creating directory: {e}")
-        return None
-
-    # Create SKILL.md from template
-    skill_title = title_case_skill_name(skill_name)
-    skill_content = SKILL_TEMPLATE.format(
-        skill_name=skill_name,
-        skill_title=skill_title
+    parser = argparse.ArgumentParser(
+        description="Initialize a new skill directory with skeleton files."
+    )
+    parser.add_argument(
+        "skill_name", help="Name of the skill (kebab-case, e.g., my-new-skill)"
+    )
+    parser.add_argument(
+        "--path",
+        required=True,
+        help="Target directory where the skill folder will be created",
     )
 
-    skill_md_path = skill_dir / 'SKILL.md'
-    try:
-        skill_md_path.write_text(skill_content)
-        print("Created SKILL.md")
-    except Exception as e:
-        print(f"Error creating SKILL.md: {e}")
-        return None
-
-    # Create optional resource directories with examples
-    try:
-        # Create scripts/ directory with example script
-        scripts_dir = skill_dir / 'scripts'
-        scripts_dir.mkdir(exist_ok=True)
-        example_script = scripts_dir / 'example.py'
-        example_script.write_text(EXAMPLE_SCRIPT.format(skill_name=skill_name))
-        example_script.chmod(0o755)
-        print("Created scripts/example.py (placeholder)")
-
-        # Create reference.md placeholder
-        reference_path = skill_dir / 'reference.md'
-        reference_path.write_text(EXAMPLE_REFERENCE.format(skill_title=skill_title))
-        print("Created reference.md (placeholder)")
-
-    except Exception as e:
-        print(f"Error creating resource files: {e}")
-        return None
-
-    # Print next steps
-    print(f"\nSkill '{skill_name}' initialized at {skill_dir}")
-    print("\nNext steps:")
-    print("1. Edit SKILL.md to complete the TODO items")
-    print("2. Update the description in frontmatter (critical for discovery)")
-    print("3. Customize or delete placeholder files (scripts/, reference.md)")
-    print("4. Run lint to verify: node .ai/scripts/lint-skills.cjs --strict")
-
-    return skill_dir
-
-
-def main():
-    if len(sys.argv) < 4 or sys.argv[2] != '--path':
-        print("Usage: init_skill.py <skill-name> --path <path>")
-        print("\nSkill name requirements:")
-        print("  - Hyphen-case identifier (e.g., 'data-analyzer')")
-        print("  - Lowercase letters, digits, and hyphens only")
-        print("  - Max 40 characters")
-        print("  - Must match directory name exactly")
-        print("\nExamples:")
-        print("  init_skill.py my-new-skill --path .ai/skills/workflows/common")
-        print("  init_skill.py data-analyzer --path .ai/skills/backend/data")
-        sys.exit(1)
-
-    skill_name = sys.argv[1]
-    path = sys.argv[3]
-
-    print(f"Initializing skill: {skill_name}")
-    print(f"Location: {path}")
-    print()
-
-    result = init_skill(skill_name, path)
-
-    if result:
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    args = parser.parse_args()
+    create_skill_directory(args.skill_name, args.path)
 
 
 if __name__ == "__main__":

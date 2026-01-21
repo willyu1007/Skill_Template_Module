@@ -1,6 +1,6 @@
 ---
 name: docs
-description: Router skill for documentation work: author developer docs, create a workdocs task plan, or update workdocs for handoff/archival with progressive disclosure.
+description: Router skill for documentation work: author developer docs, create a dev-docs task plan, or update docs for handoff/archival with progressive disclosure.
 ---
 
 # Docs (workflow router)
@@ -11,8 +11,8 @@ Select the correct documentation workflow (authoring vs planning vs handoff) and
 ## When to use
 Use this skill when you need to:
 - Write or update developer-facing documentation
-- Create a repeatable workdocs bundle for a task
-- Update workdocs for handoff, context recovery, or archival
+- Create a repeatable dev-docs bundle for a task
+- Update dev-docs for handoff, context recovery, or archival
 
 ## Operating mode (governor)
 - Select **exactly one** workflow below.
@@ -23,12 +23,12 @@ Use this skill when you need to:
 | If you need... | Use this workflow skill |
 |---|---|
 | Author or update developer documentation (guides, APIs, runbooks) | `author-developer-documentation` |
-| Create a new workdocs task bundle (overview/plan/architecture/notes/verification/pitfalls) | `create-workdocs-plan` |
-| Update an existing workdocs bundle for handoff or archive | `update-workdocs-for-handoff` |
+| Create a new dev-docs task bundle (overview/plan/architecture/notes/verification) | `create-dev-docs-plan` |
+| Update an existing dev-docs bundle for handoff or archive | `update-dev-docs-for-handoff` |
 
 ## Shared non-negotiables
 1) **Progressive disclosure**
-   - Keep top-level docs short; move deep detail into `reference/`, `examples/`, and `templates/`.
+   - Keep top-level docs short; move deep detail into supporting files under `dev-docs/` or the selected workflow skill’s supporting folders (reference, examples, templates) when present.
 
 2) **No secrets**
    - Do not include credentials, tokens, or internal-only URLs.
@@ -37,7 +37,7 @@ Use this skill when you need to:
    - Every doc set must include concrete verification steps (commands/checks + expected results).
 
 ## Steps
-1. Identify whether the intent is: (a) write docs, (b) start a task workdocs bundle, or (c) handoff/update.
+1. Identify whether the intent is: (a) write docs, (b) start a dev task bundle, or (c) handoff/update.
 2. Select exactly one workflow from the routing table.
 3. State the selection explicitly.
 4. Invoke the selected workflow skill and execute it end-to-end.

@@ -30,6 +30,7 @@ High information-gain points:
 
 ## What to ask from the user/operator
 - precise repro steps (curl command, test script, or endpoint call pattern)
+- if the repro runs in an IDE-integrated terminal: reproduce and reply `DONE` so I can attempt auto-collection (see `examples/ide-terminal-hook.md`)
 - the log subset filtered by `[DBG:<run_id>]`
 - request_id/trace_id if available
 - environment: staging/prod, deployment version/commit, config toggles

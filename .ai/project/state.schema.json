@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Project State",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [
     "version",
     "createdAt",
@@ -15,55 +15,42 @@
       "const": 1
     },
     "createdAt": {
-      "type": "string"
+      "type": "string",
+      "description": "ISO 8601 timestamp"
     },
     "updatedAt": {
-      "type": "string"
-    },
-    "project": {
-      "type": "object",
-      "additionalProperties": true,
-      "properties": {
-        "stage": {
-          "type": "string",
-          "enum": [
-            "prototype",
-            "mvp",
-            "production",
-            "maintenance",
-            "archived"
-          ]
-        }
-      }
+      "type": "string",
+      "description": "ISO 8601 timestamp"
     },
     "context": {
       "type": "object",
-      "additionalProperties": true,
-      "required": [
-        "enabled",
-        "mode"
-      ],
+      "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
         "mode": {
           "type": "string",
           "enum": [
             "contract",
             "snapshot"
-          ]
-        }
-      }
-    },
-    "modular": {
-      "type": "object",
-      "additionalProperties": true,
-      "properties": {
+          ],
+          "description": "contract = authoritative files; snapshot = generated from source"
+        },
         "enabled": {
           "type": "boolean"
         }
       }
+    },
+    "features": {
+      "type": "object",
+      "description": "Feature flags or enabled capabilities",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "custom": {
+      "type": "object",
+      "description": "Custom project-specific state",
+      "additionalProperties": true
     }
   }
 }
+

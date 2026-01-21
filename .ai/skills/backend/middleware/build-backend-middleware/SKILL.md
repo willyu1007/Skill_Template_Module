@@ -9,7 +9,7 @@ description: Design and implement backend middleware (auth, validation, logging,
 Provide a structured approach to implementing middleware so cross-cutting concerns (auth, logging, validation, rate limits, error handling) are consistent and composable.
 
 ## When to use
-Use build-backend-middleware when you are:
+Use this skill when you are:
 - Adding authentication/authorization enforcement
 - Adding request logging, correlation IDs, and audit trails
 - Validating requests before controller execution
@@ -18,7 +18,7 @@ Use build-backend-middleware when you are:
 - Debugging “middleware order” issues
 
 ## Inputs
-- The middleware’s responsibility and scope (global vs route-specific)
+- The middleware's responsibility and scope (global vs route-specific)
 - Where the middleware should run in the request lifecycle (before/after auth, before validation, etc.)
 - What context the middleware reads/writes (e.g., user identity, request ID)
 
@@ -55,7 +55,7 @@ A common order for HTTP services:
 ## Rules
 - Middleware MUST be single-purpose and composable.
 - Middleware MUST NOT embed business logic (belongs in services).
-- Middleware that adds context SHOULD attach the context to a typed request context (or `res.locals` pattern).
+- Middleware that adds context SHOULD attach the context to a typed request object (or `res.locals` pattern).
 - Error middleware MUST be last in the chain.
 
 ## Steps

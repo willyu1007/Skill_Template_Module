@@ -3,9 +3,10 @@
   "includePrefixes": [
     "workflows/",
     "standards/",
-    "scaffold/",
-    "context/",
-    "scaffold/context"
+    "backend/",
+    "frontend/",
+    "testing/",
+    "features/"
   ],
   "includeSkills": [],
   "excludeSkills": []

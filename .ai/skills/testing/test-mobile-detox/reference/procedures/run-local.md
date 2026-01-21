@@ -55,7 +55,7 @@ Run and debug Detox tests locally with:
 
 | Symptom | Possible Cause | Solution |
 |---------|----------------|----------|
-| Build succeeds but test fails to start | App binary path wrong | Check `binaryPath` in detox.config.js |
+| Build succeeds but test fails to start | App binary path wrong | Check `binaryPath` in detox.config.mjs |
 | "Unable to find app bundle" (iOS) | Build output location changed | Verify derivedDataPath matches config |
 | Emulator black screen | GPU issue or slow boot | Use `-gpu swiftshader` or increase boot timeout |
 | Tests hang indefinitely | Synchronization issue | Check for infinite animations or network calls |

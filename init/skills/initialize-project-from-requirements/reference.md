@@ -1,45 +1,46 @@
 # Reference: initialize-project-from-requirements
 
-This reference describes the behavior of the init pipeline skill implementation (scripts + templates).
-It is the SSOT; other references should link here.
+This reference describes the behavior of the init pipeline implementation (scripts + templates).
+The file is the SSOT; other references should link here.
 
 ---
 
 ## Key conclusions
 
-- Stage A quality is enforced by **structure + placeholders checks** (`check-docs`). It does not attempt deep semantic evaluation.
-- Stage B blueprint is the **machine-readable SSOT** used for Stage C scaffolding and skill pack selection.
+- Stage A quality is enforced by **structure + placeholder checks** (`check-docs`). The check does not attempt deep semantic evaluation.
+- Stage B blueprint is the **machine-readable SSOT** used for Stage C scaffold/config generation and pack selection.
 - Pack selection is explicit:
-  - declared in the working blueprint `init/project-blueprint.json` (`skills.packs`)
-  - archived to `docs/project/project-blueprint.json` after `cleanup-init --archive`
+  - declared in `init/project-blueprint.json` (`skills.packs`) during initialization
+  - archived to `docs/project/project-blueprint.json` by `cleanup-init --archive`
   - materialized into `.ai/skills/_meta/sync-manifest.json` (flat schema)
-  - synced into provider wrappers by `node .ai/scripts/sync-skills.cjs`
+  - synced into provider wrappers by `node .ai/scripts/sync-skills.mjs`
 - Stage transitions require explicit approval (`approve`), not manual state edits.
-- In add-on repos, pack enabling must go through `.ai/scripts/skillsctl.js` (scheme A) when available.
+- When `.ai/skills/_meta/skillpacksctl.mjs` is available, pack enabling is performed through `skillpacksctl`; otherwise Stage C falls back to editing the sync manifest.
+- Optional **features** are materialized in Stage C from templates stored under `.ai/skills/features/...`.
 
 ---
 
 ## Stage A validation (`check-docs`)
 
 Checks:
-- required files exist under `docs/project/` (or `--docs-root`)
-- required files exist under `init/stage-a-docs/` (or `--docs-root`)
+- required files exist under `init/stage-a-docs/` by default (or `--docs-root`)
 - required headings exist
-- template placeholders (e.g. “TBD”, “<fill>”) are not left unresolved (warn or error depending on `--strict`)
+- template placeholders (e.g. `TBD`, `<fill>`) are not left unresolved (warn or error depending on `--strict`)
 
 Command:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs check-docs --repo-root . --docs-root init/stage-a-docs --strict
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --docs-root init/stage-a-docs --strict
 ```
 
 ---
 
 ## Stage A must-ask checklist (`mark-must-ask`)
 
-Use after asking each must-ask question to keep the state board accurate.
+Use after asking each must-ask question so the state board stays accurate.
 
 Keys:
+- `terminologyAlignment`
 - `onePurpose`
 - `userRoles`
 - `mustRequirements`
@@ -51,7 +52,7 @@ Keys:
 Command:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs mark-must-ask \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs mark-must-ask \
   --repo-root . \
   --key onePurpose \
   --asked \
@@ -65,13 +66,13 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 
 Checks:
 - blueprint JSON parses
-- matches expected shape / schema (basic semantic sanity)
+- matches expected shape / schema (basic sanity)
 - optional: compute recommended packs from `capabilities`/`quality` and report deltas
 
 Command:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate --repo-root . --blueprint init/project-blueprint.json
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root . --blueprint init/project-blueprint.json
 ```
 
 ---
@@ -81,7 +82,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 Use after reviewing `skills.packs` so the state board reflects the review.
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs review-packs --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-packs --repo-root .
 ```
 
 ---
@@ -89,28 +90,32 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
 ## Stage C apply (`apply`)
 
 `apply` performs:
+
 1. validate blueprint
 2. optional docs check (when `--require-stage-a`)
-3. scaffold directories/files (idempotent; “write-if-missing” for docs)
-4. generate configs via `scripts/scaffold-configs.cjs` (SSOT)
-5. context system setup (core)
-6. enable packs (skillsctl when present; else manifest includePrefixes)
-7. sync wrappers via `.ai/scripts/sync-skills.cjs`
+3. scaffold directories/files (idempotent; mostly "write-if-missing")
+4. generate configs via `scripts/scaffold-configs.mjs` (SSOT)
+5. materialize optional **features** from templates under `.ai/skills/features/.../templates/` and run their control scripts (`...ctl.mjs init`)
+6. enable packs (skillpacksctl when present; else sync manifest)
+7. sync wrappers via `.ai/scripts/sync-skills.mjs`
 
 Notes:
-- With `--verify-addons`, add-on verify failures are fail-fast by default.
-- Use `--non-blocking-addons` to continue despite verify failures.
+- With `--verify-features`, feature verify failures are **fail-fast** by default.
+- Use `--non-blocking-features` to continue despite verify failures.
 
 ---
 
-## Context system (core)
+## Feature: context awareness
 
-In this template version, context is already present in the repo.
+Enable via blueprint:
 
-Default behavior:
-- context is treated as enabled unless `addons.contextAwareness` is explicitly set to `false`
-- enabling context implies enabling the `context-core` pack (and scaffold packs)
+- `features.contextAwareness: true`
 
-Relevant docs:
-- `init/addon-docs/context-awareness.md` (core note)
-- `docs/context/INDEX.md`
+`context.*` is configuration only and does not trigger enabling by itself.
+
+Implications:
+- Stage C materializes `docs/context/**` and environment templates, then runs `.ai/skills/features/context-awareness/scripts/contextctl.mjs init`
+- Optional: add `context-core` to `skills.packs` if you want context-awareness skills/wrappers
+
+See:
+- `.ai/skills/features/context-awareness/`

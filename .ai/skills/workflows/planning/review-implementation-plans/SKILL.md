@@ -1,6 +1,6 @@
 ---
 name: review-implementation-plans
-description: Review implementation plans for completeness, feasibility, risks, dependencies, rollout/rollback, and concrete verification before execution.
+description: Review implementation plans for completeness, feasibility, risks, dependencies, rollout/rollback, and concrete verification before execution; triggers: plan review/design review.
 ---
 
 # Review Implementation Plans

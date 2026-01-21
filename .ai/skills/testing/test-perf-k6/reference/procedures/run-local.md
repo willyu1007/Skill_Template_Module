@@ -21,10 +21,10 @@ Run k6 locally with:
 
 2) **Run a low-intensity smoke first**
    - Example:
-     - `k6 run tests/perf/k6/scripts/smoke.js --summary-export artifacts/k6/summary.json`
+     - `k6 run tests/perf/k6/scripts/smoke.mjs --summary-export artifacts/k6/summary.json`
 
 3) **Run the intended scenario**
-   - `k6 run tests/perf/k6/scripts/<scenario>.js --summary-export artifacts/k6/summary.json`
+   - `k6 run tests/perf/k6/scripts/<scenario>.mjs --summary-export artifacts/k6/summary.json`
 
 4) **Capture and review results**
    - Review thresholds pass/fail output.

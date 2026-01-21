@@ -50,9 +50,9 @@ description: Playwright Web UI E2E automation: bootstrap, author specs, run/debu
 ## Verification
 - If you changed **skills**:
   - Prefer host-repo tooling if present:
-    - `node .ai/scripts/lint-skills.cjs --strict`
+    - `node .ai/scripts/lint-skills.mjs --strict`
   - Always run the local validator:
-    - `node .ai/skills/testing/test-web-playwright/scripts/validate-skill.cjs`
+    - `node .ai/skills/testing/test-web-playwright/scripts/validate-skill.mjs`
 
 - If you changed **tests/config**:
   - `npx playwright --version`
@@ -66,22 +66,19 @@ description: Playwright Web UI E2E automation: bootstrap, author specs, run/debu
 - Do not rely on production data or production credentials.
 - Do not disable assertions to "make tests pass"; fix the underlying determinism issue.
 
-
 ## Reconnaissance-then-action workflow (borrowed)
 
-When debugging or authoring UI automation, prefer a two-phase loop:
+When adding or debugging Playwright E2E tests:
 
 1. **Reconnaissance**
-   - Confirm the target app is running (or start it using existing repo scripts).
-   - Navigate to the target page and wait for the app to become idle (Playwright auto-wait + explicit `expect` assertions; avoid fixed sleeps).
-   - Inspect the rendered DOM and identify stable selectors (role-based locators or `data-testid`).
-   - Capture artifacts early when triaging (screenshot/trace/logs) so failures are actionable.
+   - Confirm the target app is running and reachable.
+   - Use Playwright's inspector or trace viewer to inspect the rendered DOM.
+   - Identify stable selectors (`data-testid`, `data-test`, or role-based locators).
+   - Prefer explicit assertions with auto-wait over arbitrary timeouts.
 
 2. **Action**
-   - Implement the interaction using the discovered selectors.
-   - Assert on outcomes (URL change, visible text, network response, saved state) rather than implementation details.
-
-**Static HTML shortcut:** if you are automating a static HTML page, you can inspect the file contents to find stable selectors first.
+   - Implement the interaction using stable selectors.
+   - Assert on outcomes (visible UI state, route, network behavior) rather than layout details.
 
 ### If Cypress and Playwright skills are both loaded
 

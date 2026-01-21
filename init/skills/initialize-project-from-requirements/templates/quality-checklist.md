@@ -10,7 +10,7 @@
 
 ## Stage A: Requirements Quality Checklist
 
-Run the checklist after drafting all Stage A docs, **before** requesting user approval.
+Run this checklist after drafting all Stage A docs, **before** requesting user approval.
 
 ### A1. One-line Purpose
 
@@ -20,7 +20,7 @@ Run the checklist after drafting all Stage A docs, **before** requesting user ap
 
 ### A2. User Roles
 
-- [ ] Are all primary users explicitly named (2–5 roles)?
+- [ ] Are all primary users explicitly named (2-5 roles)?
 - [ ] Is there at least one explicit **non-user** (who this is NOT for)?
 - [ ] Are user roles distinguishable (not overlapping or redundant)?
 
@@ -28,8 +28,8 @@ Run the checklist after drafting all Stage A docs, **before** requesting user ap
 
 - [ ] Does each MUST requirement have a **testable** acceptance criterion?
 - [ ] Are MUST requirements **independent** (not duplicating each other)?
-- [ ] Are there **3–10** MUST requirements (not too few, not too many)?
-- [ ] Would a developer know when this requirement is "done"?
+- [ ] Are there **3-10** MUST requirements (not too few, not too many)?
+- [ ] Would a developer know when the requirement is "done"?
 
 ### A4. Out-of-Scope (OUT)
 
@@ -67,7 +67,7 @@ Run the checklist after drafting all Stage A docs, **before** requesting user ap
 
 ## Stage B: Blueprint Quality Checklist
 
-Run the checklist after drafting `init/project-blueprint.json`, **before** requesting user approval.
+Run the checklist after drafting `project-blueprint.json`, **before** requesting user approval.
 
 ### B1. Consistency with Stage A
 
@@ -106,7 +106,7 @@ Run the checklist after `apply` command, **before** cleanup.
 
 - [ ] Does the generated directory structure match `repo.layout`?
 - [ ] Are placeholder READMEs meaningful (not just "TODO")?
-- [ ] Were any files overwritten unexpectedly? (Expected overwrite: root `README.md`.)
+- [ ] Are no existing files overwritten unexpectedly? (Root `README.md` rewrite is expected.)
 
 ### C2. Skills Sync
 
@@ -116,8 +116,8 @@ Run the checklist after `apply` command, **before** cleanup.
 
 ### C3. Cleanup Readiness
 
-- [ ] If you plan to delete `init/`, have you archived Stage A docs to `docs/project/`? (use `cleanup-init --archive`)
-- [ ] If you plan to delete `init/`, is the blueprint archived to `docs/project/project-blueprint.json`?
+- [ ] Are all Stage A docs preserved in `docs/project/`?
+- [ ] Is `project-blueprint.json` preserved?
 - [ ] Is `.ai/skills/_meta/sync-manifest.json` preserved?
 - [ ] Are you confident the init kit is no longer needed?
 
@@ -135,7 +135,7 @@ Run the checklist after `apply` command, **before** cleanup.
 
 ## Verification
 
-- Stage A: `check-docs --strict` should pass AND the checklist should pass.
-- Stage B: `validate` should pass AND the checklist should pass.
-- Stage C: `apply` should complete AND the checklist should pass.
+- Stage A: `check-docs --strict` should pass AND the quality checklist should pass.
+- Stage B: `validate` should pass AND the quality checklist should pass.
+- Stage C: `apply` should complete AND the quality checklist should pass.
 

@@ -13,7 +13,7 @@ Design goals:
 This script intentionally avoids non-stdlib Python packages.
 
 Note: Provider stubs (for .codex/skills, .claude/skills, etc.) should be
-generated using `node .ai/scripts/sync-skills.cjs`, not this script.
+generated using `node .ai/scripts/sync-skills.mjs`, not this script.
 """
 
 from __future__ import annotations

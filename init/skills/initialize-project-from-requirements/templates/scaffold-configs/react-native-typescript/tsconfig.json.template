@@ -20,6 +20,6 @@
     }
   },
   "include": ["src/**/*", "App.tsx"],
-  "exclude": ["node_modules", "babel.config.js", "metro.config.js", "jest.config.js"]
+  "exclude": ["node_modules", "babel.config.mjs", "metro.config.mjs", "jest.config.mjs"]
 }
 

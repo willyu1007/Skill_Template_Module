@@ -3,7 +3,7 @@
 ## Goal
 Turn “knowledge documents” (guides, runbooks, standards, architecture notes) into **capability-oriented** skills that an agent can select via the `description` signal and execute via the `Steps` section.
 
-## Key decisions (apply in the listed order)
+## Key decisions (apply in this order)
 1. **Discovery-first**: the first sentence (`description`) must help an agent decide “use me now”.
 2. **One intent per skill**: if a user can reasonably ask for two different things, split into two skills.
 3. **Progressive disclosure**: keep `SKILL.md` short; move depth into `reference.md`, `examples/`, `templates/`.
@@ -30,7 +30,7 @@ The description should:
 - start with an action verb (“Generate…”, “Convert…”, “Debug…”, “Validate…”)
 - include a discriminating noun phrase (“skills bundle”, “API route”, “deployment manifest”)
 - include at least one trigger phrase that a user might say
-- avoid internal jargon unless the terminology is stable and shared
+- avoid internal jargon unless it is stable and shared
 
 Examples (style, not content):
 - “Generate an API smoke-test plan for authenticated routes.”
@@ -79,7 +79,7 @@ Principles:
 - the plan explicitly records split/merge decisions and rationale
 
 ## Minimal prompt template (for any LLM)
-Use the template when asking an LLM to generate or refine a plan:
+Use the following template when asking an LLM to generate or refine a plan:
 
 Goal:
 - Convert the provided knowledge docs into a provider-agnostic Agent Skills bundle.
@@ -111,15 +111,15 @@ Acceptance criteria:
 
 # Skill Authoring Standards
 
-The section defines the skill authoring standard for the repository.
+The following section defines the skill authoring standard for the repository.
 
 ## Source of Truth (SSOT)
 
 - You MUST edit skills only in `.ai/skills/`
 - You MUST NOT edit `.codex/skills/` or `.claude/skills/` directly
 - After adding or updating a skill, you MUST sync stubs:
-  - Full sync (reset): `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
-  - Incremental (one skill): `node .ai/scripts/sync-skills.cjs --scope specific --skills <skill-name> --mode update`
+  - Full sync (all skills): `node .ai/scripts/sync-skills.mjs --scope all --providers both --mode reset --yes`
+  - Incremental (one skill): `node .ai/scripts/sync-skills.mjs --scope specific --skills <skill-name> --mode update`
 
 ## Naming and Layout
 
@@ -152,7 +152,7 @@ Forbidden:
 ```yaml
 ---
 name: skill-name
-description: One sentence that helps the agent choose the skill.
+description: One sentence that helps the agent choose this skill.
 ---
 ```
 
@@ -210,160 +210,100 @@ Before finishing a skill change:
 - The directory name matches `name`
 - No `resources/` directory exists under the skill
 - `SKILL.md` is <= 500 lines and uses progressive disclosure
-- `node .ai/scripts/sync-skills.cjs` has been run and stubs are up to date
+- `node .ai/scripts/sync-skills.mjs` has been run and stubs are up to date
 
 ## Syncing Notes
 
 - Stub generation discovers skills by recursively finding `SKILL.md` under `.ai/skills/`
-- Provider stubs are flattened by skill `name` under `.codex/skills/<skill-name>/` and `.claude/skills/<skill-name>/`
-- The "current collection" is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
-- Provider stubs mirror the SSOT hierarchy under `.codex/skills/` and `.claude/skills/`
-- The "current collection" is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
-  - `node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes`
+- Provider stubs preserve the SSOT directory hierarchy under `.codex/skills/` and `.claude/skills/`
+- The current selection is configured via `.ai/skills/_meta/sync-manifest.json` and synced with:
+  - `node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes`
 
 ---
 
-# Skill Design Principles (borrowed from skill-creator)
+# Skill Design Principles (borrowed)
 
-This section provides additional design guidance for creating effective skills.
+The following section captures core design principles for authoring high-quality skills.
 
 ## Core Principles
 
 ### Concise is Key
 
-The context window is a shared resource. Skills share context with system prompts, conversation history, other skills' metadata, and the actual user request.
+Context is a shared resource. Only add information that the LLM does not already know:
+- Omit well-known programming patterns and language syntax
+- Focus on project-specific conventions, non-obvious constraints, and domain knowledge
+- Prefer links and references over inline repetition
 
-**Default assumption: the LLM is already very smart.** Only add context the LLM doesn't already have. Challenge each piece of information:
-- "Does the LLM really need the detail?"
-- "Does the paragraph justify its token cost?"
+### Degrees of Freedom
 
-Prefer concise examples over verbose explanations.
-
-### Set Appropriate Degrees of Freedom
-
-Match the level of specificity to the task's fragility and variability:
+Match instruction specificity to task fragility:
 
 | Freedom Level | When to Use | Example |
 |---------------|-------------|---------|
-| **High** (text instructions) | Multiple approaches valid, decisions depend on context | "Choose an appropriate caching strategy based on data access patterns" |
-| **Medium** (pseudocode/parameterized scripts) | Preferred pattern exists, some variation acceptable | "Use the provided template, adjust timeouts as needed" |
-| **Low** (specific scripts, few parameters) | Operations are fragile, consistency is critical | "Run exactly: `python migrate.py --dry-run` first" |
+| High (text instructions) | Multiple approaches are valid; decision depends on context | "Choose caching strategy based on data access patterns" |
+| Medium (pseudocode / parameterized script) | Preferred pattern exists; some variation allowed | "Use template, adjust timeout as needed" |
+| Low (concrete script, few parameters) | Operation is fragile; consistency is critical | "First run: `python migrate.py --dry-run`" |
 
-Think of it as exploring a path: a narrow bridge with cliffs needs specific guardrails (low freedom), while an open field allows many routes (high freedom).
+Guidelines:
+- Use high freedom for strategic decisions where context matters
+- Use medium freedom for repeatable patterns with known variations
+- Use low freedom for operations where mistakes are costly or hard to reverse
 
 ## Progressive Disclosure Design
 
-Skills use a three-level loading system to manage context efficiently:
+### Three-Level Loading System
 
-1. **Metadata (name + description)** - Always in context (~100 words)
-2. **SKILL.md body** - When skill triggers (<5k words target)
-3. **Bundled resources** - As needed (unlimited, can be executed without loading)
+1. **Metadata** (name + description) - Always in context (~100 words)
+   - Must be high-signal: include trigger phrases
+   - Agent uses this to decide "use me now"
 
-### Progressive Disclosure Patterns
+2. **SKILL.md body** - Loaded when skill is triggered (<5k words)
+   - Contains purpose, inputs/outputs, steps, boundaries, verification
+   - Should be self-contained for the happy path
 
-Keep SKILL.md body to essentials and under 500 lines. Split content into separate files when approaching the line limit. When splitting, **always reference the split files from SKILL.md** so the reader knows they exist.
+3. **Bundled resources** - Loaded on demand (no limit)
+   - `reference.md`: rationale, tradeoffs, edge cases
+   - `examples/`: scenario-specific examples
+   - `templates/`: reusable skeletons and snippets
 
-**Pattern 1: High-level guide with references**
+### Organization Patterns
 
-```markdown
-# PDF Processing
+Choose the pattern that best fits your content:
 
-## Quick start
-Extract text with pdfplumber:
-[code example]
+**Pattern 1: High-Level Guide + References**
+- `SKILL.md` contains the procedure
+- `reference.md` contains deep rationale
+- Best for: single-intent skills with complex background
 
-## Advanced features
-- **Form filling**: See [reference.md#forms](reference.md#forms) for complete guide
-- **API reference**: See [reference.md#api](reference.md#api) for all methods
-```
+**Pattern 2: Domain-Organized**
+- `SKILL.md` routes to domain-specific references
+- e.g., `reference/finance.md`, `reference/sales.md`
+- Best for: skills that vary by domain but share structure
 
-**Pattern 2: Domain-specific organization**
+**Pattern 3: Variant-Organized**
+- `SKILL.md` routes to variant-specific procedures
+- e.g., `procedures/aws.md`, `procedures/gcp.md`
+- Best for: skills that work differently per platform/provider
 
-For skills with multiple domains, organize by domain to avoid loading irrelevant context:
+## Bundled Resources Best Practices
 
-```
-bigquery-skill/
-├── SKILL.md (overview and navigation)
-└── references/
-    ├── finance.md (revenue, billing metrics)
-    ├── sales.md (opportunities, pipeline)
-    └── product.md (API usage, features)
-```
+### What to include
 
-When a user asks about sales metrics, the LLM only reads `sales.md`.
+- **`scripts/`**: Executable code that requires deterministic reliability or would be rewritten repeatedly
+- **`reference/`** or **`reference.md`**: Documentation loaded on-demand into context
+- **`templates/`**: Output skeletons and reusable snippets
+- **`examples/`**: Scenario-specific examples (one scenario per file)
 
-**Pattern 3: Variant-specific organization**
+### What NOT to include
 
-For skills supporting multiple frameworks:
+- `README.md` (use `SKILL.md` instead)
+- `CHANGELOG.md` (use git history)
+- User documentation (belongs in project docs, not skills)
+- Large binary files or logs
+- `resources/` directory (forbidden by lint)
 
-```
-cloud-deploy/
-├── SKILL.md (workflow + provider selection)
-└── references/
-    ├── aws.md (AWS patterns)
-    ├── gcp.md (GCP patterns)
-    └── azure.md (Azure patterns)
-```
+### File naming
 
-### Important Guidelines
-
-- **Avoid deeply nested references** - Keep references one level deep from SKILL.md
-- **Structure longer reference files** - For files longer than 100 lines, include a table of contents at the top
-
-## Bundled Resources
-
-### scripts/
-
-Executable code for tasks requiring deterministic reliability or repeatedly rewritten.
-
-- **When to include**: Same code rewritten repeatedly, or deterministic reliability needed
-- **Benefits**: Token efficient, deterministic, may be executed without loading into context
-
-### references/
-
-Documentation intended to be loaded as needed into context.
-
-- **When to include**: Documentation the LLM should reference while working
-- **Examples**: Database schemas, API docs, domain knowledge, company policies
-- **Best practice**: If files are large (>10k words), include grep search patterns in SKILL.md
-- **Avoid duplication**: Information should live in either SKILL.md or references, not both
-
-### templates/
-
-Reusable snippets and skeletons for outputs.
-
-- **When to include**: Skeletons for outputs, reusable config stubs, folder layouts
-- **Examples**: Report outlines, config templates, schema stubs
-
-### What NOT to Include
-
-A skill should only contain essential files. Do NOT create:
-- README.md (use `SKILL.md` as the entry document)
-- INSTALLATION_GUIDE.md
-- CHANGELOG.md
-- User-facing documentation (skills are for agents, not end users)
-
-## Skill Creation Quick Reference
-
-### From Scratch
-
-Use the init script:
-
-```bash
-python .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/init_skill.py <skill-name> --path <target-directory>
-```
-
-### From Knowledge Docs
-
-1. Inventory source docs (in-scope vs out-of-scope)
-2. Write a conversion plan mapping capabilities → skills
-3. Apply the plan to scaffold skills
-4. Move large examples into `examples/` and snippets into `templates/`
-5. Lint until clean
-
-### Iteration Workflow
-
-1. Use the skill on real tasks
-2. Notice struggles or inefficiencies
-3. Identify how SKILL.md or resources should be updated
-4. Implement changes and test again
+- Use kebab-case for all files and directories
+- Use descriptive names that indicate purpose
+- Prefer `.md` for documentation, language-appropriate extensions for code

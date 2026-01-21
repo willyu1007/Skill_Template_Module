@@ -1,21 +1,31 @@
 # Stage B: Project blueprint
 
+> **SSOT**: For the complete command reference, see `init/skills/initialize-project-from-requirements/SKILL.md`.
+
 Stage B produces and validates a **project blueprint** that will drive Stage C scaffolding, config generation, and skill pack selection.
 
-Blueprint location:
-- `init/project-blueprint.json`
+> **Working location**: `init/project-blueprint.json` (created by the `start` command)
+> 
+> **Final location**: `docs/project/project-blueprint.json` (archived by `cleanup-init --archive`)
+
+## Prerequisite (entering Stage B)
+
+- Stage A is validated and approved (state advanced to `stage: "B"`).
+- Verify current status:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
+```
 
 Reference templates:
 - `init/skills/initialize-project-from-requirements/templates/project-blueprint.example.json`
 - `init/skills/initialize-project-from-requirements/templates/project-blueprint.schema.json`
 
-> **Note**: Run `start` command first to auto-create the blueprint template.
-
 ---
 
 ## What must be true before leaving Stage B
 
-1. `init/project-blueprint.json` exists
+1. `init/project-blueprint.json` exists and is properly configured
 2. The blueprint passes validation:
    - schema-level sanity checks
    - pack selection recommendation report (optional, but strongly recommended)
@@ -28,32 +38,30 @@ Reference templates:
 From repo root:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs validate \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate \
   --repo-root .
 ```
 
 Optional: show recommended packs and whether they are installed:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs suggest-packs \
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs \
   --repo-root .
 ```
-
-> Default `--blueprint` is `init/project-blueprint.json`.
 
 ## State tracking (recommended)
 
 After reviewing `skills.packs`, record the review in `init/.init-state.json`:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs review-packs --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-packs --repo-root .
 ```
 
 ---
 
 ## Technology stack selection
 
-The blueprint must specify the following tech-stack fields:
+The blueprint must specify technology-stack related fields:
 
 ### `repo` fields
 
@@ -61,7 +69,7 @@ The blueprint must specify the following tech-stack fields:
 {
   "repo": {
     "layout": "single",           // or "monorepo"
-    "language": "typescript",     // programming language
+    "language": "typescript",     // language
     "packageManager": "pnpm"      // package manager
   }
 }
@@ -69,48 +77,70 @@ The blueprint must specify the following tech-stack fields:
 
 ### Supported languages
 
-| Language | Has template | Recommended package manager |
-|----------|--------------|----------------------------|
-| typescript | ✅ | pnpm |
-| javascript | ✅ | pnpm |
-| go | ✅ | go |
-| python | ❌ (LLM-generated) | poetry |
-| java | ❌ (LLM-generated) | gradle |
-| dotnet | ❌ (LLM-generated) | dotnet |
-| other | ❌ (LLM-generated) | - |
+| Language | Has built-in template | Recommended package manager |
+|------|-----------|-------------|
+| typescript | yes | pnpm |
+| javascript | yes | pnpm |
+| go | yes | go |
+| c | yes | xmake |
+| cpp | yes | xmake |
+| react-native | yes | pnpm |
+| python | LLM-generated | poetry |
+| java | LLM-generated | gradle |
+| kotlin | LLM-generated | gradle |
+| dotnet | LLM-generated | dotnet |
+| rust | LLM-generated | cargo |
+| ruby | LLM-generated | bundler |
+| php | LLM-generated | composer |
+| other | LLM-generated | - |
 
-For languages without a template, the `apply` command will print guidance and the LLM should generate config files based on `templates/llm-init-guide.md`.
+For languages without built-in templates, the `apply` command will print guidance and the LLM should generate config files based on `templates/llm-init-guide.md`.
 
 ### LLM guidance
 
-If you are using an AI assistant during initialization, see:
-- `templates/conversation-prompts.md` section E (tech stack selection)
-- `templates/llm-init-guide.md` Phase 2 and Phase 5
+If you're using an AI assistant to guide initialization, refer to:
+- Module E in `templates/conversation-prompts.md` (technology stack selection)
+- Phase 2 and Phase 5 in `templates/llm-init-guide.md`
 
 ---
 
-## Add-on flags (optional)
 
-In the module-first template, some capabilities are **core** and already present in the repository.
+## Feature flags (optional)
 
-### Core capability flags (backward compatible)
+Feature flags are configured in the blueprint under `features`.
 
-These flags are supported for backward compatibility, but they do not install files from `addons/` in this template version:
+### Key rules
 
-- `addons.contextAwareness`
-  - Default: enabled
-  - Set to `false` to skip context-related init steps (files remain present)
-- `addons.dbMirror`
+- You MUST set `features.<id>: true` to install a feature during Stage C.
+- `context.*` (and other config sections like `db.*`, `deploy.*`, `packaging.*`, `release.*`, `observability.*`) are configuration only; they do not install features by themselves.
 
-### Non-core add-ons
+### Recommended workflow
 
-Non-core add-ons that *do* live under `addons/` and can be installed during Stage C:
+1) Validate the blueprint:
 
-- `addons.packaging`
-- `addons.deployment`
-- `addons.release`
-- `addons.observability`
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
+```
 
+2) Ask the pipeline for recommended features:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
+```
+
+Optional: safe-add missing recommended features into `features.*`:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root . --write
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
+```
+
+### Dependencies (common)
+
+- `features.database=true` requires `db.ssot != "none"`.
+- `features.observability=true` requires `features.contextAwareness=true`.
+
+See `init/README.md` and `init/feature-docs/README.md` for the full feature list and behavior.
 
 ---
 
@@ -119,5 +149,11 @@ Non-core add-ons that *do* live under `addons/` and can be installed during Stag
 After the user explicitly approves the blueprint, record approval and advance:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs approve --stage B --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .
 ```
+
+---
+
+## Note on blueprint location
+
+The blueprint is stored in `init/project-blueprint.json` during initialization. After Stage C completion, use `cleanup-init --archive` to archive it to `docs/project/project-blueprint.json` for long-term retention.

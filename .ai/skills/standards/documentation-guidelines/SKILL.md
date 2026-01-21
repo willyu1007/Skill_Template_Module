@@ -16,7 +16,7 @@ Goals:
 
 ## When to use
 
-Use documentation-guidelines when:
+Use the documentation-guidelines skill when:
 - Writing or reviewing `README.md`, `AGENTS.md`, `CLAUDE.md`
 - Creating specs, ADRs, design notes
 - Authoring SSOT content under `.ai/skills/`
@@ -87,7 +87,7 @@ Use documentation-guidelines when:
 
 ### Skill/Command Docs (SSOT)
 
-- **Purpose (1-2 sentences)**: what problem the skill/component solves
+- **Purpose (1-2 sentences)**: what problem the skill solves
 - **Trigger/usage**: when to use; required inputs; expected outputs
 - **Steps**: bullet list; minimal examples only
 - **Notes**: boundaries, forbidden actions, failure handling
@@ -132,11 +132,6 @@ Self-review checklist:
 - Do NOT use vague terms like "it", "this", "above" without explicit references
 - Do NOT mix multiple intents in a single paragraph
 
-## Included assets
-
-None.
-
-
 ## Iterative co-authoring loop (borrowed)
 
 For substantial docs/specs, prefer an explicit loop:
@@ -145,3 +140,7 @@ For substantial docs/specs, prefer an explicit loop:
 2. **Structure first**: create section headers with placeholders.
 3. **Draft section-by-section** with review feedback.
 4. **Reader testing**: validate that a fresh reader (or fresh agent) can answer the obvious questions without extra context.
+
+## Included assets
+
+None.

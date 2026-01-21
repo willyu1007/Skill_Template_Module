@@ -10,11 +10,11 @@ metadata:
 
 You are `debug-mode`: an **evidence-driven debugger**. Your job is to turn an unclear bug report into (1) a proven root cause, (2) a minimal fix, and (3) a verified outcome, while leaving the codebase clean (no leftover debug instrumentation).
 
-This skill is optimized for **real-world debugging** where the first explanation is often wrong and runtime evidence is required.
+The `debug-mode` skill is optimized for **real-world debugging** where the first explanation is often wrong and runtime evidence is required.
 
 ## When to use
 
-Use this skill when **root cause is unclear** and you need **runtime evidence**, especially for:
+Use `debug-mode` when **root cause is unclear** and you need **runtime evidence**, especially for:
 - intermittent or flaky bugs (timing/race conditions),
 - regressions (“used to work”, “after upgrade/deploy”),
 - state machine / lifecycle issues (UI, async flows),
@@ -115,11 +115,11 @@ Produce **3–6 falsifiable hypotheses**, each with:
 - which fields/timestamps to log,
 - how to avoid altering behavior (sampling/guards; avoid hot-loop spam).
 
-Generate a **new `run_id`** for this iteration (format recommended: `dbg-YYYYMMDD-HHMMSS-<4hex>`).
+Generate a **new `run_id`** for the current iteration (format recommended: `dbg-YYYYMMDD-HHMMSS-<4hex>`).
 
 ### Gate 1 — Instrumentation plan approval
 
-Stop and present this approval block:
+Stop and present the following approval block:
 
 ```
 [APPROVAL REQUIRED — INSTRUMENTATION PLAN]
@@ -134,15 +134,17 @@ Instrumentation plan (debug-only; removable):
 - File: <path>
   Location: <function / block>
   What to log: <fields> + timestamps + branch markers
-  Why: <which hypothesis this proves/disproves>
-  Markers: DEBUG-MODE: BEGIN/END <run_id>, logs include [DBG:<run_id>]
+  Why: <which hypothesis the instrumentation proves/disproves>
+  Markers: DEBUG-MODE: BEGIN/END <run_id>, logs include [DBG:<run_id>] (or a structured `run_id` field with the same value)
 
 Reproduction plan:
 1) ...
 2) ...
 
 What I need from you after reproduction:
-- Logs filtered by [DBG:<run_id>] (include full block)
+- Reproduce now, then reply `DONE` immediately (do not clear/close the terminal or log output)
+- If the output is not in an IDE-integrated terminal, tell me where the logs appear (e.g., Xcode console, logcat, browser console)
+- If I ask for logs as a fallback, paste only run_id-marked excerpts (`[DBG:<run_id>]`, `run_id=<run_id>`, or `"run_id":"<run_id>"`) + minimal context (do not paste full tail)
 - Any screenshots/recordings if relevant
 - Notes on timing/frequency changes
 - Confirmation of environment details
@@ -158,15 +160,18 @@ Type "APPROVE INSTRUMENTATION" to proceed, or "STOP" to terminate.
 
 After approval:
 - Apply the smallest possible instrumentation to validate hypotheses.
-- Ensure every debug-only change is wrapped with the BEGIN/END markers and every log line includes `[DBG:<run_id>]`.
+- Ensure every debug-only change is wrapped with the BEGIN/END markers and every log line includes `[DBG:<run_id>]` (or a structured `run_id` field with the same value).
 - Prefer existing project logging mechanisms (do not introduce new frameworks unless necessary).
 - Provide precise instructions for how/where logs will appear and how to collect them.
+- Prefer IDE-integrated terminals; if terminal capture tools are available, collect logs automatically and only ask for pasted logs as a fallback.
 
 ### Phase 3 — Reproduce and collect evidence
 
 If you can execute the repro yourself, do so and collect evidence. Otherwise:
-- instruct the user to reproduce now,
-- request the logs filtered by `[DBG:<run_id>]`,
+- instruct the user to reproduce now (in an IDE-integrated terminal, or tell you where the logs appear),
+- ask the user to reply `DONE` immediately after reproduction (do not clear/close the terminal output),
+- attempt automatic terminal collection (e.g., Terminal Hook) and extract evidence via `reference/terminal_evidence_collection.md`,
+- if automatic collection is unavailable or insufficient, follow progressive fallback (ask for terminal selection hints, then minimal pasted logs filtered by the run_id marker),
 - request the exact “step number where it failed”.
 
 ### Phase 4 — Analyze evidence (update hypotheses)
@@ -174,7 +179,7 @@ If you can execute the repro yourself, do so and collect evidence. Otherwise:
 - Summarize the evidence.
 - Mark each hypothesis as **supported**, **ruled out**, or **uncertain**, and cite the specific log lines/signals.
 - If evidence is insufficient, return to **Phase 1** with refined hypotheses and a minimal additional instrumentation plan (new run_id, repeat Gate 1).
-- If this iteration produced new evidence (even without a fix), append an Iteration Record to the journal before starting the next iteration.
+- If the current iteration produced new evidence (even without a fix), append an Iteration Record to the journal before starting the next iteration.
 
 ### Gate 2 — Fix plan approval
 
@@ -190,7 +195,7 @@ Proposed minimal fix:
   - ...
 - Change summary:
   - ...
-- Why this fixes the root cause:
+- Why the fix addresses the root cause:
   - ...
 
 Risk assessment:
@@ -244,7 +249,7 @@ After verified success (or on termination):
 
 ## Iteration output contract (every message)
 
-Use this consistent structure:
+Use the following consistent structure:
 
 - **Status**: Intake / Awaiting Gate 1 / Instrumented / Awaiting Logs / Awaiting Gate 2 / Fix Applied / Verifying / Cleanup / Terminated
 - **run_id**: <run_id>
@@ -257,6 +262,7 @@ Use this consistent structure:
 
 For detailed templates, see:
 - `reference/iteration_output_contract.md`
+- `reference/terminal_evidence_collection.md`
 - `reference/instrumentation_rules.md`
 - `reference/cleanup_policy.md`
 - `reference/verification_policy.md`

@@ -65,13 +65,13 @@ cd {{PROJECT_NAME}}
 
 This project uses the AI-Friendly Repository pattern:
 
-- **SSOT Skills**: `.ai/skills/` — Edit skills here only
-- **Generated Wrappers**: `.codex/skills/`, `.claude/skills/` — Do NOT edit directly
+- **SSOT Skills**: `.ai/skills/` - Edit skills here only
+- **Generated Wrappers**: `.codex/skills/`, `.claude/skills/` - Do NOT edit directly
 
 Regenerate wrappers after skill changes:
 
 ```bash
-node .ai/scripts/sync-skills.cjs --scope current --providers both --mode reset --yes
+node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes
 ```
 
 ## Contributing

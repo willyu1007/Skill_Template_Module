@@ -30,7 +30,7 @@ Bootstrap k6 testing with:
    - Pick one canonical approach and document it.
 
 3) **Add a baseline script**
-   - Create `tests/perf/k6/scripts/smoke.js` that:
+   - Create `tests/perf/k6/scripts/smoke.mjs` that:
      - hits one or two endpoints
      - asserts status codes and basic success signals
      - uses env vars for base URL and token
@@ -47,7 +47,7 @@ Bootstrap k6 testing with:
 
 6) **Add a single CI-friendly command**
    - Example:
-     - `k6 run tests/perf/k6/scripts/smoke.js --summary-export artifacts/k6/summary.json`
+     - `k6 run tests/perf/k6/scripts/smoke.mjs --summary-export artifacts/k6/summary.json`
    - If using Docker:
      - mount the repo and write artifacts to a mounted path.
 

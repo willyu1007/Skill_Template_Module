@@ -1,6 +1,6 @@
 # Template: Common TypeScript fix patterns
 
-The reference lists common TypeScript compile errors and safe, minimal fix strategies.
+This reference lists common TypeScript compile errors and safe, minimal fix strategies.
 
 **Principle:** prefer **root-cause** fixes (types, exports, contracts) over downstream suppression.
 
@@ -19,7 +19,7 @@ The reference lists common TypeScript compile errors and safe, minimal fix strat
 - If the module is JS-only: add types (`@types/...`) or a local `d.ts` shim.
 
 **Avoid**
-- Adding `any` exports to "make the code compile".
+- Adding `any` exports to “make it compile”.
 
 ---
 
