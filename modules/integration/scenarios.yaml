@@ -11,9 +11,9 @@
 # - Use `allow_unresolved: true` for draft scenarios
 #
 # Commands:
-#   node .ai/scripts/integrationctl.js validate
-#   node .ai/scripts/integrationctl.js compile
-#   node .ai/scripts/integrationctl.js run --execute
+#   node .ai/scripts/integrationctl.mjs validate
+#   node .ai/scripts/integrationctl.mjs compile
+#   node .ai/scripts/integrationctl.mjs run --execute
 #
 # For examples, see:
 #   .ai/skills/scaffold/integration/manage-integration-scenarios/examples/

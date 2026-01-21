@@ -23,7 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Note: This script uses inline YAML parsing utilities for portability.
-// The shared library at .ai/scripts/lib/yaml-lite.mjs contains equivalent functions.
+// The shared library at .ai/scripts/lib/yaml.mjs contains equivalent functions.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

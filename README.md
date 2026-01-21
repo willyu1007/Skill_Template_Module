@@ -39,9 +39,9 @@ init/                         # Project bootstrap kit (Stage A/B/C)
 
 ## Core scripts
 
-- `node .ai/scripts/modulectl.js` — module instances + instance registry build
-- `node .ai/scripts/flowctl.js` — flow SSOT lint + derived indexes/graphs
-- `node .ai/scripts/integrationctl.js` — integration scenarios validate/compile/run
+- `node .ai/scripts/modulectl.mjs` — module instances + instance registry build
+- `node .ai/scripts/flowctl.mjs` — flow SSOT lint + derived indexes/graphs
+- `node .ai/scripts/integrationctl.mjs` — integration scenarios validate/compile/run
 - `node .ai/scripts/contextctl.js` — context registries + derived view
 - `node .ai/scripts/projectctl.js` — project state (context mode, stage)
 - `node .ai/scripts/skillsctl.js` — skill packs + wrapper sync

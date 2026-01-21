@@ -60,13 +60,13 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.cjs 
    - Else: additive update of `.ai/skills/_meta/sync-manifest.json` includePrefixes
 7. Syncs provider wrappers via `.ai/scripts/sync-skills.cjs`
 8. Runs modular core build (module-first consistency):
-   - `node .ai/scripts/flowctl.js init`
-   - `node .ai/scripts/integrationctl.js init`
-   - `node .ai/scripts/modulectl.js registry-build`
-   - `node .ai/scripts/flowctl.js update-from-manifests`
-   - `node .ai/scripts/flowctl.js lint`
-   - `node .ai/scripts/flowctl.js graph`
-   - `node .ai/scripts/integrationctl.js validate`
+   - `node .ai/scripts/flowctl.mjs init`
+   - `node .ai/scripts/integrationctl.mjs init`
+   - `node .ai/scripts/modulectl.mjs registry-build`
+   - `node .ai/scripts/flowctl.mjs update-from-manifests`
+   - `node .ai/scripts/flowctl.mjs lint`
+   - `node .ai/scripts/flowctl.mjs graph`
+   - `node .ai/scripts/integrationctl.mjs validate`
    - `node .ai/scripts/contextctl.js build`
 
 ---

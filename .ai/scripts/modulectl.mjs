@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * modulectl.js
+ * modulectl.mjs
  *
  * Module instance management + derived registry build.
  *
@@ -21,8 +21,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from './lib/yaml.js';
-import { normalizeImplementsEntry } from './lib/modular.js';
+import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from './lib/yaml.mjs';
+import { normalizeImplementsEntry } from './lib/modular.mjs';
 
 // =============================================================================
 // CLI
@@ -31,7 +31,7 @@ import { normalizeImplementsEntry } from './lib/modular.js';
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/scripts/modulectl.js <command> [options]
+  node .ai/scripts/modulectl.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -61,9 +61,9 @@ Commands:
     Verify module manifests and module-local SSOT.
 
 Examples:
-  node .ai/scripts/modulectl.js init --module-id billing.api --apply
-  node .ai/scripts/modulectl.js registry-build
-  node .ai/scripts/modulectl.js verify --strict
+  node .ai/scripts/modulectl.mjs init --module-id billing.api --apply
+  node .ai/scripts/modulectl.mjs registry-build
+  node .ai/scripts/modulectl.mjs verify --strict
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -260,7 +260,7 @@ function discoverModules(repoRoot, modulesDirOpt) {
 
 function templateAgentsMd(moduleId, moduleType, description) {
   const desc = description ? `\n\n## Description\n\n${description}\n` : '';
-  return `---\nname: ${moduleId}\npurpose: Module agent instructions for ${moduleId}\n---\n\n# ${moduleId}\n\n## Operating rules\n\n- Read this file first when working inside this module.\n- Keep changes local to this module unless explicitly cross-cutting.\n- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).\n- If you change this module's manifest, run:\n  - node .ai/scripts/modulectl.js registry-build\n  - node .ai/scripts/flowctl.js update-from-manifests\n  - node .ai/scripts/flowctl.js lint\n\n## Key files\n\n- MANIFEST.yaml (SSOT)\n- interact/registry.json (SSOT)\n- workdocs/AGENTS.md (how to use workdocs)\n- workdocs/ (long-running module notes)\n${desc}`;
+  return `---\nname: ${moduleId}\npurpose: Module agent instructions for ${moduleId}\n---\n\n# ${moduleId}\n\n## Operating rules\n\n- Read this file first when working inside this module.\n- Keep changes local to this module unless explicitly cross-cutting.\n- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).\n- If you change this module's manifest, run:\n  - node .ai/scripts/modulectl.mjs registry-build\n  - node .ai/scripts/flowctl.mjs update-from-manifests\n  - node .ai/scripts/flowctl.mjs lint\n\n## Key files\n\n- MANIFEST.yaml (SSOT)\n- interact/registry.json (SSOT)\n- workdocs/AGENTS.md (how to use workdocs)\n- workdocs/ (long-running module notes)\n${desc}`;
 }
 
 function templateWorkdocsAgentsMd(moduleId) {
@@ -365,13 +365,13 @@ function cmdInit(repoRoot, opts) {
   cmdRegistryBuild(repoRoot, { 'modules-dir': 'modules', out: '.system/modular/instance_registry.yaml', format: 'text' }, { quiet: true });
 
   // Rebuild project context registry (derived)
-  const ctx = spawnSync('node', ['.ai/scripts/contextctl.js', 'build'], { cwd: repoRoot, stdio: 'inherit' });
+  const ctx = spawnSync('node', ['.ai/scripts/contextctl.mjs', 'build'], { cwd: repoRoot, stdio: 'inherit' });
   if (ctx.status !== 0) {
     console.error('[warn] contextctl build failed (module created, but project context registry not updated).');
   }
 
   // Update flow implementation index (derived)
-  const flow = spawnSync('node', ['.ai/scripts/flowctl.js', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
+  const flow = spawnSync('node', ['.ai/scripts/flowctl.mjs', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
   if (flow.status !== 0) {
     console.error('[warn] flowctl update-from-manifests failed (module created, but flow implementation index not updated).');
   }

@@ -110,7 +110,7 @@ The command archives to `docs/project/`, removes `init/`, and deletes add-on sou
 The module-first template ships these capabilities **by default** (they are not add-ons anymore):
 
 - **Context registries** (`contextctl.js`, `docs/context/*`, `modules/*/interact/registry.json`)
-- **Modular system** (`modulectl.js`, `flowctl.js`, `integrationctl.js`, `.system/modular/*`)
+- **Modular system** (`modulectl.mjs`, `flowctl.mjs`, `integrationctl.mjs`, `.system/modular/*`)
 - **DB mirror** (`dbctl.js`, `db/`)
 
 > For backward compatibility, some blueprint flags may still mention these features. In the current template version, the features are already present and do not need to be installed from `addons/`.

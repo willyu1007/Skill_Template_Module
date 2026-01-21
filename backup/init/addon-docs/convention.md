@@ -7,7 +7,7 @@ This repository supports an **optional add-on mechanism** that allows *non-core*
 In the **module-first** template, these capabilities are part of the repo by default:
 
 - Context registries (`contextctl.js`, `docs/context/*`, `modules/*/interact/registry.json`)
-- Modular system controls (`modulectl.js`, `flowctl.js`, `integrationctl.js`, `.system/modular/*`)
+- Modular system controls (`modulectl.mjs`, `flowctl.mjs`, `integrationctl.mjs`, `.system/modular/*`)
 - DB mirror tools (`dbctl.js`, `db/`)
 
 They do **not** live under `addons/` anymore.

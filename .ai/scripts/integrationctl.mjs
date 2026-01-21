@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * integrationctl.js
+ * integrationctl.mjs
  *
  * Integration scenario validation + compilation + optional execution.
  *
@@ -22,7 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { loadYamlFile, dumpYaml } from './lib/yaml.js';
+import { loadYamlFile, dumpYaml } from './lib/yaml.mjs';
 import {
   firstString,
   getModularEnv,
@@ -30,12 +30,12 @@ import {
   normalizeBindingsDoc,
   normalizeFlowNodeRef,
   resolveBindingEndpoint
-} from './lib/modular.js';
+} from './lib/modular.mjs';
 
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/scripts/integrationctl.js <command> [options]
+  node .ai/scripts/integrationctl.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)

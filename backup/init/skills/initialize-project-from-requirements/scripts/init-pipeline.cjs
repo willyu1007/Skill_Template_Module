@@ -2102,10 +2102,10 @@ if (command === 'validate') {
     // Modular core build (module-first; ensures SSOT + derived artifacts are consistent)
     const modularResults = [];
     console.log('[info] Running modular core build...');
-    const flowctl = path.join(repoRoot, '.ai', 'scripts', 'flowctl.js');
-    const modulectl = path.join(repoRoot, '.ai', 'scripts', 'modulectl.js');
-    const integrationctl = path.join(repoRoot, '.ai', 'scripts', 'integrationctl.js');
-    const contextctl = path.join(repoRoot, '.ai', 'scripts', 'contextctl.js');
+    const flowctl = path.join(repoRoot, '.ai', 'scripts', 'flowctl.mjs');
+    const modulectl = path.join(repoRoot, '.ai', 'scripts', 'modulectl.mjs');
+    const integrationctl = path.join(repoRoot, '.ai', 'scripts', 'integrationctl.mjs');
+    const contextctl = path.join(repoRoot, '.ai', 'scripts', 'contextctl.mjs');
 
     const modularSteps = [
       { name: 'flowctl init', script: flowctl, args: ['init', '--repo-root', repoRoot] },
