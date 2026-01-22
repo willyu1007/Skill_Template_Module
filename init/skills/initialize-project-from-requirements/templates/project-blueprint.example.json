@@ -132,13 +132,11 @@
   },
   "features": {
     "contextAwareness": true,
-    "database": true,
     "ui": true,
     "environment": true,
     "packaging": true,
     "deployment": true,
     "release": true,
-    "ci": true,
     "observability": true
   }
 }

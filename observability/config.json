@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "updatedAt": "2026-01-22T00:15:57.084Z",
-  "metrics": true,
-  "logs": true,
-  "traces": true,
-  "platform": null
-}

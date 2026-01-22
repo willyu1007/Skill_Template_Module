@@ -261,43 +261,51 @@
     },
     "features": {
       "type": "object",
-      "description": "Optional feature flags. When enabled, init will materialize the corresponding templates into the repo (e.g., ops/, db/, docs/context/) and run the relevant control scripts (Node under .ai/scripts and/or Python under .ai/skills/features/**/scripts).",
+      "description": "Feature overrides (default-on). Context awareness is mandatory. Database and CI are enabled via implementation selection (db.ssot and ci.provider). Setting a feature to false skips materialization (Stage C is non-destructive).",
       "properties": {
         "contextAwareness": {
           "type": "boolean",
-          "description": "Enable the context-awareness feature (API/DB/BPMN contracts for LLM)."
+          "const": true,
+          "default": true,
+          "description": "Mandatory. Context-awareness is always enabled by init; setting false is invalid."
         },
         "database": {
           "type": "boolean",
-          "description": "Enable the database feature (DB schema SSOT scaffolding; behavior depends on db.ssot)."
+          "description": "Deprecated/ignored. Database materialization is controlled by db.ssot (none|repo-prisma|database)."
         },
         "ui": {
           "type": "boolean",
-          "description": "Enable the UI feature (UI SSOT + UI context contract scaffolding)."
+          "default": true,
+          "description": "Enable the UI feature (UI SSOT + UI context contract scaffolding). Default: true."
         },
         "environment": {
           "type": "boolean",
-          "description": "Enable the environment feature (env contract SSOT scaffolding + generated non-secret artifacts)."
+          "default": true,
+          "description": "Enable the environment feature (env contract SSOT scaffolding + generated non-secret artifacts). Default: true."
         },
         "packaging": {
           "type": "boolean",
-          "description": "Enable the packaging feature (container/artifact packaging)."
+          "default": true,
+          "description": "Enable the packaging feature (container/artifact packaging). Default: true."
         },
         "deployment": {
           "type": "boolean",
-          "description": "Enable the deployment feature (multi-environment deployment)."
+          "default": true,
+          "description": "Enable the deployment feature (multi-environment deployment). Default: true."
         },
         "release": {
           "type": "boolean",
-          "description": "Enable the release feature (version and changelog management)."
+          "default": true,
+          "description": "Enable the release feature (version and changelog management). Default: true."
         },
         "ci": {
           "type": "boolean",
-          "description": "Enable the CI feature (CI templates + conventions; requires ci.provider)."
+          "description": "Deprecated/ignored. CI materialization is controlled by ci.provider (none|github|gitlab)."
         },
         "observability": {
           "type": "boolean",
-          "description": "Enable the observability feature (metrics/logs/traces contracts)."
+          "default": true,
+          "description": "Enable the observability feature (metrics/logs/traces contracts). Default: true."
         }
       },
       "additionalProperties": true
@@ -364,6 +372,7 @@
             "repo-prisma",
             "database"
           ],
+          "default": "repo-prisma",
           "description": "Database schema SSOT mode. none: unmanaged; repo-prisma: prisma/schema.prisma; database: real DB with repo mirrors."
         }
       },
@@ -383,10 +392,12 @@
         "provider": {
           "type": "string",
           "enum": [
+            "none",
             "github",
             "gitlab"
           ],
-          "description": "Primary CI provider SSOT (required when features.ci=true)."
+          "default": "github",
+          "description": "Primary CI provider selection. Set to \"none\" to skip generating CI files."
         },
         "platform": {
           "type": "string",

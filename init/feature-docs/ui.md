@@ -17,6 +17,12 @@ In `init/project-blueprint.json`:
 }
 ```
 
+UI is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "ui": false } }
+```
+
 ## What Stage C `apply` does
 
 When enabled, Stage C runs:

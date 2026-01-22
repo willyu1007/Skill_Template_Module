@@ -100,16 +100,14 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 7. sync wrappers via `.ai/scripts/sync-skills.mjs`
 
 Notes:
-- With `--verify-features`, feature verify failures are **fail-fast** by default.
-- Use `--non-blocking-features` to continue despite verify failures.
+- Feature failures are **non-blocking** by default (including `--verify-features`).
+- Use `--blocking-features` to fail-fast on feature init/verify errors.
 
 ---
 
 ## Feature: context awareness
 
-Enable via blueprint:
-
-- `features.contextAwareness: true`
+Context awareness is **mandatory** in this template (always installed during Stage C).
 
 `context.*` is configuration only and does not trigger enabling by itself.
 

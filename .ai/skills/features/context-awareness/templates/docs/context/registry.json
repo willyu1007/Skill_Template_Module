@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-01-16T23:27:36.435Z",
+  "updatedAt": "2026-01-22T00:00:00.000Z",
   "artifacts": [
     {
       "id": "api-openapi",
@@ -16,22 +16,6 @@
       "source": {
         "kind": "manual",
         "notes": "Edit the contract file; then run contextctl touch."
-      }
-    },
-    {
-      "id": "db-schema",
-      "type": "db-schema",
-      "path": "docs/context/db/schema.json",
-      "mode": "contract",
-      "format": "normalized-db-schema-v2",
-      "tags": [
-        "db"
-      ],
-      "checksumSha256": "a30eb6af3d0a1587408a849baa4f4ff6266c6a9b1d1eb75e6fa43a27ac48fc6e",
-      "lastUpdated": "2026-01-16T23:27:36.431Z",
-      "source": {
-        "kind": "generated",
-        "notes": "Generated via: node .ai/scripts/dbssotctl.mjs sync-to-context (then contextctl touch). Do NOT hand-edit."
       }
     },
     {

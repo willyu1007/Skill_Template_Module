@@ -109,7 +109,8 @@ Commands:
     Feature install controls:
     --force-features            Overwrite existing feature files when materializing templates
     --verify-features           Run feature verify commands after installation (when available)
-    --non-blocking-features     Continue on feature errors (default: fail-fast)
+    --blocking-features         Fail-fast on feature errors (default: non-blocking)
+    --non-blocking-features     (legacy) Continue on feature errors (default)
 
     --format <text|json>        Output format (default: text)
 
@@ -502,6 +503,17 @@ function validateBlueprint(blueprint) {
     errors.push('addons is not supported. Use features.* instead.');
   }
 
+  const flags = featureFlags(blueprint);
+  if (Object.prototype.hasOwnProperty.call(flags, 'contextAwareness') && flags.contextAwareness !== true) {
+    errors.push('features.contextAwareness is mandatory and must be true (or omitted).');
+  }
+  if (Object.prototype.hasOwnProperty.call(flags, 'database')) {
+    warnings.push('features.database is deprecated/ignored. Use db.ssot to enable/disable database materialization.');
+  }
+  if (Object.prototype.hasOwnProperty.call(flags, 'ci')) {
+    warnings.push('features.ci is deprecated/ignored. Use ci.provider to enable/disable CI materialization.');
+  }
+
   const project = blueprint.project || {};
   if (!project.name || typeof project.name !== 'string') errors.push('project.name is required (string).');
   if (!project.description || typeof project.description !== 'string') errors.push('project.description is required (string).');
@@ -538,18 +550,18 @@ function validateBlueprint(blueprint) {
     errors.push(`db.ssot is required and must be one of: ${validSsot.join(', ')}`);
   }
 
-  const flags = featureFlags(blueprint);
   if (Object.prototype.hasOwnProperty.call(flags, 'dbMirror')) {
-    errors.push('features.dbMirror is not supported. Use features.database instead.');
+    errors.push('features.dbMirror is not supported. Use db.ssot to select DB SSOT mode (none|repo-prisma|database).');
   }
 
-  const databaseEnabled = isDatabaseEnabled(blueprint);
-
-  if (db.ssot !== 'none' && !databaseEnabled) {
-    errors.push('db.ssot != none requires features.database=true (Database feature).');
+  if (db.ssot !== 'none' && db.enabled === false) {
+    warnings.push('db.ssot is not none, but db.enabled is false. Ensure this is intentional.');
   }
-  if (db.ssot === 'none' && databaseEnabled) {
-    errors.push('features.database=true is only valid when db.ssot != none.');
+  if (db.ssot === 'none' && db.enabled === true) {
+    warnings.push('db.enabled=true but db.ssot=none. Set db.ssot to repo-prisma/database to enable DB materialization.');
+  }
+  if (db.ssot === 'none') {
+    warnings.push('db.ssot=none: DB materialization is disabled (no prisma/db/DB schema context files will be generated).');
   }
 
   // Feature dependencies
@@ -558,17 +570,12 @@ function validateBlueprint(blueprint) {
   }
 
   // CI feature requirements
-  if (isCiEnabled(blueprint)) {
-    const provider = ciProvider(blueprint);
-    if (!provider) {
-      const ci = blueprint.ci && typeof blueprint.ci === 'object' ? blueprint.ci : {};
-      const platform = String(ci.platform || '').toLowerCase();
-      const hint =
-        platform === 'github-actions' ? ' (hint: set ci.provider=\"github\")'
-        : platform === 'gitlab-ci' ? ' (hint: set ci.provider=\"gitlab\")'
-        : '';
-      errors.push(`features.ci=true requires ci.provider to be \"github\" or \"gitlab\".${hint}`);
-    }
+  const provider = ciProvider(blueprint);
+  if (provider === null) {
+    errors.push('ci.provider must be one of: none, github, gitlab.');
+  }
+  if (provider === 'none') {
+    warnings.push('ci.provider=none: CI materialization is disabled (no CI files will be generated).');
   }
 
   if ((caps.database && caps.database.enabled) && db.ssot === 'none') {
@@ -596,9 +603,21 @@ function featureFlags(blueprint) {
 }
 
 function isContextAwarenessEnabled(blueprint) {
+  // Mandatory: always enabled in this template.
+  // (If a blueprint explicitly sets features.contextAwareness=false, validateBlueprint rejects it.)
+  return true;
+}
+
+function featureOverrideBool(blueprint, key) {
   const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; context.* is configuration only
-  return flags.contextAwareness === true;
+  if (!flags || typeof flags !== 'object') return undefined;
+  if (!Object.prototype.hasOwnProperty.call(flags, key)) return undefined;
+  return typeof flags[key] === 'boolean' ? flags[key] : undefined;
+}
+
+function defaultOnFeature(blueprint, key) {
+  const ov = featureOverrideBool(blueprint, key);
+  return ov === undefined ? true : ov === true;
 }
 
 
@@ -621,67 +640,24 @@ function recommendedPacksFromBlueprint(blueprint) {
 
 function recommendedFeaturesFromBlueprint(blueprint) {
   const rec = [];
-  const caps = blueprint.capabilities || {};
-  const q = blueprint.quality || {};
-  const devops = blueprint.devops || {};
 
-  // context-awareness: enabled when API/database/BPMN are enabled
-  // Note: api.style is checked because schema uses api.style (not api.enabled)
-  const needsContext =
-    (caps.api && (caps.api.enabled || (caps.api.style && caps.api.style !== 'none'))) ||
-    (caps.database && caps.database.enabled) ||
-    (caps.bpmn && caps.bpmn.enabled);
-  if (needsContext) rec.push('contextAwareness');
+  // Mandatory foundation (cannot be disabled)
+  rec.push('contextAwareness');
 
-  // database: enable when DB SSOT is managed (repo-prisma or database)
-  const db = blueprint.db || {};
-  if (db.ssot && db.ssot !== 'none') rec.push('database');
+  // Provider/SSOT-driven features
+  if (dbSsotMode(blueprint) !== 'none') rec.push('database');
+  const provider = ciProvider(blueprint);
+  if (provider && provider !== 'none') rec.push('ci');
 
-  // ui: enable when a frontend capability exists
-  if (caps.frontend && caps.frontend.enabled) rec.push('ui');
+  // Default-on, override-disable features
+  if (defaultOnFeature(blueprint, 'ui')) rec.push('ui');
+  if (defaultOnFeature(blueprint, 'environment')) rec.push('environment');
+  if (defaultOnFeature(blueprint, 'packaging')) rec.push('packaging');
+  if (defaultOnFeature(blueprint, 'deployment')) rec.push('deployment');
+  if (defaultOnFeature(blueprint, 'release')) rec.push('release');
+  if (defaultOnFeature(blueprint, 'observability')) rec.push('observability');
 
-  // packaging: enabled when containerization/packaging is configured
-  const packagingEnabled =
-    (blueprint.packaging && blueprint.packaging.enabled) ||
-    (devops.packaging && devops.packaging.enabled) ||
-    devops.enabled === true ||
-    (q.devops && (q.devops.enabled || q.devops.containerize || q.devops.packaging));
-  if (packagingEnabled) rec.push('packaging');
-
-  // deployment: enabled when deployment is configured
-  const deploymentEnabled =
-    (devops.deploy && devops.deploy.enabled) ||
-    devops.enabled === true ||
-    (blueprint.deploy && blueprint.deploy.enabled) ||
-    (q.devops && (q.devops.enabled || q.devops.deployment));
-  if (deploymentEnabled) rec.push('deployment');
-
-  // environment: recommend when the project likely needs env var contracts
-  const envLikely =
-    (caps.backend && caps.backend.enabled) ||
-    packagingEnabled ||
-    deploymentEnabled ||
-    (blueprint.observability && blueprint.observability.enabled);
-  if (envLikely) rec.push('environment');
-
-  // release: enabled when release management is configured
-  const releaseEnabled =
-    (blueprint.release && blueprint.release.enabled);
-  if (releaseEnabled) rec.push('release');
-
-  // ci: recommend when CI is explicitly configured/enabled
-  const ciCfg = blueprint.ci && typeof blueprint.ci === 'object' ? blueprint.ci : {};
-  const ciRecommended =
-    ciCfg.enabled === true ||
-    (q.ci && typeof q.ci === 'object' && q.ci.enabled === true);
-  if (ciRecommended) rec.push('ci');
-
-  // observability: enabled when observability is configured
-  const observabilityEnabled =
-    (blueprint.observability && blueprint.observability.enabled);
-  if (observabilityEnabled) rec.push('observability');
-
-  return rec;
+  return uniq(rec);
 }
 
 function getEnabledFeatures(blueprint) {
@@ -1097,12 +1073,15 @@ function getContextMode(blueprint) {
 function ciProvider(blueprint) {
   const ci = blueprint && blueprint.ci && typeof blueprint.ci === 'object' ? blueprint.ci : {};
   const provider = String(ci.provider || '').trim().toLowerCase();
-  if (provider === 'github' || provider === 'gitlab') return provider;
+  if (provider === 'none' || provider === 'github' || provider === 'gitlab') return provider;
 
   // Compatibility hint: allow derivation from ci.platform when present.
   const platform = String(ci.platform || '').trim().toLowerCase();
   if (platform === 'github-actions') return 'github';
   if (platform === 'gitlab-ci') return 'gitlab';
+
+  // Default: GitHub (can be overridden by setting ci.provider="none").
+  if (!provider) return 'github';
 
   return null;
 }
@@ -1151,6 +1130,12 @@ function writeDbSsotConfig(repoRoot, blueprint, apply) {
 
 function ensureDbSsotConfig(repoRoot, blueprint, apply) {
   // Writes docs/project/db-ssot.json reflecting the selected db.ssot mode.
+  // When db.ssot=none, do not generate any DB SSOT config files.
+  const mode = dbSsotMode(blueprint);
+  const outPath = path.join(repoRoot, 'docs', 'project', 'db-ssot.json');
+  if (mode === 'none') {
+    return { op: 'skip', path: outPath, mode: apply ? 'skipped' : 'dry-run', reason: 'db.ssot=none' };
+  }
   return writeDbSsotConfig(repoRoot, blueprint, apply);
 }
 
@@ -1162,9 +1147,13 @@ function renderDbSsotAgentsBlock(mode) {
 
 `;
 
-  const common = [
+  const commonEnabled = [
     `- DB context contract (LLM-first): \`docs/context/db/schema.json\``,
     `- SSOT selection file: \`docs/project/db-ssot.json\``
+  ];
+  const commonDisabled = [
+    `- DB context contract (disabled; not generated when db.ssot=none): \`docs/context/db/schema.json\``,
+    `- SSOT selection file (disabled; not generated when db.ssot=none): \`docs/project/db-ssot.json\``
   ];
 
   if (m === 'repo-prisma') {
@@ -1173,7 +1162,7 @@ function renderDbSsotAgentsBlock(mode) {
       `**Mode: repo-prisma** (SSOT = \`prisma/schema.prisma\`)
 
 ` +
-      common.join('\n') +
+      commonEnabled.join('\n') +
       `
 - If you need to change persisted fields / tables: use skill \`sync-db-schema-from-code\`.
 ` +
@@ -1193,7 +1182,7 @@ function renderDbSsotAgentsBlock(mode) {
       `**Mode: database** (SSOT = running database)
 
 ` +
-      common.join('\n') +
+      commonEnabled.join('\n') +
       `
 - If the DB schema changed: use skill \`sync-code-schema-from-db\` (DB → Prisma → mirror → context).
 ` +
@@ -1214,7 +1203,7 @@ function renderDbSsotAgentsBlock(mode) {
     `**Mode: none** (no managed DB SSOT in this repo)
 
 ` +
-    common.join('\n') +
+    commonDisabled.join('\n') +
     `
 - DB sync skills are disabled. Document DB changes in workdocs and ask a human to provide a schema snapshot.
 `
@@ -1282,6 +1271,104 @@ function applyDbSsotSkillExclusions(repoRoot, blueprint, apply) {
   return { op: 'edit', path: manifestPath, mode: 'applied', note: `excludeSkills += ${desired.join(', ')}` };
 }
 
+function ciProviderSkillExclusionsForProvider(provider) {
+  const p = String(provider || 'github').toLowerCase();
+  if (p === 'gitlab') return ['github-actions-ci'];
+  if (p === 'none') return ['github-actions-ci', 'gitlab-ci'];
+  // default: github
+  return ['gitlab-ci'];
+}
+
+function applyCiProviderSkillExclusions(repoRoot, blueprint, apply) {
+  const provider = ciProvider(blueprint);
+  const manifestPath = path.join(repoRoot, '.ai', 'skills', '_meta', 'sync-manifest.json');
+  if (!fs.existsSync(manifestPath)) {
+    return { op: 'edit', path: manifestPath, mode: apply ? 'failed' : 'dry-run', note: 'manifest missing' };
+  }
+
+  const manifest = readJson(manifestPath);
+  const existing = Array.isArray(manifest.excludeSkills) ? manifest.excludeSkills.map(String) : [];
+  const cleaned = existing.filter((s) => s !== 'github-actions-ci' && s !== 'gitlab-ci');
+  const desired = ciProviderSkillExclusionsForProvider(provider);
+  manifest.excludeSkills = uniq([...cleaned, ...desired]);
+
+  if (!apply) {
+    return { op: 'edit', path: manifestPath, mode: 'dry-run', note: `excludeSkills += ${desired.join(', ')}` };
+  }
+
+  writeJson(manifestPath, manifest);
+  return { op: 'edit', path: manifestPath, mode: 'applied', note: `excludeSkills += ${desired.join(', ')}` };
+}
+
+function cleanupCiProviderArtifacts(repoRoot, blueprint, apply) {
+  const provider = ciProvider(blueprint);
+  const targets = [
+    path.join(repoRoot, '.gitlab-ci.yml'),
+    path.join(repoRoot, '.github', 'workflows', 'ci.yml'),
+    path.join(repoRoot, '.github', 'workflows', 'delivery.yml'),
+    path.join(repoRoot, 'ci', 'config.json')
+  ];
+
+  if (provider !== 'none') {
+    return {
+      op: 'skip',
+      mode: apply ? 'skipped' : 'dry-run',
+      reason: `ci.provider=${provider || 'unset'}`
+    };
+  }
+
+  if (!apply) {
+    return {
+      op: 'ci-cleanup',
+      mode: 'dry-run',
+      reason: 'ci.provider=none',
+      targets: targets.map((p) => path.relative(repoRoot, p))
+    };
+  }
+
+  const actions = [];
+  let hadErrors = false;
+
+  for (const p of targets) {
+    if (!fs.existsSync(p)) continue;
+    try {
+      fs.rmSync(p, { force: true });
+      actions.push({ op: 'rm', path: p, mode: 'applied' });
+    } catch (e) {
+      hadErrors = true;
+      actions.push({ op: 'rm', path: p, mode: 'failed', reason: e.message });
+    }
+  }
+
+  // Prune empty dirs created by CI providers (best-effort; avoids deleting unrelated files).
+  const dirsToPrune = [
+    path.join(repoRoot, '.github', 'workflows'),
+    path.join(repoRoot, '.github'),
+    path.join(repoRoot, 'ci')
+  ];
+
+  for (const dir of dirsToPrune) {
+    try {
+      if (!fs.existsSync(dir)) continue;
+      if (!fs.statSync(dir).isDirectory()) continue;
+      const entries = fs.readdirSync(dir);
+      if (entries.length > 0) continue;
+      fs.rmSync(dir, { recursive: false, force: true });
+      actions.push({ op: 'rmdir', path: dir, mode: 'applied' });
+    } catch (e) {
+      hadErrors = true;
+      actions.push({ op: 'rmdir', path: dir, mode: 'failed', reason: e.message });
+    }
+  }
+
+  return {
+    op: 'ci-cleanup',
+    mode: hadErrors ? 'partial' : 'applied',
+    reason: 'ci.provider=none',
+    actions
+  };
+}
+
 function refreshDbContextContract(repoRoot, blueprint, apply, verifyFeatures) {
   const outPath = path.join(repoRoot, 'docs', 'context', 'db', 'schema.json');
 
@@ -1293,6 +1380,29 @@ function refreshDbContextContract(repoRoot, blueprint, apply, verifyFeatures) {
       mode: apply ? 'skipped' : 'dry-run',
       reason: 'context-awareness feature not enabled'
     };
+  }
+
+  if (dbSsotMode(blueprint) === 'none') {
+    if (!apply) {
+      return {
+        op: 'skip',
+        path: outPath,
+        mode: 'dry-run',
+        reason: 'db.ssot=none'
+      };
+    }
+
+    // Best-effort cleanup: if a previous run produced the contract, remove it to honor "none".
+    if (fs.existsSync(outPath)) {
+      try {
+        fs.rmSync(outPath, { force: true });
+        return { op: 'rm', path: outPath, mode: 'applied', reason: 'db.ssot=none' };
+      } catch (e) {
+        return { op: 'rm', path: outPath, mode: 'failed', reason: `db.ssot=none (cleanup failed: ${e.message})` };
+      }
+    }
+
+    return { op: 'skip', path: outPath, mode: 'skipped', reason: 'db.ssot=none' };
   }
 
   const dbSsotCtl = path.join(repoRoot, '.ai', 'scripts', 'dbssotctl.mjs');
@@ -1324,49 +1434,45 @@ function refreshDbContextContract(repoRoot, blueprint, apply, verifyFeatures) {
 // ============================================================================
 
 function isDatabaseEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; db.* is configuration only.
-  return flags.database === true;
+  // Provider/SSOT-driven: enabled when db.ssot != "none".
+  return dbSsotMode(blueprint) !== 'none';
 }
 
 function isUiEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  return flags.ui === true;
+  // Default-on; can be disabled via features.ui=false
+  return defaultOnFeature(blueprint, 'ui');
 }
 
 function isEnvironmentEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  return flags.environment === true;
+  // Default-on; can be disabled via features.environment=false
+  return defaultOnFeature(blueprint, 'environment');
 }
 
 function isPackagingEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; packaging.* is configuration only
-  return flags.packaging === true;
+  // Default-on; can be disabled via features.packaging=false
+  return defaultOnFeature(blueprint, 'packaging');
 }
 
 function isDeploymentEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; deploy.* is configuration only
-  return flags.deployment === true;
+  // Default-on; can be disabled via features.deployment=false
+  return defaultOnFeature(blueprint, 'deployment');
 }
 
 function isReleaseEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; release.* is configuration only
-  return flags.release === true;
+  // Default-on; can be disabled via features.release=false
+  return defaultOnFeature(blueprint, 'release');
 }
 
 function isObservabilityEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; observability.* is configuration only
-  return flags.observability === true;
+  // Default-on; can be disabled via features.observability=false
+  return defaultOnFeature(blueprint, 'observability');
 }
 
 function isCiEnabled(blueprint) {
-  const flags = featureFlags(blueprint);
-  // Only feature flags trigger materialization; ci.* is configuration only
-  return flags.ci === true;
+  // Provider-driven: enabled when ci.provider != "none".
+  const provider = ciProvider(blueprint);
+  if (!provider) return false;
+  return provider !== 'none';
 }
 
 // ============================================================================
@@ -2532,7 +2638,8 @@ if (command === 'validate') {
     const cleanup = !!opts['cleanup-init'];
     const forceFeatures = !!opts['force-features'];
     const verifyFeatures = !!opts['verify-features'];
-    const nonBlockingFeatures = !!opts['non-blocking-features'];
+    const blockingFeatures = !!opts['blocking-features'];
+    const nonBlockingFeatures = !blockingFeatures;
 
     if (cleanup && !opts['i-understand']) {
       die('[error] --cleanup-init requires --i-understand');
@@ -2595,12 +2702,13 @@ if (command === 'validate') {
       }
     }
 
-    // Optional: Context Awareness feature (recommended when you want LLM-stable contracts)
+    // Mandatory: Context Awareness feature (LLM-stable contracts for modular workflow)
+    console.log('[info] Enabling Context Awareness feature...');
     const contextFeature = ensureContextAwarenessFeature(repoRoot, blueprint, true, featureOptions);
     if (contextFeature.errors && contextFeature.errors.length > 0) {
       for (const e of contextFeature.errors) console.error(`[error] ${e}`);
       if (!nonBlockingFeatures) {
-        die('[error] Context awareness feature setup failed. Use --non-blocking-features to continue despite errors.');
+        die('[error] Context awareness feature setup failed. Re-run without --blocking-features to continue despite errors.');
       }
     }
     if (contextFeature.verifyFailed) {
@@ -2608,7 +2716,7 @@ if (command === 'validate') {
       console.error(`[error] ${msg}`);
       verifyFailures.push('context-awareness');
       if (!nonBlockingFeatures) {
-        die('[error] Context awareness verify failed. Use --non-blocking-features to continue despite errors.');
+        die('[error] Context awareness verify failed. Re-run without --blocking-features to continue despite errors.');
       }
     }
     if (contextFeature.warnings && contextFeature.warnings.length > 0) {
@@ -2624,7 +2732,7 @@ if (command === 'validate') {
       if (res.errors.length > 0) {
         for (const e of res.errors) console.error(`[error] ${e}`);
         if (!nonBlockingFeatures) {
-          die(`[error] Feature "${featureId}" installation failed. Use --non-blocking-features to continue despite errors.`);
+          die(`[error] Feature "${featureId}" installation failed. Re-run without --blocking-features to continue despite errors.`);
         }
       }
       if (res.verifyFailed) {
@@ -2632,7 +2740,7 @@ if (command === 'validate') {
         console.error(`[error] ${msg}`);
         verifyFailures.push(featureId);
         if (!nonBlockingFeatures) {
-          die(`[error] Feature "${featureId}" verify failed. Use --non-blocking-features to continue despite errors.`);
+          die(`[error] Feature "${featureId}" verify failed. Re-run without --blocking-features to continue despite errors.`);
         }
       }
       if (res.warnings.length > 0) {
@@ -2700,16 +2808,28 @@ if (command === 'validate') {
     const dbSsotConfigResult = ensureDbSsotConfig(repoRoot, blueprint, true);
     if (dbSsotConfigResult.mode === 'applied') {
       console.log(`[ok] DB SSOT config written: ${path.relative(repoRoot, dbSsotConfigResult.path)}`);
+    } else if (dbSsotConfigResult.reason) {
+      console.log(`[info] DB SSOT config skipped: ${dbSsotConfigResult.reason}`);
     }
     const agentsDbSsotResult = patchRootAgentsDbSsotSection(repoRoot, blueprint, true);
     if (agentsDbSsotResult.mode === 'applied') {
       console.log(`[ok] AGENTS.md updated (DB SSOT section)`);
     }
     const dbContextRefreshResult = refreshDbContextContract(repoRoot, blueprint, true, verifyFeatures);
-    if (dbContextRefreshResult.mode === 'applied') {
+    if (dbContextRefreshResult.mode === 'applied' && dbContextRefreshResult.op === 'db-context-refresh') {
       console.log(`[ok] DB context refreshed: ${path.relative(repoRoot, dbContextRefreshResult.path)}`);
+    } else if (dbContextRefreshResult.mode === 'applied' && dbContextRefreshResult.op === 'rm') {
+      console.log(`[ok] DB context contract removed: ${path.relative(repoRoot, dbContextRefreshResult.path)}`);
     } else if (dbContextRefreshResult.reason) {
       console.log(`[info] DB context refresh skipped: ${dbContextRefreshResult.reason}`);
+    }
+
+    // CI cleanup (provider=none): ensure we don't leave behind CI config files from previous runs.
+    const ciCleanupResult = cleanupCiProviderArtifacts(repoRoot, blueprint, true);
+    if (ciCleanupResult.mode === 'applied') {
+      console.log('[ok] CI artifacts cleaned (ci.provider=none)');
+    } else if (ciCleanupResult.mode === 'partial') {
+      console.warn('[warn] CI artifacts cleanup partially completed (ci.provider=none)');
     }
 
     // Manifest update
@@ -2718,7 +2838,7 @@ if (command === 'validate') {
       if (manifestResult.errors && manifestResult.errors.length > 0) {
         for (const e of manifestResult.errors) console.error(`[error] ${e}`);
       }
-      die('[error] Skill pack / manifest update failed.');
+      console.warn('[warn] Skill pack / manifest update failed; continuing (non-blocking).');
     }
     if (manifestResult.warnings && manifestResult.warnings.length > 0) {
       for (const w of manifestResult.warnings) console.warn(`[warn] ${w}`);
@@ -2730,9 +2850,17 @@ if (command === 'validate') {
       console.log('[ok] Skill exclusions updated for DB SSOT');
     }
 
+    // CI provider mutual exclusion (sync-manifest excludeSkills)
+    const ciSkillExclusionsResult = applyCiProviderSkillExclusions(repoRoot, blueprint, true);
+    if (ciSkillExclusionsResult.mode === 'applied') {
+      console.log('[ok] Skill exclusions updated for CI provider');
+    }
+
     // Sync wrappers
     const syncResult = syncWrappers(repoRoot, providers, true);
-    if (syncResult.mode === 'failed') die(`[error] sync-skills.mjs failed with exit code ${syncResult.exitCode}`);
+    if (syncResult.mode === 'failed') {
+      console.warn(`[warn] sync-skills.mjs failed with exit code ${syncResult.exitCode}; continuing (non-blocking)`);
+    }
 
     const retentionTemplateResult = ensureSkillRetentionTemplate(repoRoot, true);
     if (retentionTemplateResult.mode === 'applied') {
@@ -2746,7 +2874,7 @@ if (command === 'validate') {
 	    if (state) {
 	      state['stage-c'].scaffoldApplied = true;
 	      state['stage-c'].configsGenerated = !skipConfigs;
-	      state['stage-c'].manifestUpdated = true;
+	      state['stage-c'].manifestUpdated = manifestResult.mode !== 'failed';
 	      state['stage-c'].wrappersSynced = syncResult.mode === 'applied';
 	      addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
 	      saveState(repoRoot, state);
@@ -2774,6 +2902,7 @@ if (command === 'validate') {
         dbSsotConfig: dbSsotConfigResult,
         agentsDbSsot: agentsDbSsotResult,
         dbContextContract: dbContextRefreshResult,
+        ciCleanup: ciCleanupResult,
         dbSsotSkillExclusions: ssotSkillExclusionsResult,
         readme: readmeResult,
         skillRetentionTemplate: retentionTemplateResult,
@@ -2810,8 +2939,10 @@ if (command === 'validate') {
         const status = retentionTemplateResult.mode || retentionTemplateResult.reason || 'unknown'
         console.log(`- Skill retention template: ${path.relative(repoRoot, retentionTemplateResult.path)} (${status})`)
       }
-      console.log(`- Manifest updated: ${path.relative(repoRoot, manifestResult.path)}`)
-      console.log(`- Wrappers synced via: ${syncResult.cmd || '(skipped)'}`)
+      const manifestStatus = manifestResult.mode || manifestResult.reason || 'unknown'
+      console.log(`- Manifest: ${path.relative(repoRoot, manifestResult.path)} (${manifestStatus})`)
+      const syncStatus = syncResult.mode || syncResult.reason || 'unknown'
+      console.log(`- Wrappers sync: ${syncResult.cmd || '(skipped)'} (${syncStatus})`)
       if (cleanupResult) console.log(`- init/ cleanup: ${cleanupResult.mode}`)
     }
 

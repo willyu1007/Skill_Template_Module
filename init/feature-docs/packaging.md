@@ -23,6 +23,12 @@ In `init/project-blueprint.json`:
 }
 ```
 
+Packaging is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "packaging": false } }
+```
+
 ## What Stage C `apply` does
 
 When enabled, Stage C:

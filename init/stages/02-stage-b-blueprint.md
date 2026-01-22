@@ -105,14 +105,35 @@ If you're using an AI assistant to guide initialization, refer to:
 ---
 
 
-## Feature flags (optional)
+## Feature + provider configuration
 
-Feature flags are configured in the blueprint under `features`.
+Stage C behavior is driven by:
 
-### Key rules
+1) **Mandatory foundation**
 
-- You MUST set `features.<id>: true` to install a feature during Stage C.
-- `context.*` (and other config sections like `db.*`, `deploy.*`, `packaging.*`, `release.*`, `observability.*`) are configuration only; they do not install features by themselves.
+- Context awareness is always enabled in Stage C.
+- You MAY keep `features.contextAwareness: true` in the blueprint (or omit it), but you MUST NOT set it to `false`.
+
+2) **Implementation selection (SSOT)**
+
+- Database: `db.ssot` is the enablement switch:
+  - `repo-prisma` (default): ensures `prisma/` as the schema SSOT anchor
+  - `database`: materializes `db/` mirrors and initializes DB tooling
+  - `none`: skips DB outputs (no `db/`, no `prisma/`, no `docs/project/db-ssot.json`, no `docs/context/db/schema.json`)
+- CI: `ci.provider` is the enablement switch:
+  - `github` (default) or `gitlab`: installs CI files
+  - `none`: skips CI outputs (no `.github/`, no `.gitlab-ci.yml`, no `ci/`)
+
+3) **Feature overrides (default-on)**
+
+Other features are **enabled by default**. To skip, set `features.<id>: false`:
+
+- `features.ui`
+- `features.environment`
+- `features.packaging`
+- `features.deployment`
+- `features.release`
+- `features.observability`
 
 ### Recommended workflow
 
@@ -122,25 +143,13 @@ Feature flags are configured in the blueprint under `features`.
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
 ```
 
-2) Ask the pipeline for recommended features:
+2) Optional: preview the effective enabled features:
 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
 ```
 
-Optional: safe-add missing recommended features into `features.*`:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root . --write
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
-```
-
-### Dependencies (common)
-
-- `features.database=true` requires `db.ssot != "none"`.
-- `features.observability=true` requires `features.contextAwareness=true`.
-
-See `init/README.md` and `init/feature-docs/README.md` for the full feature list and behavior.
+See `init/README.md` and `init/feature-docs/README.md` for feature and provider details.
 
 ---
 

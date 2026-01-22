@@ -5,6 +5,7 @@
 - Installs a practical CI baseline for **GitHub Actions** or **GitLab CI**
 - Stage C installs **CI only** (no delivery workflow by default)
 - Delivery is **explicit opt-in** (enabled via `cictl add-delivery`)
+- CI enablement is controlled by `ci.provider` (default: `github`; set to `none` to disable)
 
 ## How to enable
 
@@ -12,9 +13,6 @@ In `init/project-blueprint.json`:
 
 ```json
 {
-  "features": {
-    "ci": true
-  },
   "ci": {
     "provider": "github"
   }
@@ -22,6 +20,8 @@ In `init/project-blueprint.json`:
 ```
 
 Set `"provider": "gitlab"` to install GitLab CI instead.
+Set `"provider": "none"` to disable CI materialization (no CI files generated).
+Note: `features.ci` is deprecated/ignored (provider selection is the SSOT).
 
 ## What Stage C `apply` does
 
@@ -43,6 +43,12 @@ node .ai/skills/features/ci/scripts/cictl.mjs init --provider <github|gitlab> --
 ```bash
 node .ai/skills/features/ci/scripts/cictl.mjs verify --repo-root .
 ```
+
+When `ci.provider=none`, Stage C skips CI entirely:
+
+- No `.github/workflows/*`
+- No `.gitlab-ci.yml`
+- No `ci/**`
 
 ## Delivery (explicit opt-in)
 

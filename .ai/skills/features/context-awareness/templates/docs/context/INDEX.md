@@ -14,7 +14,7 @@
 Typical artifacts (not exhaustive):
 
 - API contract: `docs/context/api/openapi.yaml`
-- Database schema contract: `docs/context/db/schema.json`
+- Database schema contract (if enabled): `docs/context/db/schema.json`
 - Business processes: `docs/context/process/*.bpmn`
 
 All artifacts MUST be registered in `docs/context/registry.json`.
@@ -42,7 +42,7 @@ The generator chooses the source based on SSOT mode:
 
 - `repo-prisma`: reads `prisma/schema.prisma` (SSOT) and emits the contract.
 - `database`: reads `db/schema/tables.json` (mirror of real DB) and emits the contract.
-- `none`: emits an empty contract.
+- `none`: DB is disabled; init does not generate the DB contract.
 
 After generation, `dbssotctl` runs `contextctl touch` (best effort) to keep checksums consistent.
 

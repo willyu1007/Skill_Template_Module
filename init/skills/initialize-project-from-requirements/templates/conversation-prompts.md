@@ -80,7 +80,7 @@ Ask if `capabilities.database.enabled == true`.
   - `repo-prisma` (SSOT = `prisma/schema.prisma`; developers manage migrations)
   - `database` (SSOT = real DB; repo keeps mirrors via introspection)
 
-  → Write to Stage B: `db.ssot` and align `features.database` accordingly.
+  → Write to Stage B: `db.ssot` (DB enablement is controlled by SSOT; `db.ssot=none` disables DB materialization).
 - Backup / restore requirements
 
 Write to:
@@ -132,27 +132,24 @@ After completion (archived to):
 - Stage A docs → `docs/project/`
 - Blueprint → `docs/project/project-blueprint.json`
 
-## D. Feature Decision Prompts (ask when determining capabilities)
+## D. Feature + provider prompts (default-on init)
 
-After understanding the project requirements, ask the following to determine which optional features should be enabled:
+This template defaults to enabling most features during Stage C. Ask the following to choose **implementation forms** and any **override-disable** decisions.
 
 ### D1. Context Management (context-awareness)
 
-Ask if the project needs:
-- "Does this project have API contracts (OpenAPI/Swagger) that LLM assistants should understand?"
-- "Does the project have a database schema that needs to be tracked for context?"
-- "Are there business process definitions (BPMN) that describe workflows?"
-- "Should LLM assistants have access to a central registry of project context artifacts?"
+Context awareness is **mandatory** in this template.
 
-→ If YES to any: Enable `features.contextAwareness: true`
+Ask only for configuration:
+- Context mode (`contract` vs `snapshot`)
+- Environment list (`dev`, `staging`, `prod`, ...)
 
-### D2. Database Schema Management (SSOT choice + database feature)
+### D2. Database Schema Management (SSOT choice)
 
-First decide the DB schema SSOT mode (MUST): `none` / `repo-prisma` / `database`.
+Decide the DB schema SSOT mode (MUST): `none` / `repo-prisma` / `database` (default: `repo-prisma`).
 
-Then:
-- If SSOT is `none`: Keep `features.database: false`.
-- Otherwise: Enable `features.database: true` (SSOT scaffolding; behavior depends on `db.ssot`).
+- If SSOT is `none`: DB outputs are skipped (no `db/`, no `prisma/`, no DB schema context files).
+- Otherwise: Stage C will materialize DB conventions based on `db.ssot`.
 
 ### D3. Container/Artifact Packaging (packaging)
 
@@ -161,7 +158,7 @@ Ask if:
 - "Are there other artifacts to package (CLI binaries, libraries)?"
 - "What target platforms/architectures?"
 
-→ If YES: Enable `features.packaging: true`
+→ If NO: Set `features.packaging: false`
 
 ### D4. Multi-Environment Deployment (deployment)
 
@@ -170,7 +167,7 @@ Ask if:
 - "What deployment model? (K8s, VM, serverless, static)"
 - "Are there rollback requirements?"
 
-→ If YES: Enable `features.deployment: true`
+→ If NO: Set `features.deployment: false`
 
 ### D5. Release/Version Management (release)
 
@@ -179,7 +176,7 @@ Ask if:
 - "What versioning strategy? (semantic, calendar, custom)"
 - "Are there release approval workflows?"
 
-→ If YES: Enable `features.release: true`
+→ If NO: Set `features.release: false`
 
 ### D6. Observability Contracts (observability)
 
@@ -188,7 +185,7 @@ Ask if:
 - "Are there logging schema requirements?"
 - "Is distributed tracing needed?"
 
-→ If YES: Enable `features.observability: true`
+→ If NO: Set `features.observability: false`
 
 ### D7. UI System SSOT (ui)
 
@@ -196,7 +193,7 @@ Ask if the project needs a stable UI/UX foundation:
 - UI tokens and contract SSOT (so UI changes are deterministic)
 - Generated UI context for LLMs (under `docs/context/ui/`)
 
-→ If YES: Enable `features.ui: true`
+→ If NO: Set `features.ui: false`
 
 ### D8. Environment Contract SSOT (environment)
 
@@ -204,10 +201,20 @@ Ask if the project needs a strict env var contract:
 - `env/contract.yaml` as SSOT
 - Generate non-secret developer artifacts (`.env.example`, `docs/env.md`, `docs/context/env/contract.json`)
 
-→ If YES: Enable `features.environment: true`
+→ If NO: Set `features.environment: false`
 
-Write feature decisions to:
-- Stage B: `features.*` section in `init/project-blueprint.json`
+### D9. CI provider selection (ci)
+
+CI enablement is controlled by `ci.provider` (default: `github`).
+
+- Set `ci.provider=github` for GitHub Actions.
+- Set `ci.provider=gitlab` for GitLab CI.
+- Set `ci.provider=none` to disable CI materialization (no CI files generated).
+
+Write decisions to Stage B (`init/project-blueprint.json`):
+- `db.ssot`
+- `ci.provider`
+- `features.*` (override-disable only)
 
 Verification (run from repo root):
 

@@ -12,7 +12,7 @@ Before applying Stage C, review `init/project-blueprint.json`.
 - `repo.layout` matches intended structure (`single` vs `monorepo`).
 - `capabilities.*` reflect **decisions**, not aspirations (avoid setting `enabled=true` for "maybe later").
 - `skills.packs` includes only what you want enabled now.
-- Feature flags are intentional (e.g. `features.contextAwareness`).
+- Provider selections are intentional (especially `db.ssot` and `ci.provider`), and feature overrides (`features.<id>=false`) are intentional.
 - No secrets are present (no tokens, passwords, connection strings).
 
 ---

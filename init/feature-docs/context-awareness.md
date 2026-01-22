@@ -4,21 +4,13 @@
 
 - Provides stable API/DB/BPMN contracts under `docs/context/` for LLM + human collaboration
 - Makes project context auditable (registries/checksums + verification)
-- Recommended for most repos with an API and/or a database
+- **Mandatory in this template** (installed by default during Stage C)
 
-## How to enable
+## How to configure (Stage B)
 
-In `init/project-blueprint.json`:
+Context awareness is always enabled in Stage C. You MAY keep `features.contextAwareness: true` in the blueprint (or omit it), but you MUST NOT set it to `false`.
 
-```json
-{
-  "features": {
-    "contextAwareness": true
-  }
-}
-```
-
-Optional configuration (does **not** enable the feature by itself):
+Configuration (mode/env list):
 
 ```json
 {
@@ -35,7 +27,7 @@ Supported modes:
 
 ## What Stage C `apply` does
 
-When enabled, Stage C:
+Stage C always:
 
 1) Copies templates from:
 - `.ai/skills/features/context-awareness/templates/`

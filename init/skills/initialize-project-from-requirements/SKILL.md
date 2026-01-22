@@ -69,16 +69,17 @@ Stage C `apply` materializes enabled features by copying templates into the repo
 
 ### Optional feature outputs
 
-Depending on `blueprint.features`, Stage C may also materialize:
+Stage C materializes:
 
-- Context Awareness: `docs/context/**` + `config/environments/**` (and related context contracts)
-- Database: `db/**` (when `db.ssot=database`) or `prisma/**` (when `db.ssot=repo-prisma`)
-- UI: `ui/**` + `docs/context/ui/**`
-- Environment: `env/**` + `docs/project/env-ssot.json` (and optionally generated `.env.example` + `docs/env.md`)
-- Packaging: `ops/packaging/**` + `docs/packaging/registry.json`
-- Deployment: `ops/deploy/**`
-- Observability: `observability/**` + `docs/context/observability/**`
-- Release: `release/**` + `.releaserc.json.template`
+- Context Awareness (mandatory): `docs/context/**` + `config/environments/**`
+- Database (SSOT-driven): `db/**` (when `db.ssot=database`) or `prisma/**` (when `db.ssot=repo-prisma`); skipped when `db.ssot=none`
+- CI (provider-driven): `.github/workflows/ci.yml` (GitHub) or `.gitlab-ci.yml` (GitLab), `ci/**`; skipped when `ci.provider=none`
+- UI (default-on): `ui/**` + `docs/context/ui/**` (set `features.ui=false` to skip)
+- Environment (default-on): `env/**` + `docs/project/env-ssot.json` (set `features.environment=false` to skip)
+- Packaging (default-on): `ops/packaging/**` + `docs/packaging/registry.json` (set `features.packaging=false` to skip)
+- Deployment (default-on): `ops/deploy/**` (set `features.deployment=false` to skip)
+- Observability (default-on): `observability/**` + `docs/context/observability/**` (set `features.observability=false` to skip)
+- Release (default-on): `release/**` + `.releaserc.json.template` (set `features.release=false` to skip)
 
 ---
 
@@ -88,9 +89,12 @@ Depending on `blueprint.features`, Stage C may also materialize:
    - Validation is recorded in `init/.init-state.json` by pipeline commands.
    - Stage advancement must use `approve` (do not hand-edit the state file to "skip" stages).
 2. Do not advance stages without explicit user approval.
-3. Features are materialized **on demand**:
-   - Only `blueprint.features.*` triggers materialization.
-   - `blueprint.context.*` is configuration only and does not trigger enabling by itself.
+3. Feature semantics:
+   - Context awareness is **mandatory** (always enabled in Stage C).
+   - Database is controlled by `db.ssot` (SSOT selection).
+   - CI is controlled by `ci.provider` (provider selection).
+   - Other features are default-on; `blueprint.features.*` is override-only (set `false` to skip).
+   - `blueprint.context.*` is configuration only (mode/env list).
 4. The manifest schema is the **flat schema** (do not use older nested shapes like `collections.current`).
 5. Config generation has a single SSOT: `scripts/scaffold-configs.mjs`.
 6. Do not create workdocs task bundles during initialization; use workdocs after init completes.
@@ -231,11 +235,9 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 
 ### How the workflow is triggered
 
-To trigger feature materialization/init, set:
+Context awareness is mandatory and always materialized during Stage C.
 
-- `blueprint.features.contextAwareness: true`
-
-Optional (configuration only; does not trigger enabling):
+Configuration only:
 
 - `blueprint.context.mode: "contract" | "snapshot"` (default: `contract`)
 

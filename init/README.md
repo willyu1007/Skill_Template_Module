@@ -123,7 +123,8 @@ Key sections:
   - `none` | `repo-prisma` | `database`
 - `context.*`: context configuration (does not enable the feature by itself)
 - `capabilities.*`: informs scaffold and pack selection
-- `features.*`: optional features to materialize during Stage C
+- `ci.provider`: CI provider selection (`none` | `github` | `gitlab`)
+- `features.*`: feature overrides (default-on; set to `false` to skip materialization)
 
 ## Optional features
 
@@ -138,17 +139,17 @@ Stage C `apply` materializes a feature by copying templates into the repo (when 
 
 Note (Windows): `python3` may not exist on PATH. Use `python` instead. (Stage C `apply` will try `python3` then `python`.)
 
-| Feature | Blueprint toggle | Materializes | Control script(s) |
+| Feature | Blueprint control | Materializes | Control script(s) |
 |---------|------------------|--------------|----------------|
-| Context awareness | `features.contextAwareness` | `docs/context/**`, `config/environments/**` | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
-| Database | `features.database` (requires `db.ssot != none`) | `db/**` (when `db.ssot=database`), `prisma/**` (when `db.ssot=repo-prisma`) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`); `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs` (human interface) |
-| UI | `features.ui` | `ui/**`, `docs/context/ui/**` | `python3 .ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` |
-| Environment | `features.environment` | `env/**` (+ generated non-secret docs when `--verify-features`) | `python3 .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` |
-| Packaging | `features.packaging` | `ops/packaging/**`, `docs/packaging/**` | `node .ai/skills/features/packaging/scripts/packctl.mjs` |
-| Deployment | `features.deployment` | `ops/deploy/**` | `node .ai/skills/features/deployment/scripts/deployctl.mjs` |
-| CI | `features.ci` (requires `ci.provider`) | `.github/workflows/ci.yml` (GitHub) or `.gitlab-ci.yml` (GitLab), `ci/**` | `node .ai/skills/features/ci/scripts/cictl.mjs` |
-| Observability | `features.observability` (requires context awareness) | `docs/context/observability/**`, `observability/**` | `node .ai/skills/features/observability/scripts/obsctl.mjs` |
-| Release | `features.release` | `release/**`, `.releaserc.json.template` | `node .ai/skills/features/release/scripts/releasectl.mjs` |
+| Context awareness | **mandatory** (cannot be disabled) | `docs/context/**`, `config/environments/**` | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
+| Database | `db.ssot` (`none` disables) | `db/**` (when `db.ssot=database`), `prisma/**` (when `db.ssot=repo-prisma`) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`); `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs` (human interface) |
+| UI | `features.ui` (default: `true`) | `ui/**`, `docs/context/ui/**` | `python3 .ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` |
+| Environment | `features.environment` (default: `true`) | `env/**` (+ generated non-secret docs when `--verify-features`) | `python3 .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` |
+| Packaging | `features.packaging` (default: `true`) | `ops/packaging/**`, `docs/packaging/**` | `node .ai/skills/features/packaging/scripts/packctl.mjs` |
+| Deployment | `features.deployment` (default: `true`) | `ops/deploy/**` | `node .ai/skills/features/deployment/scripts/deployctl.mjs` |
+| CI | `ci.provider` (`none` disables; default: `github`) | `.github/workflows/ci.yml` (GitHub) or `.gitlab-ci.yml` (GitLab), `ci/**` | `node .ai/skills/features/ci/scripts/cictl.mjs` |
+| Observability | `features.observability` (default: `true`) | `docs/context/observability/**`, `observability/**` | `node .ai/skills/features/observability/scripts/obsctl.mjs` |
+| Release | `features.release` (default: `true`) | `release/**`, `.releaserc.json.template` | `node .ai/skills/features/release/scripts/releasectl.mjs` |
 
 For feature-specific details, see:
 
@@ -159,13 +160,17 @@ For feature-specific details, see:
 
 ### Key rules
 
-- You MUST set `features.<id>: true` to install a feature during Stage C.
-- `context.*`, `db.*`, `packaging.*`, `deploy.*`, `release.*`, and `observability.*` are configuration only; they do not install features by themselves.
+- Context awareness is always installed in Stage C (mandatory).
+- Database enablement is controlled by `db.ssot`:
+  - `db.ssot=none` skips all DB outputs
+- CI enablement is controlled by `ci.provider`:
+  - `ci.provider=none` skips all CI outputs
+- Other features are enabled by default; set `features.<id>: false` to skip.
 - Stage C is non-destructive: setting `features.<id>: false` later will NOT uninstall previously created files.
 
 ### Recommended steps
 
-1) Fill `capabilities.*`, `db.*` (especially `db.ssot`), and any feature configuration sections.
+1) Fill `capabilities.*`, choose `db.ssot`, choose `ci.provider`, and set any feature overrides under `features.*` if needed.
 
 2) Ask the pipeline for recommendations:
 
@@ -174,15 +179,9 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs --repo-root .
 ```
 
-3) Decide which features to keep, then set `features.*` explicitly (or safe-add via `--write`):
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root . --write
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .
-```
-
 ## Apply flags (Stage C)
 
 - `--force-features`: overwrite existing feature files when materializing templates
 - `--verify-features`: run `*ctl.mjs verify` after `init` (fail-fast by default)
-- `--non-blocking-features`: continue despite feature init/verify errors (not recommended)
+- `--blocking-features`: fail-fast on feature init/verify errors (default is non-blocking)
+- `--non-blocking-features`: (legacy) continue despite feature init/verify errors

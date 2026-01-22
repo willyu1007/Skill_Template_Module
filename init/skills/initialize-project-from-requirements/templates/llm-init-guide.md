@@ -197,31 +197,30 @@ Important: **DB schema SSOT mode is mandatory**. Record it as `db.ssot` with one
 | `capabilities.backend.enabled: true` | `backend` |
 | `capabilities.frontend.enabled: true` | `frontend` |
 | Needs code standards | `standards` |
-| `features.contextAwareness: true` | `context-core` (optional; context-awareness skills/wrappers) |
+| Needs context workflows | `context-core` (optional; context-awareness skills/wrappers) |
 
 ---
 
-## Phase 4: Feature recommendations
+## Phase 4: Provider selection + feature overrides
 
-Recommend features based on `capabilities` in the blueprint. See **Module D** in `conversation-prompts.md` for detailed decision prompts for each feature.
+This template defaults to enabling most features during Stage C. Use this phase to choose **implementation forms** and any **override-disable** decisions.
 
-### Quick recommendation rules
+Context awareness is **mandatory** (always installed in Stage C).
 
-| Condition | Recommended feature |
-|----------|---------------------|
-| `api.style != "none"` or `database.enabled` or `bpmn.enabled` | `contextAwareness` |
-| `db.ssot != "none"` | `database` |
-| `capabilities.frontend.enabled` | `ui` |
-| Project uses environment variables | `environment` |
-| Needs containerization | `packaging` |
-| Needs multi-environment deployment | `deployment` |
-| Needs versioning/changelog workflows | `release` |
-| Needs metrics/logging/tracing contracts | `observability` |
+### Quick decision rules
+
+| Decision | Blueprint field | Values |
+|----------|------------------|--------|
+| DB SSOT mode | `db.ssot` | `none` \| `repo-prisma` \| `database` (default: `repo-prisma`) |
+| CI provider | `ci.provider` | `none` \| `github` \| `gitlab` (default: `github`) |
+| Disable default-on features | `features.<id>` | set to `false` to skip materialization |
 
 ### Write + verify (required)
 
-- You MUST write confirmed decisions into `init/project-blueprint.json` under `features.*`.
-- `features.*` drives Stage C materialization; `context.*` and other config sections are configuration only.
+- You MUST write confirmed decisions into `init/project-blueprint.json`.
+- DB enablement is controlled by `db.ssot` (`none` disables DB outputs).
+- CI enablement is controlled by `ci.provider` (`none` disables CI outputs).
+- `features.*` is override-only: default is enabled; set `false` to skip.
 
 Verification commands (run from repo root):
 
@@ -235,12 +234,9 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 ```
 Based on your project needs, I recommend these features:
 
-1. contextAwareness - your project has an API and a database
-2. database - database schema SSOT scaffolding
-3. ui - UI SSOT scaffolding (frontend enabled)
-4. environment - env contract SSOT scaffolding
-
-Do you want to enable these features?
+1. Choose DB SSOT mode (default: repo-prisma): db.ssot = <none|repo-prisma|database>
+2. Choose CI provider (default: github): ci.provider = <none|github|gitlab>
+3. Disable any default-on features? (set features.<id>=false)
 ```
 
 ---

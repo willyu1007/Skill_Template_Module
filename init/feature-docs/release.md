@@ -23,6 +23,12 @@ In `init/project-blueprint.json`:
 }
 ```
 
+Release is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "release": false } }
+```
+
 ## What Stage C `apply` does
 
 When enabled, Stage C:

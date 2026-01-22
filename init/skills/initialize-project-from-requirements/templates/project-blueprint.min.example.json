@@ -11,7 +11,7 @@
   },
   "capabilities": {
     "database": {
-      "enabled": false
+      "enabled": true
     },
     "frontend": {
       "enabled": false
@@ -24,21 +24,29 @@
     }
   },
   "db": {
-    "enabled": false,
-    "ssot": "none",
+    "enabled": true,
+    "ssot": "repo-prisma",
     "kind": "other",
     "environments": []
   },
+  "ci": {
+    "enabled": true,
+    "provider": "github",
+    "platform": "github-actions",
+    "features": [
+      "lint",
+      "test",
+      "build"
+    ]
+  },
   "features": {
-    "contextAwareness": false,
-    "database": false,
-    "ui": false,
-    "environment": false,
-    "packaging": false,
-    "deployment": false,
-    "release": false,
-    "ci": false,
-    "observability": false
+    "contextAwareness": true,
+    "ui": true,
+    "environment": true,
+    "packaging": true,
+    "deployment": true,
+    "release": true,
+    "observability": true
   },
   "skills": {
     "packs": [
@@ -47,7 +55,7 @@
     ]
   },
   "context": {
-    "enabled": false,
+    "enabled": true,
     "mode": "contract",
     "environments": []
   }

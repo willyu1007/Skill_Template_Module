@@ -23,6 +23,12 @@ In `init/project-blueprint.json`:
 }
 ```
 
+Deployment is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "deployment": false } }
+```
+
 ## What Stage C `apply` does
 
 When enabled, Stage C:

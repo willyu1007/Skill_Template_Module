@@ -12,23 +12,27 @@ This template does **not** ship an `addons/` directory. Feature assets are integ
 
 ## Available features
 
-| Feature ID | Blueprint toggle | Control script | Documentation |
+| Feature ID | Blueprint control | Control script | Documentation |
 |------------|------------------|----------------|---------------|
-| `context-awareness` | `features.contextAwareness` | `.ai/skills/features/context-awareness/scripts/contextctl.mjs` | [context-awareness.md](context-awareness.md) |
-| `database` | `features.database` (requires `db.ssot != none`) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`) | [database.md](database.md) |
-| `ui` | `features.ui` | `.ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` | [ui.md](ui.md) |
-| `environment` | `features.environment` | `.ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` | [environment.md](environment.md) |
-| `packaging` | `features.packaging` | `.ai/skills/features/packaging/scripts/packctl.mjs` | [packaging.md](packaging.md) |
-| `deployment` | `features.deployment` | `.ai/skills/features/deployment/scripts/deployctl.mjs` | [deployment.md](deployment.md) |
-| `release` | `features.release` | `.ai/skills/features/release/scripts/releasectl.mjs` | [release.md](release.md) |
-| `ci` | `features.ci` (requires `ci.provider`) | `.ai/skills/features/ci/scripts/cictl.mjs` | [ci.md](ci.md) |
-| `observability` | `features.observability` (requires `features.contextAwareness=true`) | `.ai/skills/features/observability/scripts/obsctl.mjs` | [observability.md](observability.md) |
+| `context-awareness` | **mandatory** (cannot be disabled) | `.ai/skills/features/context-awareness/scripts/contextctl.mjs` | [context-awareness.md](context-awareness.md) |
+| `database` | `db.ssot` (`none` disables) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`) | [database.md](database.md) |
+| `ui` | `features.ui` (default: `true`) | `.ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` | [ui.md](ui.md) |
+| `environment` | `features.environment` (default: `true`) | `.ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` | [environment.md](environment.md) |
+| `packaging` | `features.packaging` (default: `true`) | `.ai/skills/features/packaging/scripts/packctl.mjs` | [packaging.md](packaging.md) |
+| `deployment` | `features.deployment` (default: `true`) | `.ai/skills/features/deployment/scripts/deployctl.mjs` | [deployment.md](deployment.md) |
+| `release` | `features.release` (default: `true`) | `.ai/skills/features/release/scripts/releasectl.mjs` | [release.md](release.md) |
+| `ci` | `ci.provider` (`none` disables; default: `github`) | `.ai/skills/features/ci/scripts/cictl.mjs` | [ci.md](ci.md) |
+| `observability` | `features.observability` (default: `true`) | `.ai/skills/features/observability/scripts/obsctl.mjs` | [observability.md](observability.md) |
 
 ## How to decide (Stage B)
 
-- You MUST set `features.<id>: true` to install a feature during Stage C.
-- Blueprint config sections (`db.*`, `deploy.*`, `packaging.*`, `release.*`, `observability.*`, `context.*`) influence recommendations but do not install by themselves.
-- Use the pipeline to compute recommendations:
+- Context awareness is mandatory and always installed in Stage C.
+- Database is enabled/disabled by `db.ssot`:
+  - `db.ssot=none` disables DB materialization.
+- CI is enabled/disabled by `ci.provider`:
+  - `ci.provider=none` disables CI materialization.
+- Other features are enabled by default; set `features.<id>: false` to skip materialization.
+- Use the pipeline to preview effective enabled features:
 
 ```bash
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
@@ -36,8 +40,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 
 Common dependency checks (enforced by `validate`):
 
-- `features.database=true` requires `db.ssot != none`.
-- `features.observability=true` requires `features.contextAwareness=true`.
+- Observability contracts require context awareness (mandatory in this template).
 
 ## Enabling features
 
@@ -46,9 +49,9 @@ In `init/project-blueprint.json`:
 ```json
 {
   "db": { "enabled": true, "ssot": "database", "kind": "postgres", "environments": ["dev", "staging", "prod"] },
+  "ci": { "provider": "github" },
   "features": {
     "contextAwareness": true,
-    "database": true,
     "ui": true,
     "environment": true,
     "packaging": true,
@@ -77,4 +80,5 @@ Useful flags:
 
 - `--force-features`: overwrite existing files when copying templates
 - `--verify-features`: run the feature verify step after init (when available)
-- `--non-blocking-features`: continue despite feature errors (default is fail-fast)
+- `--blocking-features`: fail-fast on feature errors (default is non-blocking)
+- `--non-blocking-features`: (legacy) continue despite feature errors

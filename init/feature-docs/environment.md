@@ -17,6 +17,12 @@ In `init/project-blueprint.json`:
 }
 ```
 
+Environment is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "environment": false } }
+```
+
 ## What Stage C `apply` does
 
 When enabled, Stage C runs:

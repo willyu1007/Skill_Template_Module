@@ -8,7 +8,7 @@
 
 ## Requirements
 
-- `features.observability` requires `features.contextAwareness=true`
+- Context awareness is mandatory in this template.
 
 ## How to enable
 
@@ -17,7 +17,6 @@ In `init/project-blueprint.json`:
 ```json
 {
   "features": {
-    "contextAwareness": true,
     "observability": true
   },
   "observability": {
@@ -27,6 +26,12 @@ In `init/project-blueprint.json`:
     "traces": true
   }
 }
+```
+
+Observability is enabled by default. To skip materialization, set:
+
+```json
+{ "features": { "observability": false } }
 ```
 
 ## What Stage C `apply` does
