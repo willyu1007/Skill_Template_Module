@@ -275,7 +275,7 @@ When executing this skill, always produce:
 ### Interfaces
 | Type | Entrypoint | Response Mode |
 |------|------------|---------------|
-| http | node src/adapters/http/server.mjs | blocking |
+| http | node {{agent_module_path}}/src/adapters/http/server.mjs | blocking |
 | http (SSE) | POST /run/stream | streaming |
 | http (WS) | ws://.../ws | streaming |
 | ... | ... | ... |

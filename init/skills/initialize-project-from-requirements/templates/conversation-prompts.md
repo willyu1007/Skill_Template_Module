@@ -117,7 +117,7 @@ Write to:
 
 ## C. Answer → Artifact mapping cheat sheet
 
-Use this mapping to avoid "knowledge floating in chat":
+Use the following mapping to avoid "knowledge floating in chat":
 
 During initialization (working location):
 - Scope (MUST/OUT) → `init/stage-a-docs/requirements.md` (`## Goals`, `## Non-goals`)
@@ -134,11 +134,11 @@ After completion (archived to):
 
 ## D. Feature + provider prompts (default-on init)
 
-This template defaults to enabling most features during Stage C. Ask the following to choose **implementation forms** and any **override-disable** decisions.
+The init template defaults to enabling most features during Stage C. Ask the following to choose **implementation forms** and any **override-disable** decisions.
 
 ### D1. Context Management (context-awareness)
 
-Context awareness is **mandatory** in this template.
+Context awareness is **mandatory** in the init template.
 
 Ask only for configuration:
 - Context mode (`contract` vs `snapshot`)

@@ -1,5 +1,5 @@
 ---
-name: example.api-workdocs
+name: example-api-workdocs
 purpose: Module-local task tracking and decision documentation.
 ---
 

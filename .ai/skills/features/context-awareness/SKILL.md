@@ -9,7 +9,7 @@ description: Enable and operate the Context Awareness feature (docs/context cont
 
 Provide a **stable, verifiable, LLM-readable context layer** under `docs/context/`.
 
-This feature standardizes how the project exposes:
+The context-awareness feature standardizes how the project exposes:
 
 - API contracts (OpenAPI)
 - Database schema contract (LLM-readable JSON)
@@ -110,7 +110,7 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify-config
 
 ## Module slice workflow (DB / Env / Observability)
 
-For module-level context slices, follow this standard workflow:
+For module-level context slices, follow the standard workflow below:
 
 ### Step 1 — Ensure repo contracts exist
 - DB contract: `docs/context/db/schema.json`

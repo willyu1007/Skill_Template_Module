@@ -16,17 +16,17 @@ Common provider roots (examples; configurable):
 - Claude Code: `.claude/skills/`
 
 ## Script interface
-Run from the skill root:
+Run from repo root:
 
 ```bash
-python3 scripts/land_skills.py --help
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py --help
 ```
 
 ### Typical flows
 #### 1) Install bundle into SSOT
 ```bash
-python3 scripts/land_skills.py --repo-root . --source /path/to/bundle.zip --plan
-python3 scripts/land_skills.py --repo-root . --source /path/to/bundle.zip --apply --overwrite=changed --backup
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py --repo-root . --source /path/to/bundle.zip --plan
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py --repo-root . --source /path/to/bundle.zip --apply --overwrite=changed --backup
 ```
 
 #### 2) Sync SSOT to provider stubs (recommended)
@@ -37,11 +37,11 @@ node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset -
 
 #### 3) Verify only
 ```bash
-python3 scripts/land_skills.py --repo-root . --verify
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py --repo-root . --verify
 ```
 
 ## Config file
-You can provide `--config templates/landing-config.example.json` and adjust as needed.
+You can provide `--config .ai/skills/workflows/skill-operation/land-skills-into-repo/templates/landing-config.example.json` and adjust as needed.
 
 Config fields (high level):
 - `ssot_dir`: where to install the SSOT inside the repo (default `.ai/skills`)

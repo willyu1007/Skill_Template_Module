@@ -49,7 +49,7 @@ SYNC_EXCLUDE_SCHEMAS="extensions,tiger,topology"
 When using the schema snapshot script:
 
 ```bash
-python3 ./scripts/db_schema_snapshot.py \
+python3 .ai/skills/features/database/sync-db-schema-from-code/scripts/db_schema_snapshot.py \
   --url "$DATABASE_URL" \
   --exclude-schemas extensions,tiger,topology \
   --out "<evidenceDir>/schema_snapshot.json"

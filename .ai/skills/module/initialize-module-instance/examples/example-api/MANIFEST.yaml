@@ -6,59 +6,59 @@
 #   node .ai/scripts/modules/flowctl.mjs update-from-manifests
 #   node .ai/scripts/modules/flowctl.mjs lint
 
-module_id: example.api
+module_id: example-api
 module_type: http_api
 description: "Example API module demonstrating the module-first template structure"
 status: active
 
 # Participation in business flows (quick lookup)
 participates_in:
-  - flow_id: user_management
-    node_id: create_user
+  - flow_id: user-management
+    node_id: create-user
     role: primary
-  - flow_id: user_management
-    node_id: get_user
+  - flow_id: user-management
+    node_id: get-user
     role: primary
-  - flow_id: user_management
-    node_id: list_users
+  - flow_id: user-management
+    node_id: list-users
     role: primary
 
 # Interfaces exposed by this module
 interfaces:
-  - id: http_api.create_user
+  - id: http-api.create-user
     protocol: http
     method: POST
     path: /api/users
     description: "Create a new user"
     status: active
     implements:
-      - flow_id: user_management
-        node_id: create_user
+      - flow_id: user-management
+        node_id: create-user
         variant: default
 
-  - id: http_api.get_user
+  - id: http-api.get-user
     protocol: http
     method: GET
     path: /api/users/:id
     description: "Get user by ID"
     status: active
     implements:
-      - flow_id: user_management
-        node_id: get_user
+      - flow_id: user-management
+        node_id: get-user
         variant: default
 
-  - id: http_api.list_users
+  - id: http-api.list-users
     protocol: http
     method: GET
     path: /api/users
     description: "List all users"
     status: active
     implements:
-      - flow_id: user_management
-        node_id: list_users
+      - flow_id: user-management
+        node_id: list-users
         variant: default
 
-  - id: http_api.health
+  - id: http-api.health
     protocol: http
     method: GET
     path: /health

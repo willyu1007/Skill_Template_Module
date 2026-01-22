@@ -10,7 +10,7 @@ Standardize the **"landing"** process for Agent Skills so a skills bundle can be
 
 The land-skills-into-repo skill provides:
 - A repeatable workflow (manual + scripted).
-- A script (`./scripts/land_skills.py`) that performs a safe, auditable install/update with dry-run by default.
+- A script (`.ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py`) that performs a safe, auditable install/update with dry-run by default.
 
 **Note**: Provider stubs (for `.codex/skills/`, `.claude/skills/`, etc.) should be generated using `node .ai/scripts/sync-skills.mjs`, not the land_skills.py script.
 
@@ -34,7 +34,7 @@ You MUST obtain:
 
 You MAY additionally provide:
 - `ssot_dir`: Destination SSOT directory inside the repo (default: `.ai/skills`).
-- `config`: A JSON config file (see `./templates/landing-config.schema.json` and `./templates/landing-config.example.json`).
+- `config`: A JSON config file (see `.ai/skills/workflows/skill-operation/land-skills-into-repo/templates/landing-config.schema.json` and `.ai/skills/workflows/skill-operation/land-skills-into-repo/templates/landing-config.example.json`).
 
 ## Outputs
 The skill writes:
@@ -47,10 +47,10 @@ The script always produces a plan/report to stdout; it can also emit JSON via `-
 
 ## Steps
 ### Step 1: Dry-run (MUST)
-From the directory that contains the `SKILL.md` (the "skill root"), run:
+From repo root, run:
 
 ```bash
-python3 ./scripts/land_skills.py \
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py \
   --repo-root /path/to/repo \
   --source /path/to/skills-bundle.zip \
   --plan
@@ -64,7 +64,7 @@ Rules:
 After reviewing the plan output, apply changes:
 
 ```bash
-python3 ./scripts/land_skills.py \
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py \
   --repo-root /path/to/repo \
   --source /path/to/skills-bundle.zip \
   --apply \
@@ -80,7 +80,7 @@ Recommended defaults:
 Run verification after applying:
 
 ```bash
-python3 ./scripts/land_skills.py \
+python3 .ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py \
   --repo-root /path/to/repo \
   --verify
 ```
@@ -120,7 +120,7 @@ This generates lightweight wrapper stubs in `.codex/skills/` and `.claude/skills
 - SHOULD sync provider stubs after landing skills
 
 ## Included assets
-- `./scripts/land_skills.py`: installer/verifier (stdlib-only Python).
-- `./templates/landing-config.schema.json`: optional config schema.
-- `./templates/landing-config.example.json`: optional config example.
-- `./examples/`: minimal runnable scenarios.
+- `.ai/skills/workflows/skill-operation/land-skills-into-repo/scripts/land_skills.py`: installer/verifier (stdlib-only Python).
+- `.ai/skills/workflows/skill-operation/land-skills-into-repo/templates/landing-config.schema.json`: optional config schema.
+- `.ai/skills/workflows/skill-operation/land-skills-into-repo/templates/landing-config.example.json`: optional config example.
+- `.ai/skills/workflows/skill-operation/land-skills-into-repo/examples/`: minimal runnable scenarios.

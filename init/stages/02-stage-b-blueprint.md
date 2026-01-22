@@ -112,7 +112,7 @@ Stage C behavior is driven by:
 1) **Mandatory foundation**
 
 - Context awareness is always enabled in Stage C.
-- You MAY keep `features.contextAwareness: true` in the blueprint (or omit it), but you MUST NOT set it to `false`.
+- You MAY keep `features.contextAwareness: true` in the blueprint (or omit the field), but you MUST NOT set the value to `false`.
 
 2) **Implementation selection (SSOT)**
 
@@ -165,4 +165,4 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 
 ## Note on blueprint location
 
-The blueprint is stored in `init/project-blueprint.json` during initialization. After Stage C completion, use `cleanup-init --archive` to archive it to `docs/project/project-blueprint.json` for long-term retention.
+The blueprint is stored in `init/project-blueprint.json` during initialization. After Stage C completion, use `cleanup-init --archive` to archive the blueprint to `docs/project/project-blueprint.json` for long-term retention.

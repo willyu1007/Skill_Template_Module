@@ -1,9 +1,9 @@
 ---
-name: example.api
-purpose: Module agent instructions for example.api
+name: example-api
+purpose: Module agent instructions for example-api
 ---
 
-# example.api
+# example-api
 
 Example API module demonstrating the module-first template structure.
 
@@ -56,11 +56,11 @@ The module provides a simple user management HTTP API:
 
 ## Business flows
 
-Participates in `user_management` flow:
+Participates in `user-management` flow:
 
 ```
-create_user → get_user
-           → list_users
+create-user → get-user
+            → list-users
 ```
 
 ## Context artifacts
@@ -73,8 +73,8 @@ Add artifact example:
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
   --artifact-id openapi \
   --type openapi \
-  --path modules/example.api/interact/openapi.yaml \
-  --module-id example.api
+  --path modules/example-api/interact/openapi.yaml \
+  --module-id example-api
 ```
 
 ## Testing

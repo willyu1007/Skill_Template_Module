@@ -203,7 +203,7 @@ Important: **DB schema SSOT mode is mandatory**. Record it as `db.ssot` with one
 
 ## Phase 4: Provider selection + feature overrides
 
-This template defaults to enabling most features during Stage C. Use this phase to choose **implementation forms** and any **override-disable** decisions.
+The init template defaults to enabling most features during Stage C. Use Phase 4 to choose **implementation forms** and any **override-disable** decisions.
 
 Context awareness is **mandatory** (always installed in Stage C).
 

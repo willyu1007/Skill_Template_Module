@@ -10,17 +10,17 @@ This example shows the safe-by-default workflow:
 6) optionally package
 
 ## 1) Create a draft plan
-From inside the skill directory:
+From repo root:
 
 ```bash
-python3 scripts/skillgen.py init-plan   --inputs "docs/**/*.md"   --out conversion-plan.json   --skills-root out/skills   --layout categorized   --tier1 workflows   --tier2 common
+python3 .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py init-plan   --inputs "docs/**/*.md"   --out conversion-plan.json   --skills-root out/skills   --layout categorized   --tier1 workflows   --tier2 common
 ```
 
 Review `conversion-plan.json`. The generated `description` fields are placeholders and MUST be rewritten.
 
 ## 2) Apply the plan (scaffold)
 ```bash
-python3 scripts/skillgen.py apply --plan conversion-plan.json
+python3 .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py apply --plan conversion-plan.json
 ```
 
 This creates `out/skills/.../<skill-name>/SKILL.md` and optional supporting files.
@@ -35,12 +35,12 @@ Move deep detail to `reference.md`, `examples/`, and `templates/`.
 
 ## 4) Lint
 ```bash
-python3 scripts/skillgen.py lint --skills-root out/skills
+python3 .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py lint --skills-root out/skills
 ```
 
 Fix all errors. Treat warnings as “should fix” unless you have a clear reason not to.
 
 ## 5) Package (optional)
 ```bash
-python3 scripts/skillgen.py package   --skills-root out/skills   --out skills-bundle.zip   --overwrite
+python3 .ai/skills/workflows/skill-operation/generate-skills-from-knowledge/scripts/skillgen.py package   --skills-root out/skills   --out skills-bundle.zip   --overwrite
 ```

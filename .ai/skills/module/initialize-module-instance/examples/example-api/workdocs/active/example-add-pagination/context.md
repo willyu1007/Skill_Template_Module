@@ -27,12 +27,12 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 
 ## Related Flow Nodes
 
-- `user_management.list_users` — affected by pagination changes
+- `user-management.list-users` — affected by pagination changes
 
 ## External References
 
 - [Cursor Pagination Best Practices](https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination)
-- Module MANIFEST: `modules/example.api/MANIFEST.yaml`
+- Module MANIFEST: `modules/example-api/MANIFEST.yaml`
 
 ## Open Questions
 

@@ -1,4 +1,4 @@
-# example.api — Ability
+# example-api — Ability
 
 This document describes what this module is responsible for, and what it is NOT responsible for.
 
