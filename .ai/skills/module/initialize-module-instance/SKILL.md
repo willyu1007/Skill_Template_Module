@@ -15,7 +15,7 @@ Create a new module under `modules/<module_id>/` and ensure the module is correc
 
 ## Inputs
 
-- `module_id` (required; recommended pattern: `^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$`)
+- `module_id` (required; pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*$` (kebab-case))
 - `module_type` (optional; default: `service`)
 - `description` (optional)
 
@@ -64,6 +64,21 @@ If yes, I'll help you build a module-specific domain glossary.
 
 The domain glossary alignment step is **MustAsk but not blocking** — user can skip and fill in later.
 
+### Step 0 — Confirm module_id and approve repo writes (Required)
+
+Before creating any files under `modules/`, confirm the target module id and ask for explicit approval.
+
+```
+[APPROVAL REQUIRED]
+I am ready to initialize a new module.
+
+- module_id: <module_id>  (kebab-case)
+- module_type: <module_type>
+- path: modules/<module_id>/
+
+Type "approve init" to create the module skeleton.
+```
+
 ### Step 1 — Initialize the module skeleton
 
 ```bash
@@ -73,14 +88,19 @@ node .ai/scripts/modules/modulectl.mjs init --module-id <module_id> --module-typ
 ### Step 2 — Verify manifests and module-local SSOT
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs verify --strict
+node .ai/scripts/modules/modulectl.mjs verify
+# Optional: add --strict to treat warnings as errors
 ```
 
-### Step 3 — Rebuild derived registries/graphs
+### Step 3 — Refresh derived artifacts (Conditional)
+
+`modulectl init --apply` already refreshes derived registries and indexes. Run this step when you have edited manifests, flows, or context registries after initialization, or when you want a clean validation pass.
+
 
 ```bash
 node .ai/scripts/modules/modulectl.mjs registry-build
 node .ai/scripts/modules/flowctl.mjs update-from-manifests
+node .ai/scripts/modules/flowctl.mjs graph
 node .ai/scripts/modules/flowctl.mjs lint
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 ```
@@ -115,6 +135,7 @@ If either AGENTS.md or README.md is missing, create it (do not overwrite existin
 
 - Add/edit `.system/modular/flow_graph.yaml` to include new flow nodes.
 - Add `implements` entries under `modules/<module_id>/MANIFEST.yaml` interfaces.
+- If `participates_in` is non-empty in the manifest, keep it consistent with the implemented flow/node set (quick lookup).
 - Re-run step 3.
 
 ## Notes

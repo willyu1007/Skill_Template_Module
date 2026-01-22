@@ -6,7 +6,7 @@ The `init/` package provides a 3-stage, checkpointed workflow to bootstrap a rep
 
 - **Stage A**: Requirements docs (working location: `init/stage-a-docs/`)
 - **Stage B**: Blueprint (working location: `init/project-blueprint.json`)
-- **Stage C**: Scaffold + configs + skill packs + features + wrapper sync
+- **Stage C**: Scaffold + configs + skill packs + features + wrapper sync + modular core build
 
 It is designed for **robustness and auditability**:
 - Each stage has a **validation step** (written into `init/.init-state.json`)
@@ -128,7 +128,7 @@ Key sections:
 
 ## Optional features
 
-This template does **not** ship an `addons/` directory. Feature assets are integrated under `.ai/`:
+Feature assets are integrated under `.ai/`:
 
 - Feature skills + templates: `.ai/skills/features/...`
 - Feature controllers: `.ai/skills/features/**/scripts/*` (Node/Python)
@@ -182,6 +182,8 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 ## Apply flags (Stage C)
 
 - `--force-features`: overwrite existing feature files when materializing templates
-- `--verify-features`: run `*ctl.mjs verify` after `init` (fail-fast by default)
+- `--verify-features`: run `*ctl.* verify` after `init` (respects `--blocking-features`)
 - `--blocking-features`: fail-fast on feature init/verify errors (default is non-blocking)
 - `--non-blocking-features`: (legacy) continue despite feature init/verify errors
+- `--skip-modular`: skip modular core build (not recommended)
+- `--blocking-modular`: fail-fast on modular core build errors (default is non-blocking)

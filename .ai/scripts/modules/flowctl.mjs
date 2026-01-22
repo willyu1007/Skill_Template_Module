@@ -29,7 +29,9 @@ import {
   normalizeFlowGraph,
   validateFlowGraph,
   normalizeTypeGraph,
-  validateTypeGraph
+  validateTypeGraph,
+  isValidKebabId,
+  normalizeParticipatesInEntry
 } from '../lib/modular.mjs';
 
 // =============================================================================
@@ -419,6 +421,29 @@ function cmdLint(repoRoot, opts) {
 
   const { warnings, errors, flows } = validateFlowGraph(flowGraph);
 
+  // Validate kebab-case IDs for flows and nodes
+  for (const f of flows) {
+    if (f.id && !isValidKebabId(f.id)) {
+      errors.push(
+        `[${f.id}] flow id must be kebab-case\n` +
+        `  Required format: lowercase letters, digits, hyphens only\n` +
+        `  Examples: user-management, order-fulfillment\n` +
+        `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+      );
+    }
+
+    for (const n of f.nodes || []) {
+      if (n.id && !isValidKebabId(n.id)) {
+        errors.push(
+          `[${f.id}.${n.id}] node id must be kebab-case\n` +
+          `  Required format: lowercase letters, digits, hyphens only\n` +
+          `  Examples: create-user, place-order\n` +
+          `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+        );
+      }
+    }
+  }
+
   // Validate type graph (optional)
   const tg = validateTypeGraph(typeGraph);
   warnings.push(...tg.warnings);
@@ -518,6 +543,40 @@ function cmdLint(repoRoot, opts) {
     for (const impl of entry.implementations || []) {
       if (!endpointSet.has(impl.endpoint_id)) {
         warnings.push(`flow_impl_index references unknown endpoint_id: ${impl.endpoint_id}`);
+      }
+    }
+  }
+
+  // Validate participates_in references in instance_registry
+  // Check that referenced flow/node pairs exist in the flow graph
+  const flowNodeSet = new Set();
+  for (const f of flows) {
+    if (!f.id) continue;
+    for (const n of f.nodes || []) {
+      if (n.id) flowNodeSet.add(`${f.id}.${n.id}`);
+    }
+  }
+
+  for (const m of instanceRegistry.modules || []) {
+    const moduleId = m.module_id ?? m.moduleId;
+    const participatesIn = Array.isArray(m.participates_in) ? m.participates_in : [];
+    
+    for (const entry of participatesIn) {
+      const norm = normalizeParticipatesInEntry(entry);
+      if (!norm.flow_id || !norm.node_id) continue;
+      
+      const key = `${norm.flow_id}.${norm.node_id}`;
+      
+      // Check if flow exists
+      const flowExists = flows.some(f => f.id === norm.flow_id);
+      if (!flowExists) {
+        warnings.push(`[${moduleId}] participates_in references unknown flow: ${norm.flow_id}`);
+        continue;
+      }
+      
+      // Check if node exists in flow
+      if (!flowNodeSet.has(key)) {
+        warnings.push(`[${moduleId}] participates_in references unknown node: ${key}`);
       }
     }
   }

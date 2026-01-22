@@ -17,7 +17,9 @@
  *     firstString,
  *     indexImplsByFlowNode,
  *     normalizeFlowNodeRef,
+ *     isValidKebabId,
  *     isValidModuleId,
+ *     normalizeParticipatesInEntry,
  *     discoverModules,
  *     getModulesDir,
  *     validateManifest,
@@ -295,17 +297,58 @@ export function indexImplsByFlowNode(flowImplIndex) {
 // =============================================================================
 
 /**
+ * Validate a kebab-case ID (module/flow/node/scenario/binding).
+ *
+ * Pattern: lowercase letters and digits, separated by hyphens
+ * Length: 1-64 characters
+ *
+ * Examples:
+ *   Valid: user-api, billing-service, a, my-module-123, api-v2
+ *   Invalid: User-Api, user_api, user.api, user-, -user
+ *
+ * @param {string} id - ID to validate
+ * @returns {boolean}
+ */
+export function isValidKebabId(id) {
+  if (typeof id !== 'string') return false;
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && id.length >= 1 && id.length <= 64;
+}
+
+/**
  * Validate a module ID against the standard pattern.
  *
- * Pattern: lowercase letters, digits, dots, hyphens, underscores
- * Length: 3-64 characters (first and last must be alphanumeric)
+ * Now strictly requires kebab-case format.
+ * Pattern: lowercase letters and digits, separated by hyphens
+ * Length: 1-64 characters
  *
  * @param {string} id - Module ID to validate
  * @returns {boolean}
  */
 export function isValidModuleId(id) {
-  if (typeof id !== 'string') return false;
-  return /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.test(id);
+  return isValidKebabId(id);
+}
+
+/**
+ * Normalize a participates_in entry.
+ *
+ * Handles variations:
+ * - { flow_id, node_id, role? }
+ * - { flowId, nodeId }
+ * - { flow, node }
+ *
+ * @param {object} entry - Raw participates_in entry
+ * @returns {{ flow_id: string | null, node_id: string | null, role: string | null }}
+ */
+export function normalizeParticipatesInEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return { flow_id: null, node_id: null, role: null };
+  }
+
+  const flowId = firstString(entry, ['flow_id', 'flowId', 'flow']);
+  const nodeId = firstString(entry, ['node_id', 'nodeId', 'node']);
+  const role = firstString(entry, ['role']);
+
+  return { flow_id: flowId, node_id: nodeId, role };
 }
 
 /**
@@ -373,7 +416,12 @@ export function validateManifest(manifest, manifestPath) {
 
   const moduleId = firstString(manifest, ['module_id', 'moduleId']);
   if (!moduleId || !isValidModuleId(moduleId)) {
-    errors.push(`Missing/invalid module_id in ${manifestPath} (expected pattern: /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/)`);
+    errors.push(
+      `Missing/invalid module_id in ${manifestPath}\n` +
+      `  Required format: kebab-case (lowercase letters, digits, hyphens only)\n` +
+      `  Examples: user-api, billing-service, auth-module\n` +
+      `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+    );
   }
 
   const moduleType = firstString(manifest, ['module_type', 'moduleType']);
@@ -427,6 +475,21 @@ export function validateManifest(manifest, manifestPath) {
       if (it.protocol === 'http') {
         if (typeof it.method !== 'string' || typeof it.path !== 'string') {
           warnings.push(`http interface should include method and path in ${manifestPath} (interface ${id})`);
+        }
+      }
+    }
+  }
+
+  // Validate participates_in (optional field, but if present, must be valid)
+  if (manifest.participates_in !== undefined && manifest.participates_in !== null) {
+    if (!Array.isArray(manifest.participates_in)) {
+      errors.push(`participates_in must be a list in ${manifestPath}`);
+    } else if (manifest.participates_in.length > 0) {
+      for (let i = 0; i < manifest.participates_in.length; i++) {
+        const entry = manifest.participates_in[i];
+        const norm = normalizeParticipatesInEntry(entry);
+        if (!norm.flow_id || !norm.node_id) {
+          errors.push(`participates_in[${i}] missing flow_id or node_id in ${manifestPath}`);
         }
       }
     }

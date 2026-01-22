@@ -3,10 +3,13 @@
 # This file defines business flows in BPMN-like structured data.
 # It does NOT reference modules or endpoints - those link to this via MANIFEST.yaml.
 #
-# Guidelines:
-# - IDs are stable, machine-friendly (snake_case or dot.separated)
-# - Descriptions are short business-language sentences
-# - Deprecate instead of renaming: use status: deprecated
+# ID Naming Convention:
+# - flow IDs and node IDs MUST be kebab-case (lowercase letters, digits, hyphens)
+# - Examples: user-management, create-user, order-fulfillment
+# - Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+#
+# IDs are stable machine-friendly identifiers.
+# Prefer deprecating over renaming to maintain backward compatibility.
 #
 # After editing, run:
 #   node .ai/scripts/modules/flowctl.mjs lint

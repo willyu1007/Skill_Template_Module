@@ -1,8 +1,0 @@
-{
-  "type": "module",
-  "name": "@skill-template/ai-scripts",
-  "version": "1.0.0",
-  "description": "AI/LLM skill management scripts - ESM module boundary",
-  "private": true
-}
-

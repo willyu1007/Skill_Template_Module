@@ -45,7 +45,8 @@ Rules:
 
 ### Phase 2 — Preflight validation (mandatory)
 1. Run strict validation:
-   - `node .ai/scripts/modules/dbssotctl-module.mjs verify --strict`
+   - `node .ai/scripts/modules/dbssotctl-module.mjs verify`
+   - Optional: `node .ai/scripts/modules/dbssotctl-module.mjs verify --strict`
 2. Check ownership conflicts:
    - `node .ai/scripts/modules/dbssotctl-module.mjs conflicts`
 3. If any errors or conflicts are reported, STOP and resolve:
@@ -57,6 +58,19 @@ Rules:
    - `node .ai/scripts/modules/dbssotctl-module.mjs export-slice --module-id <module_id>`
 2. Ask for confirmation before writing slices, especially if updating multiple modules.
 
+
+**Checkpoint**: request explicit approval before writing slices.
+
+```
+[APPROVAL REQUIRED]
+I am ready to generate and write module slices.
+
+- Command: sync-slices
+- Scope: all modules (or a single module if --module-id is used)
+
+Type "approve slices" to proceed.
+```
+
 ### Phase 4 — Sync module slices (writes)
 1. Generate slices for all modules (requires explicit approval):
    - `node .ai/scripts/modules/dbssotctl-module.mjs sync-slices`
@@ -65,12 +79,12 @@ Rules:
 3. To avoid registry updates, add `--no-registry`.
 
 ## Verification
-- [ ] `verify --strict` passes with no errors
+- [ ] `verify` passes with no errors
 - [ ] `conflicts` reports no ownership collisions
 - [ ] `modules/<module_id>/interact/db-slice.json` exists and matches declared owns/uses
 - [ ] Module registry updated with `db-slice` artifact (unless `--no-registry`)
 
-## Non-negotiable constraints
+## Boundaries
 - MUST NOT modify DB SSOT or run migrations in this skill.
 - MUST NOT treat module slices as SSOT.
 - MUST resolve ownership conflicts before syncing slices.

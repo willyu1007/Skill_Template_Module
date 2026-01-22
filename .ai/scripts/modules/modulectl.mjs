@@ -25,6 +25,7 @@ import { ensureDir, safeRel, readText, writeText, readJson, writeJson } from '..
 import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from '../lib/yaml.mjs';
 import {
   normalizeImplementsEntry,
+  normalizeParticipatesInEntry,
   isValidModuleId,
   discoverModules,
   getModulesDir,
@@ -44,7 +45,7 @@ Options:
 
 Commands:
   init
-    --module-id <id>            Module id (e.g., billing.api)
+    --module-id <id>            Module id (kebab-case, e.g., billing-api)
     --module-type <type>        e.g., service|library|job (default: service)
     --description <text>        Optional
     --apply                     Actually write files (default: dry-run)
@@ -66,8 +67,13 @@ Commands:
     --strict                    Fail on warnings
     Verify module manifests and module-local SSOT.
 
+ID Naming Convention:
+  All IDs must be kebab-case (lowercase letters, digits, hyphens only).
+  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+  Examples: user-api, billing-service, auth-module
+
 Examples:
-  node .ai/scripts/modules/modulectl.mjs init --module-id billing.api --apply
+  node .ai/scripts/modules/modulectl.mjs init --module-id billing-api --apply
   node .ai/scripts/modules/modulectl.mjs registry-build
   node .ai/scripts/modules/modulectl.mjs verify --strict
 `;
@@ -197,7 +203,12 @@ function cmdInit(repoRoot, opts) {
   const force = !!opts['force'];
 
   if (!moduleId || !isValidModuleId(moduleId)) {
-    die(`[error] --module-id is required and must match /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/`);
+    die(
+      `[error] Invalid module_id: "${moduleId || ''}"\n` +
+      `  Required format: kebab-case (lowercase letters, digits, hyphens only)\n` +
+      `  Examples: user-api, billing-service, auth-module\n` +
+      `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+    );
   }
 
   const modulesDir = getModulesDir(repoRoot, 'modules');
@@ -341,8 +352,21 @@ function buildInstanceRegistry(repoRoot, modulesDirOpt) {
       path: safeRel(repoRoot, m.dir),
       status: manifest.status ?? null,
       description: manifest.description ?? null,
-      interfaces: []
+      interfaces: [],
+      participates_in: []
     };
+
+    // Extract participates_in if present
+    if (Array.isArray(manifest.participates_in) && manifest.participates_in.length > 0) {
+      rec.participates_in = manifest.participates_in.map(entry => {
+        const norm = normalizeParticipatesInEntry(entry);
+        return {
+          flow_id: norm.flow_id,
+          node_id: norm.node_id,
+          role: norm.role ?? null
+        };
+      }).filter(e => e.flow_id && e.node_id);
+    }
 
     if (Array.isArray(manifest.interfaces)) {
       for (const it of manifest.interfaces) {
@@ -466,6 +490,33 @@ function cmdVerify(repoRoot, opts) {
       const reg = readJson(registryPath);
       if (!reg || typeof reg !== 'object') {
         errors.push(`[${path.basename(m.dir)}] interact/registry.json is not valid JSON`);
+      }
+    }
+
+    // Verify participates_in consistency with implements
+    if (Array.isArray(manifest.participates_in) && manifest.participates_in.length > 0) {
+      // Build set of implemented flow/node pairs from interfaces
+      const implementedFlowNodes = new Set();
+      for (const iface of manifest.interfaces || []) {
+        for (const impl of iface.implements || []) {
+          const norm = normalizeImplementsEntry(impl);
+          if (norm.flow_id && norm.node_id) {
+            implementedFlowNodes.add(`${norm.flow_id}.${norm.node_id}`);
+          }
+        }
+      }
+
+      // Check each participates_in entry
+      for (const entry of manifest.participates_in) {
+        const norm = normalizeParticipatesInEntry(entry);
+        if (!norm.flow_id || !norm.node_id) continue; // Already reported by validateManifest
+        const key = `${norm.flow_id}.${norm.node_id}`;
+        if (!implementedFlowNodes.has(key)) {
+          errors.push(
+            `[${path.basename(m.dir)}] participates_in references ${key} but no interface implements it\n` +
+            `  Fix: Either add an interface that implements ${key}, or remove this participates_in entry`
+          );
+        }
       }
     }
   }

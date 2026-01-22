@@ -113,6 +113,32 @@ Use `.ai/.tmp/` for temporary environments, caches, and generated intermediate f
 - Scripts are responsible for cleaning up their own temporary files
 - Stale files in `.ai/.tmp/` may be deleted without notice
 
+## Modular System IDs (MUST)
+
+All IDs in the modular system (`modules/`, `.system/modular/`) follow **strict kebab-case**:
+
+| Element | Pattern | Examples |
+|---------|---------|----------|
+| Module IDs | `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `user-api`, `billing-service`, `auth-module` |
+| Flow IDs | `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `user-management`, `order-fulfillment` |
+| Node IDs | `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `create-user`, `place-order`, `send-notification` |
+| Scenario IDs | `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `create-and-retrieve-user`, `billing-happy-path` |
+| Binding IDs | `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `user-create-default`, `order-place-primary` |
+
+**Forbidden characters**: dots (`.`), underscores (`_`), uppercase letters
+
+**Interface IDs** (in MANIFEST.yaml) may use dots to separate protocol prefix from operation:
+- Allowed: `http-api.create-user` (protocol prefix + operation)
+- The operation part should still be kebab-case
+
+**Why strict kebab-case?**
+- Compatible with directory names and URL paths
+- Clear word separation without ambiguity
+- Easy conversion to environment variable names (`user-api` → `USER_API`)
+- Avoids cross-platform filesystem issues
+
+**Validation**: The toolchain (`modulectl`, `flowctl`, `integrationctl`) enforces these rules and provides clear error messages when IDs don't conform.
+
 ## Skill Naming (MUST)
 
 ### Skill Directory

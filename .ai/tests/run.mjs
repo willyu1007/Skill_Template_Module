@@ -13,6 +13,7 @@ import * as envSuite from './suites/environment/index.mjs';
 import * as dbSuite from './suites/database/index.mjs';
 import * as contextSuite from './suites/context-awareness/index.mjs';
 import * as deploySuite from './suites/deployment/index.mjs';
+import * as modularSuite from './suites/modular-system/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,13 +26,14 @@ const SUITES = {
   database: dbSuite,
   'context-awareness': contextSuite,
   deployment: deploySuite,
+  'modular-system': modularSuite,
 };
 
 function usage(exitCode) {
   const msg = [
     'Usage:',
     '  node .ai/tests/run.mjs --list',
-    '  node .ai/tests/run.mjs --suite <ui|environment|database|context-awareness|deployment>',
+    '  node .ai/tests/run.mjs --suite <ui|environment|database|context-awareness|deployment|modular-system>',
     '',
     'Options:',
     '  --keep-artifacts     Keep evidence even on PASS (default: false)',

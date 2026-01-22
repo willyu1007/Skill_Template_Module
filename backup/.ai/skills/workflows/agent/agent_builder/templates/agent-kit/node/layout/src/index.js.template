@@ -1,6 +1,0 @@
-// {{agent_id}} - public module API
-const { runAgent } = require('./core/run');
-
-module.exports = {
-  runAgent
-};

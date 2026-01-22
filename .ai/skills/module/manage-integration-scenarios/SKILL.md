@@ -25,6 +25,61 @@ Maintain cross-module integration scenarios under `modules/integration/` and ens
   - `modules/integration/compiled/*.json`
   - `modules/integration/runs/*.json` (when executing)
 
+## LLM Execution Protocol
+
+### Phase 0 — Clarify scenario intent (no SSOT writes)
+
+1. Confirm:
+   - the target `flow_id` (MUST be kebab-case)
+   - the ordered node sequence (each `node_id` MUST be kebab-case)
+   - whether planned nodes are allowed (`allow_unresolved: true`)
+2. Decide how endpoints are selected:
+   - Prefer `use_binding` (project-level SSOT) when a node has multiple implementations
+   - Use `endpoint_id` only when you need a one-off override
+
+### Phase 1 — Plan and request approval (no SSOT writes)
+
+Provide a plan that includes:
+- the scenario id(s) to add/update (kebab-case)
+- the step list (flow nodes + expected assertions)
+- endpoint selection strategy (`use_binding` vs explicit `endpoint_id`)
+
+**Checkpoint**: request explicit approval before editing `modules/integration/scenarios.yaml`.
+
+```
+[APPROVAL REQUIRED]
+I am ready to edit integration scenarios SSOT:
+- modules/integration/scenarios.yaml
+
+Type "approve scenarios" to apply the change.
+```
+
+### Phase 2 — Apply and verify
+
+1. Edit `modules/integration/scenarios.yaml`.
+2. Validate and compile:
+
+```bash
+node .ai/scripts/modules/integrationctl.mjs validate
+node .ai/scripts/modules/integrationctl.mjs compile
+```
+
+3. Optional strict mode (treat warnings as errors):
+
+```bash
+node .ai/scripts/modules/integrationctl.mjs validate
+```
+
+### Phase 3 — Optional execution
+
+Execution is environment-specific. If base URLs are configured, you can run:
+
+```bash
+node .ai/scripts/modules/integrationctl.mjs run --execute
+```
+
+If base URLs are not configured, HTTP steps will be marked as SKIPPED.
+
 ## Procedure
 
 1. Validate scenarios (fast, no execution):
@@ -43,8 +98,9 @@ node .ai/scripts/modules/integrationctl.mjs compile
 
 - Configure base URLs:
   - `.system/modular/runtime_endpoints.yaml`, or
-  - environment variables: `MODULE_BASE_URL_<MODULE_ID>`
-    - Example: `MODULE_BASE_URL_BILLING_API=http://localhost:3000`
+  - environment variables: `MODULE_BASE_URL_<MODULE_ID_ENV>`
+    - `<MODULE_ID_ENV>` is `module_id` uppercased, with `-` (and `.` if present) replaced by `_`
+    - Example: module `billing-api` → `MODULE_BASE_URL_BILLING_API=http://localhost:3000`
 
 Then run:
 
@@ -61,13 +117,13 @@ node .ai/scripts/modules/integrationctl.mjs run --execute
 
 See `examples/` for example scenario definitions:
 
-- `user_management_scenarios.yaml` - User CRUD integration scenarios
+- `user-management-scenarios.yaml` - User CRUD integration scenarios
 
 Copy and adapt these to your integration testing needs.
 
 ## Verification
 
-- Run `node .ai/scripts/modules/integrationctl.mjs validate --strict` and `node .ai/scripts/modules/integrationctl.mjs compile`.
+- Run `node .ai/scripts/modules/integrationctl.mjs validate` and `node .ai/scripts/modules/integrationctl.mjs compile`.
 
 ## Boundaries
 

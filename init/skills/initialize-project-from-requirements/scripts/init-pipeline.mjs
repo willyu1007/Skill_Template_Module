@@ -112,6 +112,10 @@ Commands:
     --blocking-features         Fail-fast on feature errors (default: non-blocking)
     --non-blocking-features     (legacy) Continue on feature errors (default)
 
+    Modular system controls:
+    --skip-modular              Skip modular core build (not recommended)
+    --blocking-modular          Fail-fast on modular core build errors (default: non-blocking)
+
     --format <text|json>        Output format (default: text)
 
   cleanup-init
@@ -291,6 +295,7 @@ function createInitialState() {
       configsGenerated: false,
       manifestUpdated: false,
       wrappersSynced: false,
+      modularBuilt: false,
       userApproved: false
     },
     history: []
@@ -357,6 +362,7 @@ function getStageProgress(state) {
       configsGenerated: !!stage_c.configsGenerated,
       manifestUpdated: !!stage_c.manifestUpdated,
       wrappersSynced: !!stage_c.wrappersSynced,
+      modularBuilt: !!stage_c.modularBuilt,
       userApproved: !!stage_c.userApproved
     }
   };
@@ -400,6 +406,7 @@ function printStatus(state, repoRoot) {
     console.log(`│    Configs generated: ${stage_c.configsGenerated ? '✓' : '✗'}`);
     console.log(`│    Manifest updated: ${stage_c.manifestUpdated ? '✓' : '✗'}`);
     console.log(`│    Wrappers synced: ${stage_c.wrappersSynced ? '✓' : '✗'}`);
+    console.log(`│    Modular core build: ${stage_c.modularBuilt ? '✓' : '✗'}`);
   }
 
   console.log('│');
@@ -576,6 +583,15 @@ function validateBlueprint(blueprint) {
   }
   if (provider === 'none') {
     warnings.push('ci.provider=none: CI materialization is disabled (no CI files will be generated).');
+  }
+  const ci = blueprint.ci && typeof blueprint.ci === 'object' ? blueprint.ci : {};
+  if (typeof ci.enabled === 'boolean') {
+    if (ci.enabled === false && provider && provider !== 'none') {
+      warnings.push('ci.enabled=false but ci.provider is not none. CI materialization is controlled by ci.provider (ci.enabled is informational only).');
+    }
+    if (ci.enabled === true && provider === 'none') {
+      warnings.push('ci.enabled=true but ci.provider=none. CI materialization is controlled by ci.provider (ci.enabled is informational only).');
+    }
   }
 
   if ((caps.database && caps.database.enabled) && db.ssot === 'none') {
@@ -1532,9 +1548,16 @@ function ensureFeature(repoRoot, featureId, apply, ctlScriptName, options = {}) 
   const projectctl = path.join(repoRoot, '.ai', 'scripts', 'projectctl.mjs');
   if (fs.existsSync(projectctl)) {
     const key = stateKey || featureId;
-    result.actions.push(
-      runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set', `features.${key}`, 'true', '--repo-root', repoRoot], apply)
+    const markRes = runNodeScriptWithRepoRootFallback(
+      repoRoot,
+      projectctl,
+      ['set', `features.${key}`, 'true', '--repo-root', repoRoot],
+      apply
     );
+    result.actions.push(markRes);
+    if (apply && markRes.mode === 'failed') {
+      result.warnings.push(`projectctl feature flag update failed for "${featureId}" (continuing).`);
+    }
   } else {
     result.warnings.push('projectctl.mjs not found; skipping .ai/project feature flag update.');
   }
@@ -1543,7 +1566,11 @@ function ensureFeature(repoRoot, featureId, apply, ctlScriptName, options = {}) 
   if (ctlScriptName) {
     const ctlPath = findFeatureCtlScript(repoRoot, featureId, ctlScriptName);
     if (fs.existsSync(ctlPath)) {
-      result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, ctlPath, ['init', '--repo-root', repoRoot], apply));
+      const initRes = runNodeScriptWithRepoRootFallback(repoRoot, ctlPath, ['init', '--repo-root', repoRoot], apply);
+      result.actions.push(initRes);
+      if (apply && initRes.mode === 'failed') {
+        result.errors.push(`Feature "${featureId}" init failed (see logs above).`);
+      }
       if (verify && apply) {
         const verifyRes = runNodeScriptWithRepoRootFallback(repoRoot, ctlPath, ['verify', '--repo-root', repoRoot], apply);
         result.actions.push(verifyRes);
@@ -1605,7 +1632,11 @@ function ensureDatabaseFeature(repoRoot, blueprint, apply, options = {}) {
   };
 
   // Always mark enabled in project state (best-effort)
-  result.actions.push(markProjectFeature(repoRoot, 'database', apply));
+  const markRes = markProjectFeature(repoRoot, 'database', apply);
+  result.actions.push(markRes);
+  if (apply && markRes.mode === 'failed') {
+    result.warnings.push('projectctl feature flag update failed for "database" (continuing).');
+  }
 
   if (mode === 'database') {
     // In DB SSOT mode, materialize db/ mirrors and run the DB mirror controller (feature-local).
@@ -1626,7 +1657,12 @@ function ensureDatabaseFeature(repoRoot, blueprint, apply, options = {}) {
     );
 
     if (fs.existsSync(dbctlPath)) {
-      result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, dbctlPath, ['init', '--repo-root', repoRoot], apply));
+      const initRes = runNodeScriptWithRepoRootFallback(repoRoot, dbctlPath, ['init', '--repo-root', repoRoot], apply);
+      result.actions.push(initRes);
+      if (apply && initRes.mode === 'failed') {
+        result.errors.push('Database feature init failed (see logs above).');
+        return result;
+      }
       if (verify && apply) {
         const verifyRes = runNodeScriptWithRepoRootFallback(repoRoot, dbctlPath, ['verify', '--repo-root', repoRoot], apply);
         result.actions.push(verifyRes);
@@ -1657,7 +1693,11 @@ function ensureUiFeature(repoRoot, blueprint, apply, options = {}) {
   const { force = false, verify = false } = options;
   const result = { enabled: true, featureId: 'ui', op: 'ensure', actions: [], warnings: [], errors: [] };
 
-  result.actions.push(markProjectFeature(repoRoot, 'ui', apply));
+  const markRes = markProjectFeature(repoRoot, 'ui', apply);
+  result.actions.push(markRes);
+  if (apply && markRes.mode === 'failed') {
+    result.warnings.push('projectctl feature flag update failed for "ui" (continuing).');
+  }
 
   const script = path.join(repoRoot, '.ai', 'skills', 'features', 'ui', 'ui-system-bootstrap', 'scripts', 'ui_specctl.py');
   if (!fs.existsSync(script)) {
@@ -1667,10 +1707,21 @@ function ensureUiFeature(repoRoot, blueprint, apply, options = {}) {
 
   const initArgs = ['init'];
   if (force) initArgs.push('--force');
-  result.actions.push(runPythonScript(repoRoot, script, initArgs, apply));
+  const initRes = runPythonScript(repoRoot, script, initArgs, apply);
+  result.actions.push(initRes);
+  if (apply && initRes.mode === 'failed') {
+    result.errors.push('UI feature init failed (python execution failed).');
+    return result;
+  }
 
   if (verify && apply) {
-    result.actions.push(runPythonScript(repoRoot, script, ['codegen'], apply));
+    const codegenRes = runPythonScript(repoRoot, script, ['codegen'], apply);
+    result.actions.push(codegenRes);
+    if (codegenRes.mode === 'failed') {
+      result.verifyFailed = true;
+      result.verifyError = 'UI feature codegen failed';
+      return result;
+    }
     const v = runPythonScript(repoRoot, script, ['validate'], apply);
     result.actions.push(v);
     if (v.mode === 'failed') {
@@ -1686,7 +1737,11 @@ function ensureEnvironmentFeature(repoRoot, blueprint, apply, options = {}) {
   const { force = false, verify = false } = options;
   const result = { enabled: true, featureId: 'environment', op: 'ensure', actions: [], warnings: [], errors: [] };
 
-  result.actions.push(markProjectFeature(repoRoot, 'environment', apply));
+  const markRes = markProjectFeature(repoRoot, 'environment', apply);
+  result.actions.push(markRes);
+  if (apply && markRes.mode === 'failed') {
+    result.warnings.push('projectctl feature flag update failed for "environment" (continuing).');
+  }
 
   const script = path.join(repoRoot, '.ai', 'skills', 'features', 'environment', 'env-contractctl', 'scripts', 'env_contractctl.py');
   if (!fs.existsSync(script)) {
@@ -1697,7 +1752,12 @@ function ensureEnvironmentFeature(repoRoot, blueprint, apply, options = {}) {
   // init is conservative: it won't overwrite unless --force is passed.
   const initArgs = ['init', '--root', repoRoot];
   if (force) initArgs.push('--force');
-  result.actions.push(runPythonScript(repoRoot, script, initArgs, apply));
+  const initRes = runPythonScript(repoRoot, script, initArgs, apply);
+  result.actions.push(initRes);
+  if (apply && initRes.mode === 'failed') {
+    result.errors.push('Environment feature init failed (python execution failed).');
+    return result;
+  }
 
   if (verify && apply) {
     const validateRes = runPythonScript(repoRoot, script, ['validate', '--root', repoRoot], apply);
@@ -1725,7 +1785,11 @@ function ensureCiFeature(repoRoot, blueprint, apply, options = {}) {
 
   if (!enabled) return result;
 
-  result.actions.push(markProjectFeature(repoRoot, 'ci', apply));
+  const markRes = markProjectFeature(repoRoot, 'ci', apply);
+  result.actions.push(markRes);
+  if (apply && markRes.mode === 'failed') {
+    result.warnings.push('projectctl feature flag update failed for "ci" (continuing).');
+  }
 
   const provider = ciProvider(blueprint);
   if (!provider) {
@@ -1739,9 +1803,12 @@ function ensureCiFeature(repoRoot, blueprint, apply, options = {}) {
     return result;
   }
 
-  result.actions.push(
-    runNodeScriptWithRepoRootFallback(repoRoot, cictl, ['init', '--provider', provider, '--repo-root', repoRoot], apply)
-  );
+  const initRes = runNodeScriptWithRepoRootFallback(repoRoot, cictl, ['init', '--provider', provider, '--repo-root', repoRoot], apply);
+  result.actions.push(initRes);
+  if (apply && initRes.mode === 'failed') {
+    result.errors.push('CI feature init failed (see logs above).');
+    return result;
+  }
 
   if (verify && apply) {
     const verifyRes = runNodeScriptWithRepoRootFallback(repoRoot, cictl, ['verify', '--repo-root', repoRoot], apply);
@@ -1800,17 +1867,38 @@ function ensureContextAwarenessFeature(repoRoot, blueprint, apply, options = {})
 
   // Ensure project state exists and mark flags
   if (fs.existsSync(projectctl)) {
-    result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['init', '--repo-root', repoRoot], apply));
-    result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set', 'features.contextAwareness', 'true', '--repo-root', repoRoot], apply));
-    result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set', 'context.enabled', 'true', '--repo-root', repoRoot], apply));
+    const initRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['init', '--repo-root', repoRoot], apply);
+    result.actions.push(initRes);
+    if (apply && initRes.mode === 'failed') result.warnings.push('projectctl init failed (continuing).');
+
+    const featureFlagRes = runNodeScriptWithRepoRootFallback(
+      repoRoot,
+      projectctl,
+      ['set', 'features.contextAwareness', 'true', '--repo-root', repoRoot],
+      apply
+    );
+    result.actions.push(featureFlagRes);
+    if (apply && featureFlagRes.mode === 'failed') result.warnings.push('projectctl set features.contextAwareness failed (continuing).');
+
+    const enabledRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set', 'context.enabled', 'true', '--repo-root', repoRoot], apply);
+    result.actions.push(enabledRes);
+    if (apply && enabledRes.mode === 'failed') result.warnings.push('projectctl set context.enabled failed (continuing).');
+
     const mode = getContextMode(blueprint);
-    result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set-context-mode', mode, '--repo-root', repoRoot], apply));
+    const modeRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set-context-mode', mode, '--repo-root', repoRoot], apply);
+    result.actions.push(modeRes);
+    if (apply && modeRes.mode === 'failed') result.warnings.push('projectctl set-context-mode failed (continuing).');
   } else {
     result.warnings.push('projectctl.mjs not found; skipping project state initialization.');
   }
 
   // Initialize docs/context skeleton and registry (idempotent)
-  result.actions.push(runNodeScriptWithRepoRootFallback(repoRoot, contextctl, ['init', '--repo-root', repoRoot], apply));
+  const initRes = runNodeScriptWithRepoRootFallback(repoRoot, contextctl, ['init', '--repo-root', repoRoot], apply);
+  result.actions.push(initRes);
+  if (apply && initRes.mode === 'failed') {
+    result.errors.push('Context awareness init failed (see logs above).');
+    return result;
+  }
 
   // Optional verify
   if (verify && apply) {
@@ -2185,6 +2273,44 @@ function syncWrappers(repoRoot, providers, apply) {
     return { op: 'run', cmd: `${cmd} ${args.join(' ')}`, mode: 'failed', exitCode: res.status };
   }
   return { op: 'run', cmd: `${cmd} ${args.join(' ')}`, mode: 'applied' };
+}
+
+function runModularCoreBuild(repoRoot, apply) {
+  const result = { op: 'modular-core-build', mode: apply ? 'applied' : 'dry-run', actions: [], warnings: [], errors: [] };
+
+  const flowctl = path.join(repoRoot, '.ai', 'scripts', 'modules', 'flowctl.mjs');
+  const modulectl = path.join(repoRoot, '.ai', 'scripts', 'modules', 'modulectl.mjs');
+  const integrationctl = path.join(repoRoot, '.ai', 'scripts', 'modules', 'integrationctl.mjs');
+  const contextctl = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'contextctl.mjs');
+
+  const steps = [
+    { id: 'flowctl.init', scriptPath: flowctl, args: ['init', '--repo-root', repoRoot] },
+    { id: 'integrationctl.init', scriptPath: integrationctl, args: ['init', '--repo-root', repoRoot] },
+    { id: 'modulectl.registry-build', scriptPath: modulectl, args: ['registry-build', '--repo-root', repoRoot] },
+    { id: 'flowctl.update-from-manifests', scriptPath: flowctl, args: ['update-from-manifests', '--repo-root', repoRoot] },
+    { id: 'flowctl.lint', scriptPath: flowctl, args: ['lint', '--repo-root', repoRoot] },
+    { id: 'flowctl.graph', scriptPath: flowctl, args: ['graph', '--repo-root', repoRoot] },
+    { id: 'integrationctl.validate', scriptPath: integrationctl, args: ['validate', '--repo-root', repoRoot] },
+    { id: 'contextctl.build', scriptPath: contextctl, args: ['build', '--repo-root', repoRoot] }
+  ];
+
+  for (const step of steps) {
+    if (!fs.existsSync(step.scriptPath)) {
+      result.errors.push(`Missing modular build script: ${path.relative(repoRoot, step.scriptPath)}`);
+      result.actions.push({ op: 'skip', step: step.id, path: step.scriptPath, reason: 'script not found', mode: 'skipped' });
+      continue;
+    }
+
+    const res = runNodeScriptWithRepoRootFallback(repoRoot, step.scriptPath, step.args, apply);
+    res.step = step.id;
+    result.actions.push(res);
+    if (apply && res.mode === 'failed') {
+      result.errors.push(`Modular build step failed: ${step.id}`);
+    }
+  }
+
+  if (apply && result.errors.length > 0) result.mode = 'failed';
+  return result;
 }
 
 function cleanupInit(repoRoot, apply) {
@@ -2630,20 +2756,22 @@ if (command === 'validate') {
     process.exit(0);
   }
 
-  if (command === 'apply') {
-    if (!blueprintPath) die('[error] --blueprint is required for apply');
-    const providers = opts['providers'] || 'both';
-    const requireStageA = !!opts['require-stage-a'];
-    const skipConfigs = !!opts['skip-configs'];
-    const cleanup = !!opts['cleanup-init'];
-    const forceFeatures = !!opts['force-features'];
-    const verifyFeatures = !!opts['verify-features'];
-    const blockingFeatures = !!opts['blocking-features'];
-    const nonBlockingFeatures = !blockingFeatures;
+	  if (command === 'apply') {
+	    if (!blueprintPath) die('[error] --blueprint is required for apply');
+	    const providers = opts['providers'] || 'both';
+	    const requireStageA = !!opts['require-stage-a'];
+	    const skipConfigs = !!opts['skip-configs'];
+	    const cleanup = !!opts['cleanup-init'];
+	    const forceFeatures = !!opts['force-features'];
+	    const verifyFeatures = !!opts['verify-features'];
+	    const blockingFeatures = !!opts['blocking-features'];
+	    const skipModular = !!opts['skip-modular'];
+	    const blockingModular = !!opts['blocking-modular'];
+	    const nonBlockingFeatures = !blockingFeatures;
 
-    if (cleanup && !opts['i-understand']) {
-      die('[error] --cleanup-init requires --i-understand');
-    }
+	    if (cleanup && !opts['i-understand']) {
+	      die('[error] --cleanup-init requires --i-understand');
+	    }
 
     const blueprint = readJson(blueprintPath);
 
@@ -2857,29 +2985,45 @@ if (command === 'validate') {
     }
 
     // Sync wrappers
-    const syncResult = syncWrappers(repoRoot, providers, true);
-    if (syncResult.mode === 'failed') {
-      console.warn(`[warn] sync-skills.mjs failed with exit code ${syncResult.exitCode}; continuing (non-blocking)`);
-    }
-
-    const retentionTemplateResult = ensureSkillRetentionTemplate(repoRoot, true);
-    if (retentionTemplateResult.mode === 'applied') {
-      console.log('[ok] Skill retention template created: init/skill-retention-table.template.md');
-    } else if (retentionTemplateResult.reason) {
-      console.log(`[info] Skill retention template: ${retentionTemplateResult.reason}`);
-    }
-
-    // Auto-update state
-	    const state = loadState(repoRoot);
-	    if (state) {
-	      state['stage-c'].scaffoldApplied = true;
-	      state['stage-c'].configsGenerated = !skipConfigs;
-	      state['stage-c'].manifestUpdated = manifestResult.mode !== 'failed';
-	      state['stage-c'].wrappersSynced = syncResult.mode === 'applied';
-	      addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
-	      saveState(repoRoot, state);
-	      console.log('[auto] State updated: stage-c.* = true');
+	    const syncResult = syncWrappers(repoRoot, providers, true);
+	    if (syncResult.mode === 'failed') {
+	      console.warn(`[warn] sync-skills.mjs failed with exit code ${syncResult.exitCode}; continuing (non-blocking)`);
 	    }
+
+	    const retentionTemplateResult = ensureSkillRetentionTemplate(repoRoot, true);
+	    if (retentionTemplateResult.mode === 'applied') {
+	      console.log('[ok] Skill retention template created: init/skill-retention-table.template.md');
+	    } else if (retentionTemplateResult.reason) {
+	      console.log(`[info] Skill retention template: ${retentionTemplateResult.reason}`);
+	    }
+
+	    let modularResult = { op: 'modular-core-build', mode: 'skipped', reason: '--skip-modular', actions: [], warnings: [], errors: [] };
+	    if (!skipModular) {
+	      console.log('[info] Running modular core build...');
+	      modularResult = runModularCoreBuild(repoRoot, true);
+	      if (modularResult.errors.length > 0) {
+	        for (const e of modularResult.errors) console.error(`[error] ${e}`);
+	        if (blockingModular) {
+	          die('[error] Modular core build failed. Re-run without --blocking-modular to continue despite errors.');
+	        }
+	      }
+	      if (modularResult.warnings.length > 0) {
+	        for (const w of modularResult.warnings) console.warn(`[warn] ${w}`);
+	      }
+	    }
+
+	    // Auto-update state
+		    const state = loadState(repoRoot);
+		    if (state) {
+		      state['stage-c'].scaffoldApplied = true;
+		      state['stage-c'].configsGenerated = !skipConfigs;
+		      state['stage-c'].manifestUpdated = manifestResult.mode !== 'failed';
+		      state['stage-c'].wrappersSynced = syncResult.mode === 'applied';
+		      state['stage-c'].modularBuilt = modularResult.mode === 'applied';
+		      addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
+		      saveState(repoRoot, state);
+		      console.log('[auto] State updated: stage-c progress recorded');
+		    }
     // Optional cleanup
     let cleanupResult = null
     if (cleanup) {
@@ -2902,19 +3046,20 @@ if (command === 'validate') {
         dbSsotConfig: dbSsotConfigResult,
         agentsDbSsot: agentsDbSsotResult,
         dbContextContract: dbContextRefreshResult,
-        ciCleanup: ciCleanupResult,
-        dbSsotSkillExclusions: ssotSkillExclusionsResult,
-        readme: readmeResult,
-        skillRetentionTemplate: retentionTemplateResult,
-        manifest: manifestResult,
-        sync: syncResult,
-        cleanup: cleanupResult
-      }, null, 2))
-    } else {
-      console.log('[ok] Apply completed.')
-      console.log(`- Blueprint: ${path.relative(repoRoot, blueprintPath)}`)
-      console.log(`- Docs root: ${path.relative(repoRoot, docsRoot)}`)
-      console.log(`- DB SSOT: ${blueprint.db && blueprint.db.ssot ? blueprint.db.ssot : 'unknown'}`)
+	        ciCleanup: ciCleanupResult,
+	        dbSsotSkillExclusions: ssotSkillExclusionsResult,
+	        readme: readmeResult,
+	        skillRetentionTemplate: retentionTemplateResult,
+	        manifest: manifestResult,
+	        sync: syncResult,
+	        modular: modularResult,
+	        cleanup: cleanupResult
+	      }, null, 2))
+	    } else {
+	      console.log('[ok] Apply completed.')
+	      console.log(`- Blueprint: ${path.relative(repoRoot, blueprintPath)}`)
+	      console.log(`- Docs root: ${path.relative(repoRoot, docsRoot)}`)
+	      console.log(`- DB SSOT: ${blueprint.db && blueprint.db.ssot ? blueprint.db.ssot : 'unknown'}`)
 
       const installed = []
       if (contextFeature && contextFeature.enabled) installed.push('context-awareness')
@@ -2939,15 +3084,17 @@ if (command === 'validate') {
         const status = retentionTemplateResult.mode || retentionTemplateResult.reason || 'unknown'
         console.log(`- Skill retention template: ${path.relative(repoRoot, retentionTemplateResult.path)} (${status})`)
       }
-      const manifestStatus = manifestResult.mode || manifestResult.reason || 'unknown'
-      console.log(`- Manifest: ${path.relative(repoRoot, manifestResult.path)} (${manifestStatus})`)
-      const syncStatus = syncResult.mode || syncResult.reason || 'unknown'
-      console.log(`- Wrappers sync: ${syncResult.cmd || '(skipped)'} (${syncStatus})`)
-      if (cleanupResult) console.log(`- init/ cleanup: ${cleanupResult.mode}`)
-    }
+	      const manifestStatus = manifestResult.mode || manifestResult.reason || 'unknown'
+	      console.log(`- Manifest: ${path.relative(repoRoot, manifestResult.path)} (${manifestStatus})`)
+	      const syncStatus = syncResult.mode || syncResult.reason || 'unknown'
+	      console.log(`- Wrappers sync: ${syncResult.cmd || '(skipped)'} (${syncStatus})`)
+	      const modularStatus = modularResult.mode || modularResult.reason || 'unknown'
+	      console.log(`- Modular core build: ${modularStatus}`)
+	      if (cleanupResult) console.log(`- init/ cleanup: ${cleanupResult.mode}`)
+	    }
 
-    process.exit(0)
-  }
+	    process.exit(0)
+	  }
 
   if (command === 'cleanup-init') {
     if (!opts['i-understand']) die('[error] cleanup-init requires --i-understand');

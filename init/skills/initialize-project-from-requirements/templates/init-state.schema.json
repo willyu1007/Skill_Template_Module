@@ -76,6 +76,7 @@
         "configsGenerated": { "type": "boolean" },
         "manifestUpdated": { "type": "boolean" },
         "wrappersSynced": { "type": "boolean" },
+        "modularBuilt": { "type": "boolean", "description": "Whether the modular core build step completed successfully." },
         "userApproved": { "type": "boolean" }
       }
     },

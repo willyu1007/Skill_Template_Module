@@ -13,6 +13,7 @@ Centralized smoke tests for feature-pack `*ctl.mjs` scripts. Validates init -> v
 | `database` | `db_connect_check.py`, `db_schema_snapshot.py` | connect -> snapshot |
 | `context-awareness` | `contextctl.mjs` | init -> add-artifact -> touch -> verify |
 | `deployment` | `deployctl.mjs` | init -> add-service -> plan -> verify |
+| `modular-system` | `modular.mjs`, `modulectl.mjs`, `flowctl.mjs` | ID validation, participates_in |
 
 ## Commands
 
@@ -26,6 +27,7 @@ node .ai/tests/run.mjs --suite environment
 node .ai/tests/run.mjs --suite database
 node .ai/tests/run.mjs --suite context-awareness
 node .ai/tests/run.mjs --suite deployment
+node .ai/tests/run.mjs --suite modular-system
 
 # Keep evidence on PASS (debug)
 node .ai/tests/run.mjs --suite <name> --keep-artifacts

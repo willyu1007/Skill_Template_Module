@@ -2,7 +2,7 @@
 
 This directory contains human-facing docs for optional **features** that can be materialized during init **Stage C** (`apply`).
 
-This template does **not** ship an `addons/` directory. Feature assets are integrated under `.ai/`:
+Feature assets are integrated under `.ai/`:
 
 - Templates: usually `.ai/skills/features/<feature-id>/templates/` (some features source templates from nested skills; for database: `.ai/skills/features/database/sync-code-schema-from-db/templates/`)
 - Control scripts:

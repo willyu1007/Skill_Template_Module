@@ -1,0 +1,56 @@
+# Example: User Management Flow
+#
+# Copy this into `.system/modular/flow_graph.yaml` as a starting point.
+# After editing, run:
+#   node .ai/scripts/modules/flowctl.mjs lint
+#   node .ai/scripts/modules/flowctl.mjs graph
+
+flows:
+  - id: user-management
+    description: "User lifecycle management - create, read, update operations"
+    status: active
+
+    nodes:
+      - id: create-user
+        description: "Create a new user in the system"
+        status: active
+
+      - id: get-user
+        description: "Retrieve user details by ID"
+        status: active
+
+      - id: list-users
+        description: "List all users with optional filtering"
+        status: active
+
+      - id: update-user
+        description: "Update user information"
+        status: planned
+
+      - id: delete-user
+        description: "Soft-delete or deactivate a user"
+        status: planned
+
+    edges:
+      # After creating a user, you can get or list them
+      - from: create-user
+        to: get-user
+        description: "Retrieve newly created user"
+
+      - from: create-user
+        to: list-users
+        description: "View user in list"
+
+      # Get user can lead to update or delete
+      - from: get-user
+        to: update-user
+        description: "Update user after viewing"
+
+      - from: get-user
+        to: delete-user
+        description: "Delete user after viewing"
+
+      # List users can lead to getting a specific user
+      - from: list-users
+        to: get-user
+        description: "Select user from list"

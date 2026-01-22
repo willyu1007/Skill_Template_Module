@@ -7,6 +7,7 @@ The document is an end-to-end quickstart for the **module-first** (modular) syst
 - [Modular System Quickstart](#modular-system-quickstart)
   - [Table of contents](#table-of-contents)
   - [Key concepts](#key-concepts)
+  - [ID Naming Convention](#id-naming-convention)
   - [SSOT vs derived artifacts](#ssot-vs-derived-artifacts)
   - [Create a module instance](#create-a-module-instance)
   - [Define a business flow graph](#define-a-business-flow-graph)
@@ -29,6 +30,26 @@ The document is an end-to-end quickstart for the **module-first** (modular) syst
 | **Bindings** | Manual selection rules when a flow node has multiple implementations | `.system/modular/flow_bindings.yaml` |
 | **Integration scenarios** | End-to-end paths across flow nodes, used for validation/testing | `modules/integration/scenarios.yaml` |
 | **Context artifacts** | Curated contracts (OpenAPI/DB schema/BPMN/etc.) for LLM context | `modules/<module_id>/interact/registry.json` |
+
+---
+
+## ID Naming Convention
+
+All IDs in the modular system follow **kebab-case**:
+
+- Module IDs: `user-api`, `billing-service`, `auth-module`
+- Flow IDs: `user-management`, `order-fulfillment`
+- Node IDs: `create-user`, `place-order`, `send-notification`
+- Scenario IDs: `create-and-retrieve-user`
+
+**Pattern**: `^[a-z0-9]+(?:-[a-z0-9]+)*$`
+
+**Why kebab-case?**
+
+- Compatible with directory names and URL paths
+- Clear word separation without ambiguity
+- Works well with environment variable name generation
+- Avoids issues with different operating systems
 
 ---
 
@@ -58,14 +79,14 @@ Derived (generated; do not edit by hand):
 Recommended (script-driven):
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs init --module-id billing.api --apply
+node .ai/scripts/modules/modulectl.mjs init --module-id billing-api --apply
 ```
 
 Optional parameters:
 
 ```bash
 node .ai/scripts/modules/modulectl.mjs init \
-  --module-id billing.api \
+  --module-id billing-api \
   --module-type service \
   --description "Billing API" \
   --apply
@@ -84,34 +105,34 @@ If you prefer manual setup, use the recommended skeleton from `modules/AGENTS.md
 
 ## Define a business flow graph
 
-Edit `.system/modular/flow_graph.yaml` (keep IDs stable; prefer “deprecate” over rename):
+Edit `.system/modular/flow_graph.yaml` (keep IDs stable; prefer "deprecate" over rename):
 
 ```yaml
 flows:
-  - id: billing_flow
+  - id: billing-flow
     description: "Billing lifecycle"
     status: active
 
     nodes:
-      - id: create_invoice
+      - id: create-invoice
         description: "Create invoice"
         status: active
 
-      - id: send_invoice
+      - id: send-invoice
         description: "Send invoice"
         status: active
 
-      - id: process_payment
+      - id: process-payment
         description: "Process payment"
         status: active
 
     edges:
-      - from: create_invoice
-        to: send_invoice
+      - from: create-invoice
+        to: send-invoice
         description: "After creation, send invoice"
 
-      - from: send_invoice
-        to: process_payment
+      - from: send-invoice
+        to: process-payment
         description: "After sending, wait for payment"
 ```
 
@@ -136,21 +157,21 @@ Modules attach implementations to flow nodes via `interfaces[].implements[]` in 
 Example:
 
 ```yaml
-module_id: billing.api
+module_id: billing-api
 module_type: service
 description: "Billing API"
 status: active
 
 interfaces:
-  - id: http_api.create_invoice
+  - id: http-api.create-invoice
     protocol: http
     method: POST
     path: /api/invoices
     description: "Create invoice"
     status: active
     implements:
-      - flow_id: billing_flow
-        node_id: create_invoice
+      - flow_id: billing-flow
+        node_id: create-invoice
         variant: default
 ```
 
@@ -182,10 +203,10 @@ Register a module-local artifact (example: OpenAPI):
 
 ```bash
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
-  --module-id billing.api \
+  --module-id billing-api \
   --artifact-id openapi \
   --type openapi \
-  --path modules/billing.api/interact/openapi.yaml \
+  --path modules/billing-api/interact/openapi.yaml \
   --mode contract
 ```
 
@@ -209,9 +230,9 @@ Create a scenario stub:
 
 ```bash
 node .ai/scripts/modules/integrationctl.mjs new-scenario \
-  --id billing_happy_path \
-  --flow-id billing_flow \
-  --nodes create_invoice,send_invoice,process_payment
+  --id billing-happy-path \
+  --flow-id billing-flow \
+  --nodes create-invoice,send-invoice,process-payment
 ```
 
 Validate and compile:
@@ -225,7 +246,8 @@ Optional: execute HTTP steps (when runtime endpoints are configured)
 
 - Configure base URLs:
   - `.system/modular/runtime_endpoints.yaml`, or
-  - env vars: `MODULE_BASE_URL_<MODULE_ID>` (example: `MODULE_BASE_URL_BILLING_API=http://localhost:3000`)
+  - env vars: `MODULE_BASE_URL_<MODULE_ID_ENV>` (example: `MODULE_BASE_URL_BILLING_API=http://localhost:3000`)
+    - `<MODULE_ID_ENV>` is `module_id` uppercased, with `-` replaced by `_`
 
 Run (dry-run by default; add `--execute` to actually call):
 
@@ -241,7 +263,7 @@ Scenario steps can include `expect` checks (evaluated during execution) to close
 
 Troubleshooting:
 
-- If steps are `SKIPPED` with `missing_base_url`, configure `.system/modular/runtime_endpoints.yaml` or `MODULE_BASE_URL_<MODULE_ID>`.
+- If steps are `SKIPPED` with `missing_base_url`, configure `.system/modular/runtime_endpoints.yaml` or `MODULE_BASE_URL_<MODULE_ID_ENV>`.
 - If steps fail with `unresolved_endpoint`, rebuild derived registries: `modulectl registry-build` + `flowctl update-from-manifests`.
 
 ---
@@ -274,10 +296,10 @@ If you're using an AI assistant integrated with the repo, you can ask the assist
 
 Example prompts you can give the assistant:
 
-- “Use `initialize-module-instance` to create `billing.api` with an HTTP interface for `billing_flow.create_invoice`, then rebuild registries.”
-- “Use `maintain-flow-graph` to add `billing_flow` (nodes + edges) and run `flowctl lint --strict`.”
-- “Use `manage-integration-scenarios` to scaffold a scenario for `billing_flow` and compile it. Prefer `use_binding` if needed.”
-- “Register `modules/billing.api/interact/openapi.yaml` via `contextctl add-artifact`, then rebuild `docs/context/registry.json`.”
+- "Use `initialize-module-instance` to create `billing-api` with an HTTP interface for `billing-flow.create-invoice`, then rebuild registries."
+- "Use `maintain-flow-graph` to add `billing-flow` (nodes + edges) and run `flowctl lint --strict`."
+- "Use `manage-integration-scenarios` to scaffold a scenario for `billing-flow` and compile it. Prefer `use_binding` if needed."
+- "Register `modules/billing-api/interact/openapi.yaml` via `contextctl add-artifact`, then rebuild `docs/context/registry.json`."
 
 ---
 

@@ -33,7 +33,7 @@ import {
   normalizeFlowNodeRef,
   resolveBindingEndpoint,
   normalizeFlowGraph,
-  isValidModuleId
+  isValidKebabId
 } from '../lib/modular.mjs';
 
 // =============================================================================
@@ -844,8 +844,22 @@ function cmdNewScenario(repoRoot, opts) {
 
   if (!scenarioId) die('[error] --id is required');
   if (!flowId) die('[error] --flow-id is required');
-  if (!isValidModuleId(scenarioId)) die(`[error] invalid scenario id: ${scenarioId}`);
-  if (!isValidModuleId(flowId)) die(`[error] invalid flow id: ${flowId}`);
+  if (!isValidKebabId(scenarioId)) {
+    die(
+      `[error] Invalid scenario id: "${scenarioId}"\n` +
+      `  Required format: kebab-case (lowercase letters, digits, hyphens only)\n` +
+      `  Examples: create-and-retrieve-user, order-checkout-flow\n` +
+      `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+    );
+  }
+  if (!isValidKebabId(flowId)) {
+    die(
+      `[error] Invalid flow id: "${flowId}"\n` +
+      `  Required format: kebab-case (lowercase letters, digits, hyphens only)\n` +
+      `  Examples: user-management, order-fulfillment\n` +
+      `  Pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$`
+    );
+  }
 
   const { absPath, doc } = loadScenarios(repoRoot, opts.scenarios);
   const existing = normalizeScenarios(doc);

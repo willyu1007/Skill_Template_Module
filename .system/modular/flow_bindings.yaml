@@ -1,21 +1,23 @@
 # SSOT: Manual bindings for flow nodes with multiple implementations
 #
 # When a flow node has >1 possible implementation endpoint, add a binding here.
+# All IDs (binding, flow, node) must be kebab-case.
 #
 # Example:
 # bindings:
-#   - id: order.place_order_default
-#     flow_id: order_fulfillment
-#     node_id: place_order
+#   - id: order-place-order-default
+#     flow_id: order-fulfillment
+#     node_id: place-order
+#     primary: order-api:http-api.create-order
 #
 #     candidates:
-#       - endpoint_id: order.api:http_api.create_order
-#         weight: 1.0
+#       - endpoint_id: order-api:http-api.create-order
+#         priority: 100
 #
 #     conditions:
 #       - env: ["dev", "staging"]
 #         override:
-#           - endpoint_id: order.experimental:http_api.create_order_v2
-#             weight: 1.0
+#           - endpoint_id: order-experimental:http-api.create-order-v2
+#             priority: 100
 
 bindings: []

@@ -48,6 +48,12 @@ Read `init/AGENTS.md` for project initialization instructions.
 - Keep module documentation local: `modules/<module_id>/workdocs/`.
 - Never edit `.codex/` or `.claude/` directly; they are generated.
 
+## Workspace Safety (MUST)
+
+- NEVER create/copy/clone this repository into any subdirectory of itself (no nested repo copies).
+- Create throwaway test repos **outside** the repo root (OS temp or a sibling directory) and delete them after verification.
+- Keep temporary workspaces shallow: if a path is deeply nested or exceeds **12 path segments** total, stop and clean up instead of continuing.
+
 <!-- DB-SSOT:START -->
 ## Database SSOT and schema synchronization
 

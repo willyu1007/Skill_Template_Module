@@ -1,0 +1,65 @@
+# Example: Order Processing Flow
+#
+# Copy this into `.system/modular/flow_graph.yaml` as a starting point.
+# After editing, run:
+#   node .ai/scripts/modules/flowctl.mjs lint
+#   node .ai/scripts/modules/flowctl.mjs graph
+
+flows:
+  - id: order-processing
+    description: "End-to-end order lifecycle from creation to fulfillment"
+    status: experimental
+
+    nodes:
+      - id: create-order
+        description: "Customer initiates a new order"
+        status: active
+
+      - id: validate-order
+        description: "System validates order items and pricing"
+        status: active
+
+      - id: process-payment
+        description: "Process payment for the order"
+        status: active
+
+      - id: fulfill-order
+        description: "Pick, pack, and ship the order"
+        status: planned
+
+      - id: complete-order
+        description: "Mark order as delivered/completed"
+        status: planned
+
+      - id: cancel-order
+        description: "Cancel an order before fulfillment"
+        status: active
+
+    edges:
+      - from: create-order
+        to: validate-order
+        description: "Validate after creation"
+
+      - from: validate-order
+        to: process-payment
+        description: "Payment after validation succeeds"
+
+      - from: validate-order
+        to: cancel-order
+        description: "Cancel if validation fails"
+
+      - from: process-payment
+        to: fulfill-order
+        description: "Fulfill after payment succeeds"
+
+      - from: process-payment
+        to: cancel-order
+        description: "Cancel if payment fails"
+
+      - from: fulfill-order
+        to: complete-order
+        description: "Complete after delivery"
+
+      - from: create-order
+        to: cancel-order
+        description: "Customer cancels immediately"
