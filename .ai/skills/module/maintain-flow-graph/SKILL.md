@@ -42,13 +42,13 @@ Recommended structure:
 3. Rebuild derived index + graphs:
 
 ```bash
-node .ai/scripts/flowctl.mjs update-from-manifests
+node .ai/scripts/modules/flowctl.mjs update-from-manifests
 ```
 
 4. Validate:
 
 ```bash
-node .ai/scripts/flowctl.mjs lint --strict
+node .ai/scripts/modules/flowctl.mjs lint --strict
 ```
 
 ## Notes
@@ -67,7 +67,7 @@ Copy and adapt these to your business requirements.
 
 ## Verification
 
-- Run `node .ai/scripts/flowctl.mjs lint --strict` and `node .ai/scripts/flowctl.mjs graph`.
+- Run `node .ai/scripts/modules/flowctl.mjs lint --strict` and `node .ai/scripts/modules/flowctl.mjs graph`.
 
 ## Boundaries
 

@@ -108,6 +108,72 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-env --id q
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify-config
 ```
 
+## Module slice workflow (DB / Env / Observability)
+
+For module-level context slices, follow this standard workflow:
+
+### Step 1 — Ensure repo contracts exist
+- DB contract: `docs/context/db/schema.json`
+- Env contract: `env/contract.yaml`
+- Observability contracts: `docs/context/observability/*.json`
+
+### Step 2 — Declare module boundaries in MANIFEST.yaml
+```yaml
+# modules/<module_id>/MANIFEST.yaml
+db:
+  owns:
+    - table: users
+  uses:
+    - table: orders
+
+env:
+  owns:
+    - SERVICE_API_KEY
+  requires:
+    - LOG_LEVEL
+
+observability:
+  metrics:
+    owns:
+      - http_requests_total
+    uses:
+      - auth_login_total
+  logs:
+    owns:
+      - billing_account_id
+    requires:
+      - trace_id
+```
+
+### Step 3 — Validate and sync slices
+```bash
+# DB slices
+node .ai/scripts/modules/dbssotctl-module.mjs verify --strict
+node .ai/scripts/modules/dbssotctl-module.mjs conflicts
+node .ai/scripts/modules/dbssotctl-module.mjs sync-slices --module-id <module_id>
+
+# Env slices
+node .ai/scripts/modules/env-contractctl-module.mjs verify --strict
+node .ai/scripts/modules/env-contractctl-module.mjs conflicts
+node .ai/scripts/modules/env-contractctl-module.mjs sync-slices --module-id <module_id>
+
+# Observability slices
+node .ai/scripts/modules/obsctl-module.mjs verify --strict
+node .ai/scripts/modules/obsctl-module.mjs conflicts
+node .ai/scripts/modules/obsctl-module.mjs sync-slices --module-id <module_id>
+```
+
+### Step 4 — Rebuild aggregated context
+```bash
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
+node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
+```
+
+### Related skills
+- `manage-db-module-slices`
+- `manage-env-module-slices`
+- `manage-observability-module-slices`
+
 ## Verification
 
 ```bash

@@ -2,8 +2,8 @@
 #
 # Copy relevant scenarios into `modules/integration/scenarios.yaml`.
 # After editing, run:
-#   node .ai/scripts/integrationctl.mjs validate
-#   node .ai/scripts/integrationctl.mjs compile
+#   node .ai/scripts/modules/integrationctl.mjs validate
+#   node .ai/scripts/modules/integrationctl.mjs compile
 
 scenarios:
   # ============================================================================

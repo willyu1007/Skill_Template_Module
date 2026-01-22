@@ -21,7 +21,7 @@ npm run build
 npm test
 
 # Update module registry after manifest changes
-node .ai/scripts/modulectl.mjs registry-build
+node .ai/scripts/modules/modulectl.mjs registry-build
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 ```
 

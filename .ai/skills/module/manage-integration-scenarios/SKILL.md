@@ -30,13 +30,13 @@ Maintain cross-module integration scenarios under `modules/integration/` and ens
 1. Validate scenarios (fast, no execution):
 
 ```bash
-node .ai/scripts/integrationctl.mjs validate
+node .ai/scripts/modules/integrationctl.mjs validate
 ```
 
 2. Compile scenarios into resolved plans:
 
 ```bash
-node .ai/scripts/integrationctl.mjs compile
+node .ai/scripts/modules/integrationctl.mjs compile
 ```
 
 3. (Optional) Execute HTTP steps:
@@ -49,7 +49,7 @@ node .ai/scripts/integrationctl.mjs compile
 Then run:
 
 ```bash
-node .ai/scripts/integrationctl.mjs run --execute
+node .ai/scripts/modules/integrationctl.mjs run --execute
 ```
 
 ## Notes
@@ -67,7 +67,7 @@ Copy and adapt these to your integration testing needs.
 
 ## Verification
 
-- Run `node .ai/scripts/integrationctl.mjs validate --strict` and `node .ai/scripts/integrationctl.mjs compile`.
+- Run `node .ai/scripts/modules/integrationctl.mjs validate --strict` and `node .ai/scripts/modules/integrationctl.mjs compile`.
 
 ## Boundaries
 

@@ -58,13 +58,13 @@ Derived (generated; do not edit by hand):
 Recommended (script-driven):
 
 ```bash
-node .ai/scripts/modulectl.mjs init --module-id billing.api --apply
+node .ai/scripts/modules/modulectl.mjs init --module-id billing.api --apply
 ```
 
 Optional parameters:
 
 ```bash
-node .ai/scripts/modulectl.mjs init \
+node .ai/scripts/modules/modulectl.mjs init \
   --module-id billing.api \
   --module-type service \
   --description "Billing API" \
@@ -118,13 +118,13 @@ flows:
 Validate the flow graph:
 
 ```bash
-node .ai/scripts/flowctl.mjs lint
+node .ai/scripts/modules/flowctl.mjs lint
 ```
 
 Generate relationship graphs (Mermaid):
 
 ```bash
-node .ai/scripts/flowctl.mjs graph
+node .ai/scripts/modules/flowctl.mjs graph
 ```
 
 ---
@@ -157,9 +157,9 @@ interfaces:
 Rebuild derived indexes after changing manifests:
 
 ```bash
-node .ai/scripts/modulectl.mjs registry-build
-node .ai/scripts/flowctl.mjs update-from-manifests
-node .ai/scripts/flowctl.mjs lint --strict
+node .ai/scripts/modules/modulectl.mjs registry-build
+node .ai/scripts/modules/flowctl.mjs update-from-manifests
+node .ai/scripts/modules/flowctl.mjs lint --strict
 ```
 
 If a node has multiple implementations, define a binding in `.system/modular/flow_bindings.yaml` and prefer `use_binding` in scenarios (instead of hardcoding `endpoint_id` everywhere).
@@ -208,7 +208,7 @@ Integration assets live under `modules/integration/` as a **cross-module workspa
 Create a scenario stub:
 
 ```bash
-node .ai/scripts/integrationctl.mjs new-scenario \
+node .ai/scripts/modules/integrationctl.mjs new-scenario \
   --id billing_happy_path \
   --flow-id billing_flow \
   --nodes create_invoice,send_invoice,process_payment
@@ -217,8 +217,8 @@ node .ai/scripts/integrationctl.mjs new-scenario \
 Validate and compile:
 
 ```bash
-node .ai/scripts/integrationctl.mjs validate --strict
-node .ai/scripts/integrationctl.mjs compile
+node .ai/scripts/modules/integrationctl.mjs validate --strict
+node .ai/scripts/modules/integrationctl.mjs compile
 ```
 
 Optional: execute HTTP steps (when runtime endpoints are configured)
@@ -230,7 +230,7 @@ Optional: execute HTTP steps (when runtime endpoints are configured)
 Run (dry-run by default; add `--execute` to actually call):
 
 ```bash
-node .ai/scripts/integrationctl.mjs run --execute
+node .ai/scripts/modules/integrationctl.mjs run --execute
 ```
 
 Scenario steps can include `expect` checks (evaluated during execution) to close the loop:
@@ -251,12 +251,12 @@ Troubleshooting:
 After changing flows/manifests/scenarios/context:
 
 ```bash
-node .ai/scripts/modulectl.mjs registry-build
-node .ai/scripts/flowctl.mjs update-from-manifests
-node .ai/scripts/flowctl.mjs lint --strict
-node .ai/scripts/flowctl.mjs graph
-node .ai/scripts/integrationctl.mjs validate --strict
-node .ai/scripts/integrationctl.mjs compile
+node .ai/scripts/modules/modulectl.mjs registry-build
+node .ai/scripts/modules/flowctl.mjs update-from-manifests
+node .ai/scripts/modules/flowctl.mjs lint --strict
+node .ai/scripts/modules/flowctl.mjs graph
+node .ai/scripts/modules/integrationctl.mjs validate --strict
+node .ai/scripts/modules/integrationctl.mjs compile
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
 ```

@@ -20,7 +20,7 @@ User “trigger phrases” are only hints; correct usage must not depend on lang
 
 ## Inputs
 
-- Task scope (module / integration)
+- Task scope (module / integration / temporary)
 - The task workdocs directory
 - Current repo state (PR, branch, or working tree)
 
@@ -39,10 +39,12 @@ A handoff-ready workdocs set including:
 1. Locate the task's workdocs folder:
    - Module: `modules/<module_id>/workdocs/active/<task_slug>/`
    - Integration: `modules/integration/workdocs/active/<task_slug>/`
+   - Temporary: `.ai/.tmp/workdocs/<task_slug>/`
 
 2. If the folder does not exist:
-   - Stop and ask for the missing scope inputs (`module_id` vs `integration`, `task_slug`), then create the bundle via `create-workdocs-plan`.
+   - Stop and ask for the missing scope inputs (`module_id` vs `integration` vs `temporary`, `task_slug`), then create the bundle via `create-workdocs-plan`.
    - Do not guess scope silently; if an assumption is required, record the assumption explicitly in `00-overview.md`.
+   - If user cannot decide scope or explicitly requests temporary, use `.ai/.tmp/workdocs/<task_slug>/` as the fallback.
 
 3. Update `03-implementation-notes.md`:
    - Current status
@@ -81,8 +83,8 @@ A handoff-ready workdocs set including:
   - `05-pitfalls.md` updated with actionable “do not repeat” notes (if any)
   - `handoff.md` (optional) with concise handoff instructions
 - If the work involved modular SSOT, run:
-  - `node .ai/scripts/flowctl.mjs lint`
-  - `node .ai/scripts/integrationctl.mjs validate`
+  - `node .ai/scripts/modules/flowctl.mjs lint`
+  - `node .ai/scripts/modules/integrationctl.mjs validate`
   - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify`
 
 ## Boundaries
@@ -91,6 +93,7 @@ A handoff-ready workdocs set including:
 - Do **not** edit derived artifacts directly; regenerate them via the corresponding ctl scripts if needed.
 - Keep handoff notes operational: commands, file paths, and exact known issues; avoid long narratives.
 
+> **Note**: Temporary workdocs (`.ai/.tmp/workdocs/`) are not tracked by module registries. If scope becomes clear during implementation, consider moving the workdocs to the appropriate module or integration location before handoff.
 
 ## Reader-test handoff check (borrowed)
 

@@ -23,9 +23,9 @@ When working on a specific module:
 3. Treat the module directory as the default write scope.
 4. If a change impacts business flows, update `.system/modular/flow_graph.yaml` via `flowctl`.
 5. After changing manifests, regenerate derived artifacts:
-   - `node .ai/scripts/modulectl.mjs registry-build`
-   - `node .ai/scripts/flowctl.mjs update-from-manifests`
-   - `node .ai/scripts/flowctl.mjs lint`
+   - `node .ai/scripts/modules/modulectl.mjs registry-build`
+   - `node .ai/scripts/modules/flowctl.mjs update-from-manifests`
+   - `node .ai/scripts/modules/flowctl.mjs lint`
 6. **Before handoff / wrap-up (MUST)**: run `update-workdocs-for-handoff` so another developer/agent can resume safely.
 
 ## Directory skeleton (recommended)

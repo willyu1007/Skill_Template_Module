@@ -24,9 +24,9 @@ Read `init/AGENTS.md` for project initialization instructions.
 | Area | Script |
 |---|---|
 | Project state | `node .ai/scripts/projectctl.mjs` |
-| Module instances | `node .ai/scripts/modulectl.mjs` |
-| Flow SSOT + derived indexes/graphs | `node .ai/scripts/flowctl.mjs` |
-| Integration scenarios | `node .ai/scripts/integrationctl.mjs` |
+| Module instances | `node .ai/scripts/modules/modulectl.mjs` |
+| Flow SSOT + derived indexes/graphs | `node .ai/scripts/modules/flowctl.mjs` |
+| Integration scenarios | `node .ai/scripts/modules/integrationctl.mjs` |
 | Context registries | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
 
 ## Coding Standards (RECOMMEND)

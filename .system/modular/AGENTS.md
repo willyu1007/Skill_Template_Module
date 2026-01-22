@@ -17,9 +17,9 @@ This directory contains the **SSOT** for the repository's modular development sy
 
 ## Tooling
 
-- `node .ai/scripts/modulectl.mjs registry-build`
-- `node .ai/scripts/flowctl.mjs update-from-manifests`
-- `node .ai/scripts/flowctl.mjs lint`
-- `node .ai/scripts/flowctl.mjs graph`
-- `node .ai/scripts/integrationctl.mjs validate`
-- `node .ai/scripts/integrationctl.mjs compile`
+- `node .ai/scripts/modules/modulectl.mjs registry-build`
+- `node .ai/scripts/modules/flowctl.mjs update-from-manifests`
+- `node .ai/scripts/modules/flowctl.mjs lint`
+- `node .ai/scripts/modules/flowctl.mjs graph`
+- `node .ai/scripts/modules/integrationctl.mjs validate`
+- `node .ai/scripts/modules/integrationctl.mjs compile`

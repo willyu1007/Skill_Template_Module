@@ -16,19 +16,29 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from './lib/yaml.mjs';
+
+import { parseArgs, createUsage, die, isoNow, repoRootFromOpts, printDiagnostics } from '../lib/cli.mjs';
+import { ensureDir, safeRel, fileExists, writeJson } from '../lib/fs-utils.mjs';
+import { loadYamlFile, saveYamlFile, dumpYaml } from '../lib/yaml.mjs';
 import {
   getModularEnv,
   normalizeBindingsDoc,
   normalizeFlowImplIndex,
   normalizeImplementsEntry,
-  resolveBindingEndpoint
-} from './lib/modular.mjs';
+  resolveBindingEndpoint,
+  normalizeFlowGraph,
+  validateFlowGraph,
+  normalizeTypeGraph,
+  validateTypeGraph
+} from '../lib/modular.mjs';
 
-function usage(exitCode = 0) {
-  const msg = `
+// =============================================================================
+// CLI
+// =============================================================================
+
+const usageText = `
 Usage:
-  node .ai/scripts/flowctl.mjs <command> [options]
+  node .ai/scripts/modules/flowctl.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -63,52 +73,15 @@ Commands:
 Notes:
   - The tools operate on a minimal YAML subset; keep SSOT files simple.
 `;
-  console.log(msg.trim());
-  process.exit(exitCode);
-}
 
-function die(msg, code = 1) {
-  console.error(msg);
-  process.exit(code);
-}
+const usage = createUsage(usageText);
 
-function parseArgs(argv) {
-  const args = argv.slice(2);
-  if (args.length === 0 || args[0] === '-h' || args[0] === '--help') usage(0);
-  const command = args.shift();
-  const opts = {};
-  const positionals = [];
-  while (args.length > 0) {
-    const t = args.shift();
-    if (t === '-h' || t === '--help') usage(0);
-    if (t.startsWith('--')) {
-      const k = t.slice(2);
-      if (args.length > 0 && !args[0].startsWith('--')) opts[k] = args.shift();
-      else opts[k] = true;
-    } else {
-      positionals.push(t);
-    }
-  }
-  return { command, opts, positionals };
-}
-
-function isoNow() {
-  return new Date().toISOString();
-}
-
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
-function safeRel(repoRoot, p) {
-  const abs = path.resolve(p);
-  const rr = path.resolve(repoRoot);
-  if (!abs.startsWith(rr)) return p;
-  return path.relative(rr, abs);
-}
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function readYamlOrDie(absPath, label) {
-  if (!fs.existsSync(absPath)) die(`[error] Missing ${label}: ${absPath}`);
+  if (!fileExists(absPath)) die(`[error] Missing ${label}: ${absPath}`);
   try {
     return loadYamlFile(absPath);
   } catch (e) {
@@ -116,116 +89,26 @@ function readYamlOrDie(absPath, label) {
   }
 }
 
-function normalizeFlowGraph(flowGraph) {
-  const flows = Array.isArray(flowGraph.flows) ? flowGraph.flows : [];
-  const norm = [];
-  for (const f of flows) {
-    if (!f || typeof f !== 'object') continue;
-    const flowId = f.id ?? f.flow_id ?? f.flowId;
-    norm.push({
-      id: flowId,
-      name: f.name ?? f.description ?? null,
-      status: f.status ?? null,
-      nodes: Array.isArray(f.nodes) ? f.nodes : [],
-      edges: Array.isArray(f.edges) ? f.edges : []
-    });
-  }
-  return norm;
-}
-
-function normalizeTypeGraph(typeGraph) {
-  const types = Array.isArray(typeGraph?.types) ? typeGraph.types : [];
-  return types
-    .filter(t => t && typeof t === 'object')
-    .map(t => ({
-      id: t.id ?? t.type_id ?? t.typeId,
-      outbound: Array.isArray(t.outbound) ? t.outbound : []
-    }));
-}
-
-function validateTypeGraph(typeGraph) {
-  const warnings = [];
-  const errors = [];
-
-  const types = normalizeTypeGraph(typeGraph);
-  const ids = new Set();
-
-  for (const t of types) {
-    if (!t.id || typeof t.id !== 'string') {
-      errors.push('type_graph: type missing id');
-      continue;
-    }
-    if (ids.has(t.id)) errors.push(`type_graph: duplicate type id: ${t.id}`);
-    ids.add(t.id);
-  }
-
-  for (const t of types) {
-    for (const out of t.outbound || []) {
-      if (typeof out !== 'string' || out.trim().length === 0) continue;
-      if (!ids.has(out)) errors.push(`type_graph: unknown outbound type "${out}" referenced by "${t.id}"`);
-    }
-  }
-
-  return { warnings, errors, types };
-}
-
-function validateFlowGraph(flowGraph) {
-  const warnings = [];
-  const errors = [];
-
-  const flows = normalizeFlowGraph(flowGraph);
-  const flowIds = new Set();
-
-  for (const f of flows) {
-    if (!f.id || typeof f.id !== 'string') {
-      errors.push(`Flow missing id`);
-      continue;
-    }
-    if (flowIds.has(f.id)) errors.push(`Duplicate flow id: ${f.id}`);
-    flowIds.add(f.id);
-
-    const nodeIds = new Set();
-    for (const n of f.nodes) {
-      if (!n || typeof n !== 'object') {
-        errors.push(`[${f.id}] node must be mapping`);
-        continue;
-      }
-      if (!n.id || typeof n.id !== 'string') {
-        errors.push(`[${f.id}] node missing id`);
-        continue;
-      }
-      if (nodeIds.has(n.id)) errors.push(`[${f.id}] duplicate node id: ${n.id}`);
-      nodeIds.add(n.id);
-    }
-
-    for (const e of f.edges) {
-      if (!e || typeof e !== 'object') {
-        errors.push(`[${f.id}] edge must be mapping`);
-        continue;
-      }
-      const from = e.from;
-      const to = e.to;
-      if (!from || !to) {
-        errors.push(`[${f.id}] edge missing from/to`);
-        continue;
-      }
-      if (!nodeIds.has(from)) errors.push(`[${f.id}] edge.from references unknown node: ${from}`);
-      if (!nodeIds.has(to)) errors.push(`[${f.id}] edge.to references unknown node: ${to}`);
-    }
-
-    // Warnings for empty flows
-    if (f.nodes.length === 0) warnings.push(`[${f.id}] flow has no nodes`);
-  }
-
-  return { warnings, errors, flows };
-}
-
 function loadInstanceRegistry(absPath) {
-  if (!fs.existsSync(absPath)) {
+  if (!fileExists(absPath)) {
     return { version: 1, updatedAt: isoNow(), modules: [] };
   }
   return loadYamlFile(absPath);
 }
+
+function readBindings(repoRoot, opts) {
+  const bindingsPath = path.join(repoRoot, opts['flow-bindings'] || '.system/modular/flow_bindings.yaml');
+  if (!fileExists(bindingsPath)) return { bindings: [] };
+  return loadYamlFile(bindingsPath);
+}
+
+function normalizeBindings(raw) {
+  return normalizeBindingsDoc(raw);
+}
+
+// =============================================================================
+// Build flow implementation index
+// =============================================================================
 
 function buildFlowImplIndex(flowGraph, instanceRegistry) {
   const { flows, warnings: fgWarn, errors: fgErr } = validateFlowGraph(flowGraph);
@@ -336,15 +219,9 @@ function buildFlowImplIndex(flowGraph, instanceRegistry) {
   };
 }
 
-function readBindings(repoRoot, opts) {
-  const bindingsPath = path.join(repoRoot, opts['flow-bindings'] || '.system/modular/flow_bindings.yaml');
-  if (!fs.existsSync(bindingsPath)) return { bindings: [] };
-  return loadYamlFile(bindingsPath);
-}
-
-function normalizeBindings(raw) {
-  return normalizeBindingsDoc(raw);
-}
+// =============================================================================
+// Primary implementation selection
+// =============================================================================
 
 function pickPrimaryImplementation(flowImplIndex, bindingsRaw) {
   const env = getModularEnv();
@@ -374,6 +251,10 @@ function pickPrimaryImplementation(flowImplIndex, bindingsRaw) {
 
   return { primary, bindings };
 }
+
+// =============================================================================
+// Graph rendering
+// =============================================================================
 
 function writeMermaidGraphs(repoRoot, flowGraph, flowImplIndex, bindingsRaw) {
   const graphsDir = path.join(repoRoot, '.system', 'modular', 'graphs');
@@ -453,8 +334,15 @@ function writeMermaidGraphs(repoRoot, flowGraph, flowImplIndex, bindingsRaw) {
   const modMmd = ['graph TD', ...modLines].join('\n') + '\n';
   fs.writeFileSync(path.join(graphsDir, 'modules.mmd'), modMmd, 'utf8');
 
-  return { flowGraphPath: safeRel(repoRoot, path.join(graphsDir, 'flows.mmd')), modulesGraphPath: safeRel(repoRoot, path.join(graphsDir, 'modules.mmd')) };
+  return {
+    flowGraphPath: safeRel(repoRoot, path.join(graphsDir, 'flows.mmd')),
+    modulesGraphPath: safeRel(repoRoot, path.join(graphsDir, 'modules.mmd'))
+  };
 }
+
+// =============================================================================
+// Commands
+// =============================================================================
 
 function cmdInit(repoRoot) {
   const base = path.join(repoRoot, '.system', 'modular');
@@ -465,7 +353,7 @@ function cmdInit(repoRoot) {
 
   const ensureFile = (relPath, content) => {
     const abs = path.join(repoRoot, relPath);
-    if (!fs.existsSync(abs)) {
+    if (!fileExists(abs)) {
       ensureDir(path.dirname(abs));
       fs.writeFileSync(abs, content, 'utf8');
       console.log(`[ok] created ${relPath}`);
@@ -487,7 +375,7 @@ function cmdUpdateFromManifests(repoRoot, opts) {
   const flowGraph = readYamlOrDie(flowGraphPath, 'flow graph');
   const instanceRegistry = loadInstanceRegistry(instancePath);
 
-  const prev = fs.existsSync(outPath) ? loadYamlFile(outPath) : null;
+  const prev = fileExists(outPath) ? loadYamlFile(outPath) : null;
   const { flowImplIndex, warnings, errors } = buildFlowImplIndex(flowGraph, instanceRegistry);
 
   ensureDir(path.dirname(outPath));
@@ -495,13 +383,13 @@ function cmdUpdateFromManifests(repoRoot, opts) {
 
   const reportPath = path.join(repoRoot, '.system', 'modular', 'reports', 'flow_impl_index.diff.json');
   ensureDir(path.dirname(reportPath));
-  fs.writeFileSync(reportPath, JSON.stringify({
+  writeJson(reportPath, {
     generatedAt: isoNow(),
     out: safeRel(repoRoot, outPath),
     changed: prev ? dumpYaml(prev) !== dumpYaml(flowImplIndex) : true,
     warnings,
     errors
-  }, null, 2) + '\n', 'utf8');
+  });
 
   const bindingsRaw = readBindings(repoRoot, opts);
   const graphs = writeMermaidGraphs(repoRoot, flowGraph, flowImplIndex, bindingsRaw);
@@ -510,15 +398,8 @@ function cmdUpdateFromManifests(repoRoot, opts) {
   console.log(`[ok] wrote ${graphs.flowGraphPath}`);
   console.log(`[ok] wrote ${graphs.modulesGraphPath}`);
 
-  if (warnings.length > 0) {
-    console.log(`\nWarnings (${warnings.length}):`);
-    for (const w of warnings) console.log(`- ${w}`);
-  }
-  if (errors.length > 0) {
-    console.log(`\nErrors (${errors.length}):`);
-    for (const e of errors) console.log(`- ${e}`);
-    process.exitCode = 1;
-  }
+  const { shouldExit } = printDiagnostics({ warnings, errors });
+  if (shouldExit) process.exitCode = 1;
 }
 
 function cmdLint(repoRoot, opts) {
@@ -531,10 +412,10 @@ function cmdLint(repoRoot, opts) {
   const implIndexPath = path.join(repoRoot, opts['flow-impl-index'] || '.system/modular/flow_impl_index.yaml');
 
   const flowGraph = readYamlOrDie(flowGraphPath, 'flow graph');
-  const bindingsRaw = fs.existsSync(bindingsPath) ? loadYamlFile(bindingsPath) : { bindings: [] };
-  const typeGraph = fs.existsSync(typeGraphPath) ? loadYamlFile(typeGraphPath) : { types: [] };
+  const bindingsRaw = fileExists(bindingsPath) ? loadYamlFile(bindingsPath) : { bindings: [] };
+  const typeGraph = fileExists(typeGraphPath) ? loadYamlFile(typeGraphPath) : { types: [] };
   const instanceRegistry = loadInstanceRegistry(instancePath);
-  const implIndex = fs.existsSync(implIndexPath) ? loadYamlFile(implIndexPath) : { version: 1, updatedAt: isoNow(), nodes: [] };
+  const implIndex = fileExists(implIndexPath) ? loadYamlFile(implIndexPath) : { version: 1, updatedAt: isoNow(), nodes: [] };
 
   const { warnings, errors, flows } = validateFlowGraph(flowGraph);
 
@@ -596,7 +477,7 @@ function cmdLint(repoRoot, opts) {
     }
     const entry = implByKey.get(`${b.flow_id}::${b.node_id}`);
     if (!entry) {
-      errors.push(`flow_impl_index missing entry for ${b.flow_id}.${b.node_id} (run: node .ai/scripts/flowctl.mjs update-from-manifests)`);
+      errors.push(`flow_impl_index missing entry for ${b.flow_id}.${b.node_id} (run: node .ai/scripts/modules/flowctl.mjs update-from-manifests)`);
       continue;
     }
     const impls = Array.isArray(entry?.implementations) ? entry.implementations : [];
@@ -641,18 +522,9 @@ function cmdLint(repoRoot, opts) {
     }
   }
 
-  if (warnings.length > 0) {
-    console.log(`Warnings (${warnings.length}):`);
-    for (const w of warnings) console.log(`- ${w}`);
-  }
-  if (errors.length > 0) {
-    console.log(`\nErrors (${errors.length}):`);
-    for (const e of errors) console.log(`- ${e}`);
-  }
+  const { shouldExit } = printDiagnostics({ warnings, errors }, { strict });
 
-  if (errors.length > 0) process.exit(1);
-  if (strict && warnings.length > 0) process.exit(1);
-
+  if (shouldExit) process.exit(1);
   console.log('\n[ok] flow lint passed.');
 }
 
@@ -662,16 +534,20 @@ function cmdGraph(repoRoot, opts) {
   const bindingsRaw = readBindings(repoRoot, opts);
 
   const flowGraph = readYamlOrDie(flowGraphPath, 'flow graph');
-  const implIndex = fs.existsSync(implIndexPath) ? loadYamlFile(implIndexPath) : { version: 1, updatedAt: isoNow(), nodes: [] };
+  const implIndex = fileExists(implIndexPath) ? loadYamlFile(implIndexPath) : { version: 1, updatedAt: isoNow(), nodes: [] };
 
   const graphs = writeMermaidGraphs(repoRoot, flowGraph, implIndex, bindingsRaw);
   console.log(`[ok] wrote ${graphs.flowGraphPath}`);
   console.log(`[ok] wrote ${graphs.modulesGraphPath}`);
 }
 
+// =============================================================================
+// Main
+// =============================================================================
+
 function main() {
-  const { command, opts } = parseArgs(process.argv);
-  const repoRoot = path.resolve(opts['repo-root'] || process.cwd());
+  const { command, opts } = parseArgs(process.argv, { usageFn: usage });
+  const repoRoot = repoRootFromOpts(opts);
 
   switch (command) {
     case 'init':

@@ -52,30 +52,62 @@ A directory with a workdocs bundle:
 - `04-verification.md`
 - `05-pitfalls.md`
 
+## Scope resolution
+
+Workdocs can be placed in one of three locations:
+
+| Scope | Path | When to use |
+|-------|------|-------------|
+| Module | `modules/<module_id>/workdocs/active/<task_slug>/` | Task is clearly about a single module |
+| Integration | `modules/integration/workdocs/active/<task_slug>/` | Task spans multiple modules or involves scenario testing |
+| **Temporary (default)** | `.ai/.tmp/workdocs/<task_slug>/` | Scope is unclear AND user cannot/will not confirm, OR user explicitly requests temporary location |
+
+### Path confirmation rules (MUST)
+
+| Scope | Human confirmation required? | Auto-create allowed? |
+|-------|------------------------------|----------------------|
+| Module | **YES** — MUST confirm `module_id` + `task_slug` | **NO** |
+| Integration | **YES** — MUST confirm `task_slug` | **NO** |
+| Temporary | NO — can auto-create after proposing `task_slug` | **YES** |
+
+**Critical rule**: NEVER create workdocs under `modules/` without explicit human confirmation of the full path. If confirmation is not obtained, fall back to `.ai/.tmp/workdocs/`.
+
 ## Procedure
 
 1. **Infer scope**
    - If the task is clearly about a single module, treat the task as module-scoped.
    - If the task spans multiple modules (or involves scenario testing), treat the task as integration-scoped.
-   - If scope is unclear, ask the user to confirm `module_id` or `integration` before creating files.
+   - If scope is unclear:
+     1. Ask the user to confirm `module_id` or `integration`.
+     2. If user cannot decide or explicitly requests a temporary location, use `.ai/.tmp/workdocs/<task_slug>/` as the fallback.
+   - If user explicitly specifies `.ai/.tmp/workdocs/` or "temporary", use that location directly without further scope confirmation.
 
 2. **Prefer resume over new creation (robustness)**
    - Check for existing tasks first:
      - Module: `modules/<module_id>/workdocs/active/`
      - Integration: `modules/integration/workdocs/active/`
+     - Temporary: `.ai/.tmp/workdocs/`
    - If an active task already matches the user's request, **reuse it** and only update missing artifacts (do not create a parallel task folder).
    - If you reuse an existing task, read these first before doing any work:
      - `03-implementation-notes.md`
      - `05-pitfalls.md`
 
-3. **Confirm `<task_slug>` (kebab-case)**
-   - Propose a slug (e.g., `fix-auth-middleware`, `add-checkout-flag`), ask the user to confirm.
-   - If the user can't decide now, choose a conservative slug and record the assumption in `00-overview.md`.
+3. **Confirm path with user (MUST for non-temporary scope)**
+   - Propose a `<task_slug>` (kebab-case, e.g., `fix-auth-middleware`, `add-checkout-flag`).
+   - **For module/integration scope**: Present the full proposed path and **wait for explicit user confirmation** before creating any files:
+     ```
+     Proposed path: modules/<module_id>/workdocs/active/<task_slug>/
+     Please confirm this location, or specify a different one.
+     ```
+   - **For temporary scope**: Propose the path but may proceed without waiting if user does not respond (auto-create allowed).
+   - If user confirms, proceed to step 4.
+   - If user does not confirm within the same turn and scope is module/integration, **do NOT create files** — remind user confirmation is required, or offer to use temporary location instead.
 
 4. **Create the workdocs folder**
-   Use one of:
-   - Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/`
-   - Integration-scoped: `modules/integration/workdocs/active/<task_slug>/`
+   - **Only after confirmation** (for module/integration) or with temporary scope:
+     - Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/`
+     - Integration-scoped: `modules/integration/workdocs/active/<task_slug>/`
+     - Temporary: `.ai/.tmp/workdocs/<task_slug>/`
 
 5. **Create the bundle files from templates**
    - Copy from `./templates/` into the task folder.
@@ -103,17 +135,22 @@ Even though `create-workdocs-plan` is docs-only, it is designed to make executio
 - Confirm the workdocs directory exists at the intended scope:
   - Module: `modules/<module_id>/workdocs/active/<task_slug>/`
   - Integration: `modules/integration/workdocs/active/<task_slug>/`
+  - Temporary: `.ai/.tmp/workdocs/<task_slug>/`
 - Confirm the bundle files exist and are filled in (no empty placeholders).
 - If the task touches modular SSOT (flow/manifests/scenarios), run:
-  - `node .ai/scripts/flowctl.mjs lint`
-  - `node .ai/scripts/integrationctl.mjs validate`
+  - `node .ai/scripts/modules/flowctl.mjs lint`
+  - `node .ai/scripts/modules/integrationctl.mjs validate`
   - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify`
+
+> **Note**: Temporary workdocs (`.ai/.tmp/workdocs/`) are not tracked by module registries. Once the task scope becomes clear, consider moving the workdocs to the appropriate module or integration location.
 
 ## Boundaries
 
 - Do **not** implement code changes as part of create-workdocs-plan. Only create/update workdocs.
 - Do **not** edit derived artifacts (e.g., `docs/context/registry.json`, `.system/modular/*_index.yaml`, `modules/integration/compiled/*`).
 - If changes to SSOT are required (MANIFEST / flow_graph / scenarios), use the appropriate ctl scripts and record the change rationale in workdocs.
+- **MUST NOT** create workdocs under `modules/` (module or integration scope) without explicit human confirmation of the full path.
+- **MUST** fall back to `.ai/.tmp/workdocs/` if human confirmation is not obtained for module/integration scope.
 
 ## Included assets
 

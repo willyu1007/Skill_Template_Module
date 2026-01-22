@@ -5,6 +5,7 @@
  * - Flow/node reference normalization
  * - Binding resolution
  * - Implementation indexing
+ * - Module discovery and validation
  *
  * Usage:
  *   import {
@@ -15,9 +16,17 @@
  *     resolveBindingEndpoint,
  *     firstString,
  *     indexImplsByFlowNode,
- *     normalizeFlowNodeRef
+ *     normalizeFlowNodeRef,
+ *     isValidModuleId,
+ *     discoverModules,
+ *     getModulesDir,
+ *     validateManifest,
+ *     normalizeFlowGraph
  *   } from './lib/modular.mjs';
  */
+
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Get the first string value from an object given a list of candidate keys.
@@ -279,4 +288,279 @@ export function indexImplsByFlowNode(flowImplIndex) {
   }
 
   return map;
+}
+
+// =============================================================================
+// Module discovery and validation
+// =============================================================================
+
+/**
+ * Validate a module ID against the standard pattern.
+ *
+ * Pattern: lowercase letters, digits, dots, hyphens, underscores
+ * Length: 3-64 characters (first and last must be alphanumeric)
+ *
+ * @param {string} id - Module ID to validate
+ * @returns {boolean}
+ */
+export function isValidModuleId(id) {
+  if (typeof id !== 'string') return false;
+  return /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.test(id);
+}
+
+/**
+ * Get the modules directory path.
+ *
+ * @param {string} repoRoot - Repository root path
+ * @param {string} [modulesDirOpt] - Optional modules directory name (default: 'modules')
+ * @returns {string} Absolute path to modules directory
+ */
+export function getModulesDir(repoRoot, modulesDirOpt) {
+  return path.join(repoRoot, modulesDirOpt || 'modules');
+}
+
+/**
+ * Discover all module instances in the repository.
+ *
+ * Scans the modules directory for subdirectories containing MANIFEST.yaml.
+ * Excludes the 'integration' directory.
+ *
+ * @param {string} repoRoot - Repository root path
+ * @param {string} [modulesDirOpt] - Optional modules directory name (default: 'modules')
+ * @returns {Array<{ dir: string, id: string, manifestPath: string }>}
+ */
+export function discoverModules(repoRoot, modulesDirOpt) {
+  const modulesDir = getModulesDir(repoRoot, modulesDirOpt);
+  if (!fs.existsSync(modulesDir)) return [];
+
+  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
+  const mods = [];
+
+  for (const e of entries) {
+    if (!e.isDirectory()) continue;
+    if (e.name === 'integration') continue;
+
+    const dir = path.join(modulesDir, e.name);
+    const manifestPath = path.join(dir, 'MANIFEST.yaml');
+
+    if (fs.existsSync(manifestPath)) {
+      mods.push({
+        dir,
+        id: e.name,
+        manifestPath
+      });
+    }
+  }
+
+  return mods.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Validate a module manifest.
+ *
+ * @param {object} manifest - Parsed manifest object
+ * @param {string} manifestPath - Path to manifest (for error messages)
+ * @returns {{ warnings: string[], errors: string[] }}
+ */
+export function validateManifest(manifest, manifestPath) {
+  const warnings = [];
+  const errors = [];
+
+  if (!manifest || typeof manifest !== 'object') {
+    errors.push(`Manifest is not a mapping: ${manifestPath}`);
+    return { warnings, errors };
+  }
+
+  const moduleId = firstString(manifest, ['module_id', 'moduleId']);
+  if (!moduleId || !isValidModuleId(moduleId)) {
+    errors.push(`Missing/invalid module_id in ${manifestPath} (expected pattern: /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/)`);
+  }
+
+  const moduleType = firstString(manifest, ['module_type', 'moduleType']);
+  if (!moduleType) {
+    warnings.push(`Missing module_type in ${manifestPath}`);
+  }
+
+  if (manifest.interfaces && !Array.isArray(manifest.interfaces)) {
+    errors.push(`interfaces must be a list in ${manifestPath}`);
+  }
+
+  if (Array.isArray(manifest.interfaces)) {
+    const seen = new Set();
+    for (const it of manifest.interfaces) {
+      if (!it || typeof it !== 'object') {
+        errors.push(`interfaces item must be a mapping in ${manifestPath}`);
+        continue;
+      }
+
+      const id = it.id;
+      if (typeof id !== 'string' || id.trim().length === 0) {
+        errors.push(`interfaces[].id missing in ${manifestPath}`);
+      } else {
+        if (seen.has(id)) errors.push(`Duplicate interface id "${id}" in ${manifestPath}`);
+        seen.add(id);
+      }
+
+      if (it.implements && !Array.isArray(it.implements)) {
+        errors.push(`interfaces[].implements must be a list in ${manifestPath} (interface ${id})`);
+      }
+
+      if (Array.isArray(it.implements)) {
+        for (const imp of it.implements) {
+          if (!imp || typeof imp !== 'object') {
+            errors.push(`interfaces[].implements item must be a mapping in ${manifestPath} (interface ${id})`);
+            continue;
+          }
+          const norm = normalizeImplementsEntry(imp);
+          if (!norm.flow_id || !norm.node_id) {
+            warnings.push(`implements entries should include flow_id/node_id in ${manifestPath} (interface ${id})`);
+          }
+          if (imp.variant != null && typeof imp.variant !== 'string') {
+            errors.push(`interfaces[].implements[].variant must be string in ${manifestPath} (interface ${id})`);
+          }
+        }
+      }
+
+      if (it.protocol && typeof it.protocol !== 'string') {
+        errors.push(`interfaces[].protocol must be string in ${manifestPath} (interface ${id})`);
+      }
+      if (it.protocol === 'http') {
+        if (typeof it.method !== 'string' || typeof it.path !== 'string') {
+          warnings.push(`http interface should include method and path in ${manifestPath} (interface ${id})`);
+        }
+      }
+    }
+  }
+
+  return { warnings, errors };
+}
+
+/**
+ * Normalize a flow graph document.
+ *
+ * @param {object} flowGraph - Raw flow graph
+ * @returns {Array<{ id: string, name: string | null, status: string | null, nodes: object[], edges: object[] }>}
+ */
+export function normalizeFlowGraph(flowGraph) {
+  const flows = Array.isArray(flowGraph?.flows) ? flowGraph.flows : [];
+  const norm = [];
+
+  for (const f of flows) {
+    if (!f || typeof f !== 'object') continue;
+    const flowId = firstString(f, ['id', 'flow_id', 'flowId']);
+    norm.push({
+      id: flowId,
+      name: f.name ?? f.description ?? null,
+      status: f.status ?? null,
+      nodes: Array.isArray(f.nodes) ? f.nodes : [],
+      edges: Array.isArray(f.edges) ? f.edges : []
+    });
+  }
+
+  return norm;
+}
+
+/**
+ * Validate a flow graph document.
+ *
+ * @param {object} flowGraph - Raw flow graph
+ * @returns {{ warnings: string[], errors: string[], flows: Array }}
+ */
+export function validateFlowGraph(flowGraph) {
+  const warnings = [];
+  const errors = [];
+
+  const flows = normalizeFlowGraph(flowGraph);
+  const flowIds = new Set();
+
+  for (const f of flows) {
+    if (!f.id || typeof f.id !== 'string') {
+      errors.push(`Flow missing id`);
+      continue;
+    }
+    if (flowIds.has(f.id)) errors.push(`Duplicate flow id: ${f.id}`);
+    flowIds.add(f.id);
+
+    const nodeIds = new Set();
+    for (const n of f.nodes) {
+      if (!n || typeof n !== 'object') {
+        errors.push(`[${f.id}] node must be mapping`);
+        continue;
+      }
+      if (!n.id || typeof n.id !== 'string') {
+        errors.push(`[${f.id}] node missing id`);
+        continue;
+      }
+      if (nodeIds.has(n.id)) errors.push(`[${f.id}] duplicate node id: ${n.id}`);
+      nodeIds.add(n.id);
+    }
+
+    for (const e of f.edges) {
+      if (!e || typeof e !== 'object') {
+        errors.push(`[${f.id}] edge must be mapping`);
+        continue;
+      }
+      const from = e.from;
+      const to = e.to;
+      if (!from || !to) {
+        errors.push(`[${f.id}] edge missing from/to`);
+        continue;
+      }
+      if (!nodeIds.has(from)) errors.push(`[${f.id}] edge.from references unknown node: ${from}`);
+      if (!nodeIds.has(to)) errors.push(`[${f.id}] edge.to references unknown node: ${to}`);
+    }
+
+    // Warnings for empty flows
+    if (f.nodes.length === 0) warnings.push(`[${f.id}] flow has no nodes`);
+  }
+
+  return { warnings, errors, flows };
+}
+
+/**
+ * Normalize a type graph document.
+ *
+ * @param {object} typeGraph - Raw type graph
+ * @returns {Array<{ id: string, outbound: string[] }>}
+ */
+export function normalizeTypeGraph(typeGraph) {
+  const types = Array.isArray(typeGraph?.types) ? typeGraph.types : [];
+  return types
+    .filter(t => t && typeof t === 'object')
+    .map(t => ({
+      id: firstString(t, ['id', 'type_id', 'typeId']),
+      outbound: Array.isArray(t.outbound) ? t.outbound : []
+    }));
+}
+
+/**
+ * Validate a type graph document.
+ *
+ * @param {object} typeGraph - Raw type graph
+ * @returns {{ warnings: string[], errors: string[], types: Array }}
+ */
+export function validateTypeGraph(typeGraph) {
+  const warnings = [];
+  const errors = [];
+
+  const types = normalizeTypeGraph(typeGraph);
+  const ids = new Set();
+
+  for (const t of types) {
+    if (!t.id || typeof t.id !== 'string') {
+      errors.push('type_graph: type missing id');
+      continue;
+    }
+    if (ids.has(t.id)) errors.push(`type_graph: duplicate type id: ${t.id}`);
+    ids.add(t.id);
+  }
+
+  for (const t of types) {
+    for (const out of t.outbound || []) {
+      if (typeof out !== 'string' || out.trim().length === 0) continue;
+      if (!ids.has(out)) errors.push(`type_graph: unknown outbound type "${out}" referenced by "${t.id}"`);
+    }
+  }
+
+  return { warnings, errors, types };
 }

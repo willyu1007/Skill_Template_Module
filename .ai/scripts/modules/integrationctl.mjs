@@ -22,20 +22,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { loadYamlFile, dumpYaml } from './lib/yaml.mjs';
+import { parseArgs, createUsage, die, isoNow, repoRootFromOpts, printDiagnostics } from '../lib/cli.mjs';
+import { ensureDir, safeRel, fileExists, readText, writeText, writeJson, cleanJsonFilesInDir, extractLeadingCommentBlock } from '../lib/fs-utils.mjs';
+import { loadYamlFile, dumpYaml } from '../lib/yaml.mjs';
 import {
   firstString,
   getModularEnv,
   indexImplsByFlowNode,
   normalizeBindingsDoc,
   normalizeFlowNodeRef,
-  resolveBindingEndpoint
-} from './lib/modular.mjs';
+  resolveBindingEndpoint,
+  normalizeFlowGraph,
+  isValidModuleId
+} from '../lib/modular.mjs';
 
-function usage(exitCode = 0) {
-  const msg = `
+// =============================================================================
+// CLI
+// =============================================================================
+
+const usageText = `
 Usage:
-  node .ai/scripts/integrationctl.mjs <command> [options]
+  node .ai/scripts/modules/integrationctl.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -71,80 +78,21 @@ Notes:
   - Execution is optional and environment-specific.
   - If base URLs are not configured, HTTP steps will be marked as SKIPPED.
 `;
-  console.log(msg.trim());
-  process.exit(exitCode);
-}
 
-function die(msg, code = 1) {
-  console.error(msg);
-  process.exit(code);
-}
+const usage = createUsage(usageText);
 
-function parseArgs(argv) {
-  const args = argv.slice(2);
-  if (args.length === 0 || args[0] === '-h' || args[0] === '--help') usage(0);
-  const command = args.shift();
-  const opts = {};
-  while (args.length > 0) {
-    const t = args.shift();
-    if (t === '-h' || t === '--help') usage(0);
-    if (t.startsWith('--')) {
-      const k = t.slice(2);
-      if (args.length > 0 && !args[0].startsWith('--')) opts[k] = args.shift();
-      else opts[k] = true;
-    } else {
-      // ignore positional
-    }
-  }
-  return { command, opts };
-}
-
-function isoNow() {
-  return new Date().toISOString();
-}
-
-function cleanJsonFilesInDir(dirPath) {
-  if (!fs.existsSync(dirPath)) return;
-  for (const ent of fs.readdirSync(dirPath, { withFileTypes: true })) {
-    if (!ent.isFile()) continue;
-    if (!ent.name.endsWith('.json')) continue;
-    fs.unlinkSync(path.join(dirPath, ent.name));
-  }
-}
-
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
-function readText(p) {
-  return fs.readFileSync(p, 'utf8');
-}
-
-function writeText(p, content) {
-  ensureDir(path.dirname(p));
-  fs.writeFileSync(p, content, 'utf8');
-}
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function readYamlIfExists(absPath, fallback) {
-  if (!fs.existsSync(absPath)) return fallback;
+  if (!fileExists(absPath)) return fallback;
   return loadYamlFile(absPath);
 }
 
 function loadFlowGraph(repoRoot) {
   const p = path.join(repoRoot, '.system', 'modular', 'flow_graph.yaml');
   return readYamlIfExists(p, { flows: [] });
-}
-
-function normalizeFlowGraph(flowGraph) {
-  const flows = Array.isArray(flowGraph.flows) ? flowGraph.flows : [];
-  return flows
-    .filter(f => f && typeof f === 'object')
-    .map(f => ({
-      id: f.id ?? f.flow_id ?? f.flowId,
-      nodes: Array.isArray(f.nodes) ? f.nodes : [],
-      edges: Array.isArray(f.edges) ? f.edges : []
-    }))
-    .filter(f => !!f.id);
 }
 
 function buildAdjacency(flowGraph) {
@@ -200,30 +148,14 @@ function getBaseUrl(runtimeCfg, moduleId) {
 
 function loadScenarios(repoRoot, scenariosPathOpt) {
   const p = path.join(repoRoot, scenariosPathOpt || 'modules/integration/scenarios.yaml');
-  if (!fs.existsSync(p)) die(`[error] scenarios file not found: ${p}`);
+  if (!fileExists(p)) die(`[error] scenarios file not found: ${p}`);
   return { absPath: p, doc: loadYamlFile(p) };
 }
 
 function loadScenariosText(repoRoot, scenariosPathOpt) {
   const p = path.join(repoRoot, scenariosPathOpt || 'modules/integration/scenarios.yaml');
-  if (!fs.existsSync(p)) die(`[error] scenarios file not found: ${p}`);
+  if (!fileExists(p)) die(`[error] scenarios file not found: ${p}`);
   return { absPath: p, raw: readText(p) };
-}
-
-function extractLeadingCommentBlock(raw) {
-  const lines = raw.split(/\r?\n/);
-  let i = 0;
-  while (i < lines.length) {
-    const t = lines[i].trim();
-    if (t === '' || t.startsWith('#')) i++;
-    else break;
-  }
-  const header = lines.slice(0, i).join('\n').replace(/\s+$/, '');
-  return header.length > 0 ? header + '\n\n' : '';
-}
-
-function isValidId(id) {
-  return typeof id === 'string' && /^[a-z0-9][a-z0-9._-]{0,62}[a-z0-9]$/.test(id);
 }
 
 function normalizeScenarios(doc) {
@@ -312,6 +244,10 @@ function resolveEndpointForStep(step, implsByNode, bindingsById, bindingsByKey, 
   if (impls.length > 1) return { endpoint_id: null, binding_id: null, resolution: 'ambiguous' };
   return { endpoint_id: null, binding_id: null, resolution: 'no_impl' };
 }
+
+// =============================================================================
+// Validation
+// =============================================================================
 
 function validate(repoRoot, scenariosDoc, opts = {}) {
   const strict = !!opts.strict;
@@ -450,6 +386,10 @@ function validate(repoRoot, scenariosDoc, opts = {}) {
   return { warnings, errors, scenarios };
 }
 
+// =============================================================================
+// Compilation
+// =============================================================================
+
 function compile(repoRoot, scenariosDoc, outDirOpt, compileOpts = {}) {
   const outDir = path.join(repoRoot, outDirOpt || 'modules/integration/compiled');
   ensureDir(outDir);
@@ -511,19 +451,23 @@ function compile(repoRoot, scenariosDoc, outDirOpt, compileOpts = {}) {
     };
 
     const outPath = path.join(outDir, `${sc.id}.json`);
-    fs.writeFileSync(outPath, JSON.stringify(plan, null, 2) + '\n', 'utf8');
+    writeJson(outPath, plan);
     plans.push({ id: sc.id, path: outPath });
   }
 
   const indexPath = path.join(outDir, 'index.json');
-  fs.writeFileSync(indexPath, JSON.stringify({
+  writeJson(indexPath, {
     compiledAt: isoNow(),
     env: env ?? null,
     scenarios: plans.map(p => ({ id: p.id, file: path.basename(p.path) }))
-  }, null, 2) + '\n', 'utf8');
+  });
 
   return { warnings, errors, plans, outDir, indexPath };
 }
+
+// =============================================================================
+// Execution helpers
+// =============================================================================
 
 function lookupInterface(instanceRegistry, endpointId) {
   if (!endpointId) return null;
@@ -731,12 +675,16 @@ async function execStep(repoRoot, runtimeCfg, instanceRegistry, step, execute) {
   }
 }
 
+// =============================================================================
+// Run plans
+// =============================================================================
+
 async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
   const outDir = path.join(repoRoot, outDirOpt || 'modules/integration/runs');
   ensureDir(outDir);
 
   const compiledDir = path.join(repoRoot, 'modules/integration/compiled');
-  if (!fs.existsSync(compiledDir)) die(`[error] compiled dir not found: ${compiledDir} (run compile first)`);
+  if (!fileExists(compiledDir)) die(`[error] compiled dir not found: ${compiledDir} (run compile first)`);
 
   const instanceRegistry = loadInstanceRegistry(repoRoot);
   const runtimeCfg = loadRuntimeEndpoints(repoRoot);
@@ -751,13 +699,13 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
 
   const loadPlan = (id) => {
     const p = path.join(compiledDir, `${id}.json`);
-    if (!fs.existsSync(p)) return null;
+    if (!fileExists(p)) return null;
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   };
 
   const plans = [];
   const idx = path.join(compiledDir, 'index.json');
-  if (!fs.existsSync(idx)) die(`[error] compiled index missing: ${idx} (run compile first)`);
+  if (!fileExists(idx)) die(`[error] compiled index missing: ${idx} (run compile first)`);
   const indexDoc = JSON.parse(fs.readFileSync(idx, 'utf8'));
   const allowed = new Set((indexDoc.scenarios || []).map(s => s.id));
 
@@ -834,13 +782,13 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
     summary.scenarios.push(scRes);
 
     const outPath = path.join(outDir, `${runId}__${plan.id}.json`);
-    fs.writeFileSync(outPath, JSON.stringify(scRes, null, 2) + '\n', 'utf8');
+    writeJson(outPath, scRes);
   }
 
   summary.finishedAt = isoNow();
 
   const summaryPath = path.join(outDir, `${runId}__SUMMARY.json`);
-  fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n', 'utf8');
+  writeJson(summaryPath, summary);
 
   // Write triage doc stub
   const triagePath = path.join(repoRoot, 'modules', 'integration', 'workdocs', `run_${runId}.md`);
@@ -861,10 +809,14 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
     `- If failures are environment/config related, update .system/modular/runtime_endpoints.yaml or relevant module config.`,
     ``
   ].join('\n');
-  fs.writeFileSync(triagePath, triageMd, 'utf8');
+  writeText(triagePath, triageMd);
 
   return { summaryPath, triagePath, summary };
 }
+
+// =============================================================================
+// Commands
+// =============================================================================
 
 function cmdInit(repoRoot) {
   const dir = path.join(repoRoot, 'modules', 'integration');
@@ -874,7 +826,7 @@ function cmdInit(repoRoot) {
   ensureDir(path.join(dir, 'runs'));
 
   const scenariosPath = path.join(dir, 'scenarios.yaml');
-  if (!fs.existsSync(scenariosPath)) {
+  if (!fileExists(scenariosPath)) {
     fs.writeFileSync(scenariosPath, '# SSOT: Integration scenarios\n\nscenarios: []\n', 'utf8');
     console.log('[ok] created modules/integration/scenarios.yaml');
   }
@@ -892,8 +844,8 @@ function cmdNewScenario(repoRoot, opts) {
 
   if (!scenarioId) die('[error] --id is required');
   if (!flowId) die('[error] --flow-id is required');
-  if (!isValidId(scenarioId)) die(`[error] invalid scenario id: ${scenarioId}`);
-  if (!isValidId(flowId)) die(`[error] invalid flow id: ${flowId}`);
+  if (!isValidModuleId(scenarioId)) die(`[error] invalid scenario id: ${scenarioId}`);
+  if (!isValidModuleId(flowId)) die(`[error] invalid flow id: ${flowId}`);
 
   const { absPath, doc } = loadScenarios(repoRoot, opts.scenarios);
   const existing = normalizeScenarios(doc);
@@ -930,9 +882,13 @@ function cmdNewScenario(repoRoot, opts) {
   console.log(`[ok] updated ${path.relative(repoRoot, absPath)}`);
 }
 
+// =============================================================================
+// Main
+// =============================================================================
+
 async function main() {
-  const { command, opts } = parseArgs(process.argv);
-  const repoRoot = path.resolve(opts['repo-root'] || process.cwd());
+  const { command, opts } = parseArgs(process.argv, { usageFn: usage });
+  const repoRoot = repoRootFromOpts(opts);
 
   switch (command) {
     case 'init': {
@@ -947,34 +903,19 @@ async function main() {
       const { doc } = loadScenarios(repoRoot, opts.scenarios);
       const strict = !!opts.strict;
       const { warnings, errors } = validate(repoRoot, doc, { strict });
-      if (warnings.length > 0) {
-        console.log(`Warnings (${warnings.length}):`);
-        for (const w of warnings) console.log(`- ${w}`);
-      }
-      if (errors.length > 0) {
-        console.log(`\nErrors (${errors.length}):`);
-        for (const e of errors) console.log(`- ${e}`);
-        process.exit(1);
-      }
-      if (strict && warnings.length > 0) process.exit(1);
+      const { shouldExit } = printDiagnostics({ warnings, errors }, { strict });
+      if (shouldExit) process.exit(1);
       console.log('\n[ok] scenario validation passed.');
       break;
     }
     case 'compile': {
       const { doc } = loadScenarios(repoRoot, opts.scenarios);
       const clean = !opts['no-clean'];
-      const { warnings, errors, plans, outDir, indexPath } = compile(repoRoot, doc, opts['out-dir'], { clean });
+      const { warnings, errors, outDir, indexPath } = compile(repoRoot, doc, opts['out-dir'], { clean });
       console.log(`[ok] wrote compiled scenarios to ${outDir}`);
       console.log(`[ok] wrote ${indexPath}`);
-      if (warnings.length > 0) {
-        console.log(`\nWarnings (${warnings.length}):`);
-        for (const w of warnings) console.log(`- ${w}`);
-      }
-      if (errors.length > 0) {
-        console.log(`\nErrors (${errors.length}):`);
-        for (const e of errors) console.log(`- ${e}`);
-        process.exit(1);
-      }
+      const { shouldExit } = printDiagnostics({ warnings, errors });
+      if (shouldExit) process.exitCode = 1;
       break;
     }
     case 'run': {

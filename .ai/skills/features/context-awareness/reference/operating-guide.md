@@ -18,11 +18,12 @@
 
 ### Generated mode (opt-in)
 
-- The artifact file is generated from code/tools.
-- Register the artifact with `mode=generated` and a `source.command`.
-- Run generators with:
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs update --allow-shell`
-- This feature does not assume any specific generator tooling; the command is project-defined.
+- The artifact file is generated from external tools (e.g., OpenAPI generators, schema extractors).
+- Register the artifact with `mode=generated` and optionally document the source command in `source.command` for reference.
+- **contextctl does NOT execute generators automatically**. Run your generator manually, then:
+  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch`
+  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+- The `source.command` field is metadata for humans/LLMs to know how to regenerate; it is not executed by contextctl.
 
 ## Recommended CI gates
 
@@ -33,7 +34,8 @@ Minimum:
 
 Optional (if you use generated mode):
 
-- `node .ai/skills/features/context-awareness/scripts/contextctl.mjs update --allow-shell`
+- Run your generator tool (project-specific, not managed by contextctl)
+- `node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch`
 - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
 
 ## Common artifact types

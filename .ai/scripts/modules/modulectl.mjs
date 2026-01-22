@@ -18,20 +18,26 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from './lib/yaml.mjs';
-import { normalizeImplementsEntry } from './lib/modular.mjs';
+import { parseArgs, createUsage, die, isoNow, repoRootFromOpts, printDiagnostics } from '../lib/cli.mjs';
+import { ensureDir, safeRel, readText, writeText, readJson, writeJson } from '../lib/fs-utils.mjs';
+import { loadYamlFile, saveYamlFile, dumpYaml, parseYaml } from '../lib/yaml.mjs';
+import {
+  normalizeImplementsEntry,
+  isValidModuleId,
+  discoverModules,
+  getModulesDir,
+  validateManifest
+} from '../lib/modular.mjs';
 
 // =============================================================================
 // CLI
 // =============================================================================
 
-function usage(exitCode = 0) {
-  const msg = `
+const usageText = `
 Usage:
-  node .ai/scripts/modulectl.mjs <command> [options]
+  node .ai/scripts/modules/modulectl.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -61,214 +67,101 @@ Commands:
     Verify module manifests and module-local SSOT.
 
 Examples:
-  node .ai/scripts/modulectl.mjs init --module-id billing.api --apply
-  node .ai/scripts/modulectl.mjs registry-build
-  node .ai/scripts/modulectl.mjs verify --strict
+  node .ai/scripts/modules/modulectl.mjs init --module-id billing.api --apply
+  node .ai/scripts/modules/modulectl.mjs registry-build
+  node .ai/scripts/modules/modulectl.mjs verify --strict
 `;
-  console.log(msg.trim());
-  process.exit(exitCode);
-}
 
-function die(msg, exitCode = 1) {
-  console.error(msg);
-  process.exit(exitCode);
-}
-
-function parseArgs(argv) {
-  const args = argv.slice(2);
-  if (args.length === 0 || args[0] === '-h' || args[0] === '--help') usage(0);
-
-  const command = args.shift();
-  const opts = {};
-  const positionals = [];
-
-  while (args.length > 0) {
-    const token = args.shift();
-    if (token === '-h' || token === '--help') usage(0);
-
-    if (token.startsWith('--')) {
-      const key = token.slice(2);
-      if (args.length > 0 && !args[0].startsWith('--')) {
-        opts[key] = args.shift();
-      } else {
-        opts[key] = true;
-      }
-    } else {
-      positionals.push(token);
-    }
-  }
-
-  return { command, opts, positionals };
-}
-
-function isoNow() {
-  return new Date().toISOString();
-}
-
-function repoRootFromOpts(opts) {
-  return path.resolve(opts['repo-root'] || process.cwd());
-}
+const usage = createUsage(usageText);
 
 // =============================================================================
-// Validation helpers
-// =============================================================================
-
-function isString(x) {
-  return typeof x === 'string';
-}
-
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
-function safeRel(repoRoot, p) {
-  const abs = path.resolve(p);
-  const rr = path.resolve(repoRoot);
-  if (!abs.startsWith(rr)) return p;
-  return path.relative(rr, abs);
-}
-
-function readText(p) {
-  return fs.readFileSync(p, 'utf8');
-}
-
-function writeText(p, content) {
-  ensureDir(path.dirname(p));
-  fs.writeFileSync(p, content, 'utf8');
-}
-
-function readJson(p) {
-  try {
-    return JSON.parse(readText(p));
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(p, data) {
-  writeText(p, JSON.stringify(data, null, 2) + '\n');
-}
-
-function sha256File(absPath) {
-  const buf = fs.readFileSync(absPath);
-  return crypto.createHash('sha256').update(buf).digest('hex');
-}
-
-function isValidModuleId(id) {
-  // Align with `.system/modular/schemas/module_context_registry.schema.json`
-  return /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/.test(id);
-}
-
-function validateManifest(manifest, manifestPath) {
-  const warnings = [];
-  const errors = [];
-
-  if (!manifest || typeof manifest !== 'object') {
-    errors.push(`Manifest is not a mapping: ${manifestPath}`);
-    return { warnings, errors };
-  }
-
-  const moduleId = manifest.module_id ?? manifest.moduleId;
-  if (!isString(moduleId) || !isValidModuleId(moduleId)) {
-    errors.push(`Missing/invalid module_id in ${manifestPath} (expected pattern: /^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$/)`);
-  }
-
-  const moduleType = manifest.module_type ?? manifest.moduleType;
-  if (!isString(moduleType)) warnings.push(`Missing module_type in ${manifestPath}`);
-
-  if (manifest.interfaces && !Array.isArray(manifest.interfaces)) {
-    errors.push(`interfaces must be a list in ${manifestPath}`);
-  }
-
-  if (Array.isArray(manifest.interfaces)) {
-    const seen = new Set();
-    for (const it of manifest.interfaces) {
-      if (!it || typeof it !== 'object') {
-        errors.push(`interfaces item must be a mapping in ${manifestPath}`);
-        continue;
-      }
-      const id = it.id;
-      if (!isString(id) || id.trim().length === 0) {
-        errors.push(`interfaces[].id missing in ${manifestPath}`);
-      } else {
-        if (seen.has(id)) errors.push(`Duplicate interface id "${id}" in ${manifestPath}`);
-        seen.add(id);
-      }
-      if (it.implements && !Array.isArray(it.implements)) {
-        errors.push(`interfaces[].implements must be a list in ${manifestPath} (interface ${id})`);
-      }
-
-      if (Array.isArray(it.implements)) {
-        for (const imp of it.implements) {
-          if (!imp || typeof imp !== 'object') {
-            errors.push(`interfaces[].implements item must be a mapping in ${manifestPath} (interface ${id})`);
-            continue;
-          }
-          const norm = normalizeImplementsEntry(imp);
-          if (!isString(norm.flow_id) || !isString(norm.node_id)) {
-            warnings.push(`implements entries should include flow_id/node_id in ${manifestPath} (interface ${id})`);
-          }
-          if (imp.variant != null && !isString(imp.variant)) {
-            errors.push(`interfaces[].implements[].variant must be string in ${manifestPath} (interface ${id})`);
-          }
-        }
-      }
-      if (it.protocol && !isString(it.protocol)) errors.push(`interfaces[].protocol must be string in ${manifestPath} (interface ${id})`);
-      if (it.protocol === 'http') {
-        if (!isString(it.method) || !isString(it.path)) {
-          warnings.push(`http interface should include method and path in ${manifestPath} (interface ${id})`);
-        }
-      }
-    }
-  }
-
-  return { warnings, errors };
-}
-
-// =============================================================================
-// Module discovery
-// =============================================================================
-
-function getModulesDir(repoRoot, modulesDirOpt) {
-  return path.join(repoRoot, modulesDirOpt || 'modules');
-}
-
-function discoverModules(repoRoot, modulesDirOpt) {
-  const modulesDir = getModulesDir(repoRoot, modulesDirOpt);
-  if (!fs.existsSync(modulesDir)) return [];
-  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
-  const mods = [];
-  for (const e of entries) {
-    if (!e.isDirectory()) continue;
-    if (e.name === 'integration') continue;
-    const dir = path.join(modulesDir, e.name);
-    const manifestPath = path.join(dir, 'MANIFEST.yaml');
-    if (fs.existsSync(manifestPath)) {
-      mods.push({
-        dir,
-        id: e.name,
-        manifestPath
-      });
-    }
-  }
-  return mods.sort((a, b) => a.id.localeCompare(b.id));
-}
-
-// =============================================================================
-// Commands
+// Module templates
 // =============================================================================
 
 function templateAgentsMd(moduleId, moduleType, description) {
   const desc = description ? `\n\n## Description\n\n${description}\n` : '';
-  return `---\nname: ${moduleId}\npurpose: Module agent instructions for ${moduleId}\n---\n\n# ${moduleId}\n\n## Operating rules\n\n- Read this file first when working inside this module.\n- Keep changes local to this module unless explicitly cross-cutting.\n- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).\n- If you change this module's manifest, run:\n  - node .ai/scripts/modulectl.mjs registry-build\n  - node .ai/scripts/flowctl.mjs update-from-manifests\n  - node .ai/scripts/flowctl.mjs lint\n\n## Key files\n\n- MANIFEST.yaml (SSOT)\n- interact/registry.json (SSOT)\n- workdocs/AGENTS.md (how to use workdocs)\n- workdocs/ (long-running module notes)\n${desc}`;
+  return `---
+name: ${moduleId}
+purpose: Module agent instructions for ${moduleId}
+---
+
+# ${moduleId}
+
+## Operating rules
+
+- Read this file first when working inside this module.
+- Keep changes local to this module unless explicitly cross-cutting.
+- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).
+- If you change this module's manifest, run:
+  - node .ai/scripts/modules/modulectl.mjs registry-build
+  - node .ai/scripts/modules/flowctl.mjs update-from-manifests
+  - node .ai/scripts/modules/flowctl.mjs lint
+
+## Key files
+
+- MANIFEST.yaml (SSOT)
+- interact/registry.json (SSOT)
+- workdocs/AGENTS.md (how to use workdocs)
+- workdocs/ (long-running module notes)
+${desc}`;
 }
 
 function templateWorkdocsAgentsMd(moduleId) {
-  return `---\nname: ${moduleId}-workdocs\npurpose: Workdocs operating rules for ${moduleId}\n---\n\n# ${moduleId} — workdocs\n\n## Scope\n\nLong-running task tracking, design decisions, and handoff documentation for this module.\n\n## Operating rules (MUST)\n\n- Do not start non-trivial implementation without a task folder under \`active/<task_slug>/\`.\n- Prefer **resume over new**: if a related task already exists in \`active/\`, reuse it.\n- Before doing any work in an existing task, read:\n  - \`03-implementation-notes.md\`\n  - \`05-pitfalls.md\`\n- Keep execution synced during work:\n  - \`01-plan.md\` (checklist + newly discovered TODOs)\n  - \`03-implementation-notes.md\` (what changed + decisions + deviations)\n  - \`04-verification.md\` (commands run + results + blockers)\n- Before context switch / handoff / wrap-up: run \`update-workdocs-for-handoff\` and ensure \`handoff.md\` is present and actionable.\n\n## Structure\n\n| Directory | Content |\n|---|---|\n| \`active/<task-slug>/\` | Current tasks |\n| \`archive/<task-slug>/\` | Completed tasks |\n\n## Workflow\n\n1. If the user asks for planning before coding, write \`active/<task_slug>/roadmap.md\` via \`plan-maker\` (planning-only).\n2. Create (or resume) the task bundle via \`create-workdocs-plan\`.\n3. Execute work while continuously syncing \`01-plan.md\`, \`03-implementation-notes.md\`, and \`04-verification.md\`.\n4. Before handoff: use \`update-workdocs-for-handoff\`.\n5. On completion: move the folder to \`archive/\`.\n`;
+  return `---
+name: ${moduleId}-workdocs
+purpose: Workdocs operating rules for ${moduleId}
+---
+
+# ${moduleId} — workdocs
+
+## Scope
+
+Long-running task tracking, design decisions, and handoff documentation for this module.
+
+## Operating rules (MUST)
+
+- Do not start non-trivial implementation without a task folder under \`active/<task_slug>/\`.
+- Prefer **resume over new**: if a related task already exists in \`active/\`, reuse it.
+- Before doing any work in an existing task, read:
+  - \`03-implementation-notes.md\`
+  - \`05-pitfalls.md\`
+- Keep execution synced during work:
+  - \`01-plan.md\` (checklist + newly discovered TODOs)
+  - \`03-implementation-notes.md\` (what changed + decisions + deviations)
+  - \`04-verification.md\` (commands run + results + blockers)
+- Before context switch / handoff / wrap-up: run \`update-workdocs-for-handoff\` and ensure \`handoff.md\` is present and actionable.
+
+## Structure
+
+| Directory | Content |
+|---|---|
+| \`active/<task-slug>/\` | Current tasks |
+| \`archive/<task-slug>/\` | Completed tasks |
+
+## Workflow
+
+1. If the user asks for planning before coding, write \`active/<task_slug>/roadmap.md\` via \`plan-maker\` (planning-only).
+2. Create (or resume) the task bundle via \`create-workdocs-plan\`.
+3. Execute work while continuously syncing \`01-plan.md\`, \`03-implementation-notes.md\`, and \`04-verification.md\`.
+4. Before handoff: use \`update-workdocs-for-handoff\`.
+5. On completion: move the folder to \`archive/\`.
+`;
 }
 
 function templateAbilityMd(moduleId) {
-  return `# ${moduleId} — Ability\n\nDescribe what this module is responsible for, and what it is NOT responsible for.\n\n## Responsibilities\n- TBD\n\n## Non-responsibilities\n- TBD\n\n## External dependencies\n- TBD\n`;
+  return `# ${moduleId} — Ability
+
+Describe what this module is responsible for, and what it is NOT responsible for.
+
+## Responsibilities
+- TBD
+
+## Non-responsibilities
+- TBD
+
+## External dependencies
+- TBD
+`;
 }
 
 function defaultManifest(moduleId, moduleType, description) {
@@ -291,6 +184,10 @@ function defaultModuleContextRegistry(moduleId) {
     artifacts: []
   };
 }
+
+// =============================================================================
+// Commands
+// =============================================================================
 
 function cmdInit(repoRoot, opts) {
   const moduleId = opts['module-id'];
@@ -318,7 +215,20 @@ function cmdInit(repoRoot, opts) {
   const manifestObj = defaultManifest(moduleId, moduleType, description);
   const manifestYaml = dumpYaml(manifestObj);
 
-  const workdocsReadme = `# ${moduleId} — workdocs\n\nThis folder contains long-running notes for the module.\n\nRead first:\n- workdocs/AGENTS.md (how to use workdocs)\n\nRecommended structure:\n\n- active/ — current tasks\n- archive/ — closed tasks\n\nFor integration-related work, prefer writing in modules/integration/workdocs/.\n`;
+  const workdocsReadme = `# ${moduleId} — workdocs
+
+This folder contains long-running notes for the module.
+
+Read first:
+- workdocs/AGENTS.md (how to use workdocs)
+
+Recommended structure:
+
+- active/ — current tasks
+- archive/ — closed tasks
+
+For integration-related work, prefer writing in modules/integration/workdocs/.
+`;
 
   filesToWrite.push({ path: manifestPath, content: manifestYaml });
   filesToWrite.push({ path: agentsPath, content: templateAgentsMd(moduleId, moduleType, description) });
@@ -375,7 +285,7 @@ function cmdInit(repoRoot, opts) {
   }
 
   // Update flow implementation index (derived)
-  const flow = spawnSync('node', ['.ai/scripts/flowctl.mjs', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
+  const flow = spawnSync('node', ['.ai/scripts/modules/flowctl.mjs', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
   if (flow.status !== 0) {
     console.error('[warn] flowctl update-from-manifests failed (module created, but flow implementation index not updated).');
   }
@@ -522,15 +432,8 @@ function cmdRegistryBuild(repoRoot, opts, internal = { quiet: false }) {
   }
 
   console.log(`[ok] Wrote ${safeRel(repoRoot, outPath)}`);
-  if (warnings.length > 0) {
-    console.log(`\nWarnings (${warnings.length}):`);
-    for (const w of warnings) console.log(`- ${w}`);
-  }
-  if (errors.length > 0) {
-    console.log(`\nErrors (${errors.length}):`);
-    for (const e of errors) console.log(`- ${e}`);
-    process.exitCode = 1;
-  }
+  const { shouldExit } = printDiagnostics({ warnings, errors });
+  if (shouldExit) process.exitCode = 1;
 }
 
 function cmdVerify(repoRoot, opts) {
@@ -567,18 +470,9 @@ function cmdVerify(repoRoot, opts) {
     }
   }
 
-  if (warnings.length > 0) {
-    console.log(`Warnings (${warnings.length}):`);
-    for (const w of warnings) console.log(`- ${w}`);
-  }
-  if (errors.length > 0) {
-    console.log(`\nErrors (${errors.length}):`);
-    for (const e of errors) console.log(`- ${e}`);
-  }
+  const { shouldExit } = printDiagnostics({ warnings, errors }, { strict });
 
-  if (errors.length > 0) process.exit(1);
-  if (strict && warnings.length > 0) process.exit(1);
-
+  if (shouldExit) process.exit(1);
   console.log('\n[ok] Module verification passed.');
 }
 
@@ -587,7 +481,7 @@ function cmdVerify(repoRoot, opts) {
 // =============================================================================
 
 function main() {
-  const { command, opts } = parseArgs(process.argv);
+  const { command, opts } = parseArgs(process.argv, { usageFn: usage });
   const repoRoot = repoRootFromOpts(opts);
 
   switch (command) {

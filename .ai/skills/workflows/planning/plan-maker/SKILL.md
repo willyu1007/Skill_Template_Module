@@ -35,9 +35,28 @@ Avoid the skill when:
 - `roadmap.md` (always) at exactly one scope:
   - Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md`
   - Integration-scoped: `modules/integration/workdocs/active/<task_slug>/roadmap.md`
+  - **Temporary (default fallback)**: `.ai/.tmp/workdocs/<task_slug>/roadmap.md`
 - `requirement.md` (optional, when requirements alignment mode is active) at the same scope:
   - Module-scoped: `modules/<module_id>/workdocs/active/<task_slug>/requirement.md`
   - Integration-scoped: `modules/integration/workdocs/active/<task_slug>/requirement.md`
+  - **Temporary (default fallback)**: `.ai/.tmp/workdocs/<task_slug>/requirement.md`
+
+### Scope resolution
+| Scope | Path | When to use |
+|-------|------|-------------|
+| Module | `modules/<module_id>/workdocs/active/<task_slug>/` | Task is clearly about a single module |
+| Integration | `modules/integration/workdocs/active/<task_slug>/` | Task spans multiple modules or involves scenario testing |
+| **Temporary (default)** | `.ai/.tmp/workdocs/<task_slug>/` | Scope is unclear AND user cannot/will not confirm, OR user explicitly requests temporary location |
+
+### Path confirmation rules (MUST)
+
+| Scope | Human confirmation required? | Auto-create allowed? |
+|-------|------------------------------|----------------------|
+| Module | **YES** — MUST confirm `module_id` + `task_slug` | **NO** |
+| Integration | **YES** — MUST confirm `task_slug` | **NO** |
+| Temporary | NO — can auto-create after proposing `task_slug` | **YES** |
+
+**Critical rule**: NEVER create workdocs under `modules/` without explicit human confirmation of the full path. If confirmation is not obtained, fall back to `.ai/.tmp/workdocs/`.
 
 ## Steps
 
@@ -78,12 +97,20 @@ Avoid the skill when:
    - If the user cannot answer now, record assumptions explicitly and surface the risk.
    - If a requirements document exists at `requirement.md` in the target workdocs folder, use it as input.
 3. Confirm scope and slug:
-   - Confirm module-scoped vs integration-scoped:
+   - Confirm module-scoped vs integration-scoped vs temporary:
      - Module: `modules/<module_id>/workdocs/active/<task_slug>/`
      - Integration: `modules/integration/workdocs/active/<task_slug>/`
-   - Propose a `<task_slug>` and confirm with the user.
-   - Use kebab-case; avoid dates unless requested.
+     - Temporary: `.ai/.tmp/workdocs/<task_slug>/`
+   - Propose a `<task_slug>` (kebab-case; avoid dates unless requested).
    - If already confirmed in Phase 0, skip proposing again.
+   - **For module/integration scope (MUST)**: Present the full proposed path and **wait for explicit user confirmation** before proceeding to step 4:
+     ```
+     Proposed path: modules/<module_id>/workdocs/active/<task_slug>/roadmap.md
+     Please confirm this location, or specify a different one.
+     ```
+   - **For temporary scope**: May proceed without explicit confirmation (auto-create allowed).
+   - **Fallback rule**: If scope is unclear and user cannot/will not confirm, or user explicitly requests a temporary location, use `.ai/.tmp/workdocs/<task_slug>/` as the default.
+   - If user does not confirm within the same turn and scope is module/integration, **do NOT create files** — remind user confirmation is required, or offer to use temporary location instead.
 4. Draft the roadmap using `./templates/roadmap.md`.
    - Keep the roadmap macro-level: phases, milestones, deliverables, verification, risks, rollback.
    - Always include the **Project structure change preview (may be empty)** section from the template:
@@ -93,7 +120,10 @@ Avoid the skill when:
      - If unknown, keep `(none)` or use `<TBD>` and add/keep a **Discovery** step to confirm.
    - Only include specific file paths/APIs elsewhere when you have evidence; otherwise add a discovery step.
    - Include an "Optional detailed documentation layout (convention)" section that declares the expected workdocs layout without creating those files.
-5. Save the roadmap to `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md` or `modules/integration/workdocs/active/<task_slug>/roadmap.md`.
+5. Save the roadmap to the resolved scope:
+   - Module: `modules/<module_id>/workdocs/active/<task_slug>/roadmap.md`
+   - Integration: `modules/integration/workdocs/active/<task_slug>/roadmap.md`
+   - Temporary: `.ai/.tmp/workdocs/<task_slug>/roadmap.md`
 6. Return a short handoff message to the user:
    - confirmed goal
    - where the roadmap was saved
@@ -118,7 +148,7 @@ Avoid the skill when:
 - [ ] Roadmap includes milestones/phases and per-step deliverables
 - [ ] Roadmap includes "Project structure change preview" section (may be empty)
 - [ ] Roadmap defines verification/acceptance criteria and a rollback strategy
-- [ ] Roadmap is saved at the chosen scope under `workdocs/active/<task_slug>/roadmap.md`
+- [ ] Roadmap is saved at the chosen scope under `workdocs/active/<task_slug>/roadmap.md` (or `.ai/.tmp/workdocs/<task_slug>/roadmap.md` for temporary scope)
 - [ ] Workdocs Decision Gate evaluated; user prompted for full bundle if criteria met
 - [ ] No application/source/config files were modified
 
@@ -127,6 +157,8 @@ Avoid the skill when:
 - MUST ask clarifying questions when the goal or constraints are ambiguous
 - MUST NOT invent project-specific facts (APIs, file paths, schemas) without evidence
 - **MUST use the `plan-maker` skill when the user explicitly asks for a saved “roadmap” document/artifact** (strong trigger)
+- **MUST NOT** create roadmap under `modules/` (module or integration scope) without explicit human confirmation of the full path
+- **MUST** fall back to `.ai/.tmp/workdocs/` if human confirmation is not obtained for module/integration scope
 - If the user asks to implement immediately but the task is non-trivial, produce the roadmap first, then ask for confirmation to proceed with execution in a follow-up turn.
 - If the task meets the workdocs Decision Gate, **MUST prompt user** whether to continue with `create-workdocs-plan`
 - If user confirms workdocs bundle creation, **MUST trigger `create-workdocs-plan`**

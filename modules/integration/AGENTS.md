@@ -19,5 +19,5 @@ It holds:
 - Do not edit derived assets by hand.
 - Keep scenarios aligned to `.system/modular/flow_graph.yaml`.
 - Validate + compile scenarios before running:
-  - `node .ai/scripts/integrationctl.mjs validate`
-  - `node .ai/scripts/integrationctl.mjs compile`
+  - `node .ai/scripts/modules/integrationctl.mjs validate`
+  - `node .ai/scripts/modules/integrationctl.mjs compile`
