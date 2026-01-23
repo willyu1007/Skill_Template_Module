@@ -5,7 +5,9 @@
 
 Run these commands from repo root.
 
-> **Note**: During initialization, working files are stored in `init/` (Stage A docs in `init/stage-a-docs/`, blueprint in `init/project-blueprint.json`). After completion, use `cleanup-init --archive` to move them to `docs/project/`.
+> **Note**: During initialization, working files are stored in `init/` (Stage A docs in `init/stage-a-docs/`, blueprint in `init/project-blueprint.json`). After completion, use `cleanup-init --archive` to archive:
+> - Stage A docs → `docs/project/overview/`
+> - Blueprint → `docs/project/overview/project-blueprint.json`
 
 ---
 
@@ -87,6 +89,12 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply \
   --repo-root . \
   --providers both
+```
+
+Before Stage C approval (required): review skill retention and record it:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .
 ```
 
 After the user explicitly approves Stage C:

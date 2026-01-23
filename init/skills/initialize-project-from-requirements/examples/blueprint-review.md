@@ -2,7 +2,7 @@
 
 Before applying Stage C, review `init/project-blueprint.json`.
 
-> **Note**: The blueprint is stored in `init/project-blueprint.json` during initialization. After completion, use `cleanup-init --archive` to archive it to `docs/project/`.
+> **Note**: The blueprint is stored in `init/project-blueprint.json` during initialization. After completion, use `cleanup-init --archive` to archive it to `docs/project/overview/project-blueprint.json`.
 
 ---
 

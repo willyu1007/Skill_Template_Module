@@ -25,7 +25,9 @@ Working location (default: `init/stage-a-docs/`):
 
 Working location (default): `init/project-blueprint.json`
 
-> After initialization completes, use `cleanup-init --archive` to move these files to `docs/project/` for long-term retention.
+> After initialization completes, use `cleanup-init --archive` to archive:
+> - Stage A docs → `docs/project/overview/`
+> - Blueprint → `docs/project/overview/project-blueprint.json`
 
 ### Optional: features
 
@@ -49,9 +51,8 @@ Stage C `apply` materializes enabled features by copying templates into the repo
 
 ### Archived files (after `cleanup-init --archive`)
 
-- Stage A docs: `docs/project/*`
-- Blueprint: `docs/project/project-blueprint.json`
-- Init state board: `docs/project/init-state.json`
+- Stage A docs: `docs/project/overview/*`
+- Blueprint: `docs/project/overview/project-blueprint.json`
 
 ### Stage C outputs
 
@@ -167,15 +168,9 @@ Stage C `apply` may generate a project-specific root `README.md` from the bluepr
 
 Troubleshooting: if Stage C `apply` fails with `EPERM` when writing `.codex/skills/` or `.claude/skills/`, re-run the same `apply` command in an elevated shell. Do not change the blueprint between attempts.
 
-After the user reviews the changes and explicitly approves, run:
+### 4) Stage C: skill retention and pruning (required before approval)
 
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
-```
-
-### 4) Post-init: skill retention and pruning (required)
-
-After Stage C approval, generate and fill the skill retention table:
+After Stage C `apply`, generate and fill the skill retention table:
 
 1) Ensure `init/skill-retention-table.template.md` exists (copy from the template if needed).
 2) Fill the table with current skills from `.ai/skills/` (translate descriptions if needed).
@@ -185,6 +180,12 @@ After Stage C approval, generate and fill the skill retention table:
 ```bash
 node .ai/scripts/sync-skills.mjs --dry-run --delete-skills "<csv>"
 node .ai/scripts/sync-skills.mjs --delete-skills "<csv>" --yes
+```
+
+Record that skill retention was reviewed (required before Stage C approval):
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .
 ```
 
 ### Optional: prune unused feature tooling (tests/scripts)
@@ -210,15 +211,30 @@ After pruning, re-run wrapper sync:
 node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes
 ```
 
-### 5) Post-init: update root README.md and AGENTS.md (recommended)
+### 5) Stage C: update root README.md and AGENTS.md (recommended)
 
-After Stage C approval, explicitly ask:
+After Stage C `apply`, explicitly ask:
 
 > Do you want to record the project type, tech stack, and key directories in the root `AGENTS.md`, and update the root `README.md`?
 
-If approved, update and show a diff before writing.
+If approved, prefer using `update-agents` (dry-run, then apply):
 
-### 6) Optional: remove the init kit
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply
+```
+
+Note: Stage C `apply` may already generate a project-specific root `README.md` from the blueprint.
+
+### 6) Stage C approval (complete init)
+
+After the user reviews the Stage C results and explicitly approves, run:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
+```
+
+### 7) Optional: remove the init kit
 
 When the user confirms the bootstrap kit is no longer needed:
 

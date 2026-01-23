@@ -4,8 +4,8 @@
  *
  * Dependency-free helper for a 3-stage, verifiable init pipeline:
  *
- *   Stage A: requirements docs under `init/stage-a-docs/` (archived to `docs/project/` via cleanup-init --archive)
- *   Stage B: blueprint JSON at `init/project-blueprint.json` (archived to `docs/project/project-blueprint.json` via cleanup-init --archive)
+ *   Stage A: requirements docs under `init/stage-a-docs/` (archived to `docs/project/overview/` via cleanup-init --archive)
+ *   Stage B: blueprint JSON at `init/project-blueprint.json` (archived to `docs/project/overview/project-blueprint.json` via cleanup-init --archive)
  *   Stage C: minimal scaffold + skill pack manifest update + wrapper sync
  *
  * Commands:
@@ -17,6 +17,7 @@
  *   - check-docs     Validate Stage A docs (structure + template placeholders)
  *   - mark-must-ask  Update Stage A must-ask checklist state
  *   - review-packs   Mark Stage B packs review as completed
+ *   - review-skill-retention Mark Stage C skill retention review as completed
  *   - suggest-packs  Recommend skill packs from blueprint capabilities (warn-only by default)
  *   - suggest-features Recommend features from blueprint capabilities
  *   - scaffold       Plan or apply a minimal directory scaffold from the blueprint
@@ -81,6 +82,10 @@ Commands:
     --repo-root <path>          Repo root (default: cwd)
     --note <text>               Optional audit note
 
+  review-skill-retention
+    --repo-root <path>          Repo root (default: cwd)
+    --note <text>               Optional audit note
+
   suggest-packs
     --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
     --repo-root <path>          Repo root (default: cwd)
@@ -118,13 +123,19 @@ Commands:
 
     --format <text|json>        Output format (default: text)
 
+  update-agents
+    --blueprint <path>          Blueprint JSON path (default: init/project-blueprint.json)
+    --repo-root <path>          Repo root (default: cwd)
+    --apply                     Write changes (default: dry-run)
+    --format <text|json>        Output format (default: text)
+
   cleanup-init
     --repo-root <path>          Repo root (default: cwd)
     --apply                     Actually remove init/ (default: dry-run)
     --i-understand              Required acknowledgement (refuses without it)
-    --archive                   Archive all (Stage A docs + blueprint) to docs/project/
-    --archive-docs              Archive Stage A docs only to docs/project/
-    --archive-blueprint         Archive blueprint only to docs/project/
+    --archive                   Archive all (Stage A docs + blueprint) to docs/project/overview/
+    --archive-docs              Archive Stage A docs only to docs/project/overview/
+    --archive-blueprint         Archive blueprint only to docs/project/overview/project-blueprint.json
 
 Examples:
   node .../init-pipeline.mjs start
@@ -295,6 +306,8 @@ function createInitialState() {
       configsGenerated: false,
       manifestUpdated: false,
       wrappersSynced: false,
+      skillRetentionReviewed: false,
+      agentsUpdated: false,
       modularBuilt: false,
       userApproved: false
     },
@@ -363,6 +376,8 @@ function getStageProgress(state) {
       manifestUpdated: !!stage_c.manifestUpdated,
       wrappersSynced: !!stage_c.wrappersSynced,
       modularBuilt: !!stage_c.modularBuilt,
+      skillRetentionReviewed: !!stage_c.skillRetentionReviewed,
+      agentsUpdated: !!stage_c.agentsUpdated,
       userApproved: !!stage_c.userApproved
     }
   };
@@ -406,6 +421,8 @@ function printStatus(state, repoRoot) {
     console.log(`│    Configs generated: ${stage_c.configsGenerated ? '✓' : '✗'}`);
     console.log(`│    Manifest updated: ${stage_c.manifestUpdated ? '✓' : '✗'}`);
     console.log(`│    Wrappers synced: ${stage_c.wrappersSynced ? '✓' : '✗'}`);
+    console.log(`│    Skill retention reviewed: ${stage_c.skillRetentionReviewed ? '✓' : '✗'}`);
+    console.log(`│    Root AGENTS.md updated: ${stage_c.agentsUpdated ? '✓' : '✗'}`);
     console.log(`│    Modular core build: ${stage_c.modularBuilt ? '✓' : '✗'}`);
   }
 
@@ -430,9 +447,16 @@ function printStatus(state, repoRoot) {
   } else if (progress.stage === 'C') {
     if (!stage_c.wrappersSynced) {
       console.log('│    Run: apply --blueprint init/project-blueprint.json');
+    } else if (!stage_c.skillRetentionReviewed) {
+      console.log('│    Review skill retention (required): fill init/skill-retention-table.template.md');
+      console.log('│    Then run: review-skill-retention');
     } else if (!stage_c.userApproved) {
-      console.log('│    Initialization is mostly complete; ask the user to confirm');
-      console.log('│    Then optionally run: cleanup-init --apply --i-understand');
+      if (!stage_c.agentsUpdated) {
+        console.log('│    Optional (recommended): update root AGENTS.md from the blueprint');
+        console.log('│      Run: update-agents --apply');
+      }
+      console.log('│    Have the user review the Stage C outputs and explicitly approve');
+      console.log('│    Then run: advance');
     }
   } else if (progress.stage === 'complete') {
     console.log('│    Initialization complete!');
@@ -1264,6 +1288,280 @@ ${end}${after}`;
 
 function patchRootAgentsDbSsotSection(repoRoot, blueprint, apply) {
   return patchRootAgentsDbSsot(repoRoot, blueprint, apply);
+}
+
+// ============================================================================
+// Root AGENTS.md project info updater (project type + tech stack + key dirs)
+// ============================================================================
+
+function normalizeMarkdownNewlines(raw) {
+  return String(raw || '').replace(/\r\n/g, '\n');
+}
+
+function ensureTrailingNewline(raw) {
+  const s = String(raw || '');
+  return s.endsWith('\n') ? s : `${s}\n`;
+}
+
+function stripBackticks(s) {
+  return String(s || '').replace(/`/g, '').trim();
+}
+
+function findH2Index(lines, headingLine) {
+  const h = String(headingLine || '').trim();
+  if (!h.startsWith('## ')) throw new Error(`findH2Index requires a '## ' headingLine; got: ${headingLine}`);
+  return lines.findIndex((l) => l.trim() === h);
+}
+
+function findNextH2Index(lines, startIdx) {
+  for (let i = startIdx; i < lines.length; i++) {
+    if (/^##\s+/.test(lines[i].trim())) return i;
+  }
+  return lines.length;
+}
+
+function replaceH2SectionBody(lines, headingLine, bodyLines) {
+  const idx = findH2Index(lines, headingLine);
+  if (idx === -1) return { lines, changed: false, op: 'skip', reason: 'heading not found' };
+
+  const start = idx + 1;
+  const end = findNextH2Index(lines, start);
+
+  const before = lines.slice(0, start);
+  const after = lines.slice(end);
+
+  const next = [...before];
+  if (next.length > 0 && next[next.length - 1].trim() !== '') next.push('');
+  next.push(...bodyLines);
+  if (next.length > 0 && next[next.length - 1].trim() !== '') next.push('');
+  next.push(...after);
+
+  return { lines: next, changed: true, op: 'replace' };
+}
+
+function insertH2SectionBefore(lines, beforeHeadingLine, headingLine, bodyLines) {
+  const beforeIdx = findH2Index(lines, beforeHeadingLine);
+  const insertAt = beforeIdx === -1 ? lines.length : beforeIdx;
+
+  const next = [...lines.slice(0, insertAt)];
+  if (next.length > 0 && next[next.length - 1].trim() !== '') next.push('');
+  next.push(headingLine.trim());
+  next.push('');
+  next.push(...bodyLines);
+  next.push('');
+  next.push(...lines.slice(insertAt));
+
+  return { lines: next, changed: true, op: 'insert', insertAt };
+}
+
+function renderTechStackTableRows(blueprint) {
+  const project = blueprint.project || {};
+  const repo = blueprint.repo || {};
+  const caps = blueprint.capabilities || {};
+  const db = blueprint.db || {};
+  const ci = blueprint.ci || {};
+
+  const frontend = caps.frontend?.enabled ? (caps.frontend?.framework || 'enabled') : 'none';
+  const backend = caps.backend?.enabled ? (caps.backend?.framework || 'enabled') : 'none';
+  const database = db.ssot ? `${db.ssot}${caps.database?.kind ? ` (${caps.database.kind})` : ''}` : (caps.database?.enabled ? (caps.database.kind || 'enabled') : 'none');
+  const apiStyle = caps.api?.style || 'none';
+  const primaryUsers = Array.isArray(project.primaryUsers) ? project.primaryUsers.filter(Boolean).join(', ') : '';
+
+  const rows = [
+    { area: 'Language', choice: repo.language || 'unknown' },
+    { area: 'Package manager', choice: repo.packageManager || 'unknown' },
+    { area: 'Repo layout', choice: repo.layout || 'unknown' },
+    { area: 'Frontend', choice: frontend },
+    { area: 'Backend', choice: backend },
+    { area: 'API style', choice: apiStyle },
+    { area: 'Database', choice: database },
+    { area: 'CI', choice: ci.provider || 'github' },
+  ];
+
+  if (primaryUsers) rows.push({ area: 'Primary users', choice: primaryUsers });
+
+  return rows;
+}
+
+function deriveProjectKeyDirectories(blueprint) {
+  const repo = blueprint.repo || {};
+  const caps = blueprint.capabilities || {};
+  const rows = [];
+
+  if (repo.layout === 'monorepo') {
+    rows.push({ dir: '`apps/`', purpose: 'Application entrypoints' });
+    rows.push({ dir: '`packages/`', purpose: 'Shared packages/libraries' });
+    if (caps.frontend?.enabled) rows.push({ dir: '`apps/frontend/`', purpose: 'Frontend app' });
+    if (caps.backend?.enabled) rows.push({ dir: '`apps/backend/`', purpose: 'Backend app/services' });
+  } else {
+    rows.push({ dir: '`src/`', purpose: 'Source code' });
+    if (caps.frontend?.enabled) rows.push({ dir: '`src/frontend/`', purpose: 'Frontend code' });
+    if (caps.backend?.enabled) rows.push({ dir: '`src/backend/`', purpose: 'Backend code' });
+  }
+
+  // Project SSOT + init archive (docs/project is used by multiple features)
+  rows.push({ dir: '`docs/project/`', purpose: 'Project SSOT (blueprint, db/env ssot, init state)' });
+  rows.push({ dir: '`docs/project/overview/`', purpose: 'Archived init overview (Stage A docs)' });
+
+  return rows;
+}
+
+function parseTwoColMarkdownTableRow(line) {
+  const trimmed = String(line || '').trim();
+  if (!trimmed.startsWith('|')) return null;
+  const parts = trimmed.split('|').slice(1, -1).map((s) => s.trim());
+  if (parts.length < 2) return null;
+  return { dirCell: parts[0], purposeCell: parts[1] };
+}
+
+function formatTwoColMarkdownTable(rows) {
+  const out = [];
+  out.push('| Directory | Purpose |');
+  out.push('|---|---|');
+  for (const r of rows) {
+    out.push(`| ${r.dir} | ${r.purpose} |`);
+  }
+  return out;
+}
+
+function patchRootAgentsProjectInfo(repoRoot, blueprint, apply) {
+  const agentsPath = path.join(repoRoot, 'AGENTS.md');
+  if (!fs.existsSync(agentsPath)) {
+    return { op: 'edit', path: agentsPath, mode: apply ? 'failed' : 'dry-run', reason: 'AGENTS.md not found' };
+  }
+
+  const project = blueprint.project || {};
+  const repo = blueprint.repo || {};
+
+  const raw0 = fs.readFileSync(agentsPath, 'utf8');
+  const raw = normalizeMarkdownNewlines(raw0);
+  let lines = raw.split('\n');
+
+  const changes = [];
+
+  // Replace the template intro line if it exists verbatim (keeps the rest of the template guidance).
+  const templateIntro = 'This is an **AI-Friendly, Module-First Repository Template**.';
+  const projectIntro = `This repository is for **${project.name || 'my-project'}** — ${project.description || 'Project description'}.`;
+  const introIdx = lines.findIndex((l) => l.trim() === templateIntro);
+  if (introIdx !== -1) {
+    lines[introIdx] = projectIntro;
+    changes.push('intro');
+  }
+
+  // Project Type (upsert)
+  const projectTypeHeading = '## Project Type';
+  const projectTypeBody = [`${project.name || 'my-project'} — ${project.description || 'Project description'}`];
+  if (findH2Index(lines, projectTypeHeading) === -1) {
+    const inserted = insertH2SectionBefore(lines, '## First Time?', projectTypeHeading, projectTypeBody);
+    lines = inserted.lines;
+    changes.push('projectType:insert');
+  } else {
+    const replaced = replaceH2SectionBody(lines, projectTypeHeading, projectTypeBody);
+    lines = replaced.lines;
+    if (replaced.changed) changes.push('projectType:update');
+  }
+
+  // Tech Stack (upsert)
+  const techStackHeading = '## Tech Stack';
+  const techRows = renderTechStackTableRows(blueprint).map((r) => ({ dir: r.area, purpose: r.choice }));
+  const techBody = formatTwoColMarkdownTable(techRows).map((l) => l.replace('| Directory | Purpose |', '| Area | Choice |').replace('|---|---|', '|---|---|'));
+  if (findH2Index(lines, techStackHeading) === -1) {
+    const inserted = insertH2SectionBefore(lines, '## First Time?', techStackHeading, techBody);
+    lines = inserted.lines;
+    changes.push('techStack:insert');
+  } else {
+    const replaced = replaceH2SectionBody(lines, techStackHeading, techBody);
+    lines = replaced.lines;
+    if (replaced.changed) changes.push('techStack:update');
+  }
+
+  // Key Directories table (inject project dirs first; preserve template rows and existing custom rows)
+  const keyDirsHeading = '## Key Directories';
+  const keyIdx = findH2Index(lines, keyDirsHeading);
+  if (keyIdx === -1) {
+    changes.push('keyDirs:skip(noHeading)');
+  } else {
+    // Find the first markdown table under the heading
+    let tableStart = -1;
+    for (let i = keyIdx + 1; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (t === '') continue;
+      if (t.startsWith('|')) {
+        tableStart = i;
+        break;
+      }
+      if (/^##\s+/.test(t)) break;
+    }
+
+    if (tableStart === -1) {
+      changes.push('keyDirs:skip(noTable)');
+    } else {
+      let tableEnd = tableStart;
+      for (let i = tableStart; i < lines.length; i++) {
+        if (!lines[i].trim().startsWith('|')) {
+          tableEnd = i;
+          break;
+        }
+        tableEnd = i + 1;
+      }
+
+      const existingRowLines = lines.slice(tableStart + 2, tableEnd);
+      const existingRows = [];
+      for (const l of existingRowLines) {
+        const parsed = parseTwoColMarkdownTableRow(l);
+        if (parsed) existingRows.push(parsed);
+      }
+
+      const templateDirDefaults = [
+        { dir: '`modules/`', purpose: '**Module instances** + cross-module integration workspace' },
+        { dir: '`.system/modular/`', purpose: '**Modular system SSOT** (flow graph, bindings, type graph) + derived registries/graphs' },
+        { dir: '`docs/context/`', purpose: 'Context registries (project SSOT + derived aggregated view)' },
+      ];
+
+      const templateDirSet = new Set(templateDirDefaults.map((r) => stripBackticks(r.dir)));
+      const projectDirDefaults = deriveProjectKeyDirectories(blueprint);
+      const managedProjectDirSet = new Set(projectDirDefaults.map((r) => stripBackticks(r.dir)));
+
+      const existingOrder = existingRows.map((r) => stripBackticks(r.dirCell));
+      const existingMap = new Map();
+      for (const r of existingRows) {
+        const key = stripBackticks(r.dirCell);
+        if (!existingMap.has(key)) existingMap.set(key, r);
+      }
+
+      const templateRows = [];
+      for (const r of templateDirDefaults) {
+        const key = stripBackticks(r.dir);
+        const existing = existingMap.get(key);
+        templateRows.push({ dir: existing ? existing.dirCell : r.dir, purpose: existing ? existing.purposeCell : r.purpose });
+      }
+
+      const otherRows = [];
+      const used = new Set([...templateDirSet, ...managedProjectDirSet]);
+      for (const key of existingOrder) {
+        if (used.has(key)) continue;
+        const r = existingMap.get(key);
+        if (!r) continue;
+        otherRows.push({ dir: r.dirCell, purpose: r.purposeCell });
+      }
+
+      const finalRows = [...projectDirDefaults, ...templateRows, ...otherRows];
+      const newTable = formatTwoColMarkdownTable(finalRows);
+
+      lines = [...lines.slice(0, tableStart), ...newTable, ...lines.slice(tableEnd)];
+      changes.push('keyDirs:update');
+    }
+  }
+
+  const next = ensureTrailingNewline(lines.join('\n'));
+  const changed = next !== ensureTrailingNewline(raw);
+
+  if (!apply) {
+    return { op: 'edit', path: agentsPath, mode: 'dry-run', changed, changes, summary: `${project.name || 'my-project'} (${repo.language || 'unknown'}, ${repo.layout || 'unknown'})` };
+  }
+
+  fs.writeFileSync(agentsPath, next, 'utf8');
+  return { op: 'edit', path: agentsPath, mode: 'applied', changed, changes, summary: `${project.name || 'my-project'} (${repo.language || 'unknown'}, ${repo.layout || 'unknown'})` };
 }
 
 function applyDbSsotSkillExclusions(repoRoot, blueprint, apply) {
@@ -2476,13 +2774,28 @@ function main() {
 	        process.exit(1);
 	      }
 
+      if (!stage_c.skillRetentionReviewed) {
+        console.log('[info] Stage C is not complete (skill retention not reviewed).');
+        console.log('Next (required):');
+        console.log('  - Fill: init/skill-retention-table.template.md');
+        console.log('  - If deleting skills: node .ai/scripts/sync-skills.mjs --dry-run --delete-skills \"<csv>\"');
+        console.log('    Then: node .ai/scripts/sync-skills.mjs --delete-skills \"<csv>\" --yes');
+        console.log('    Then: node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes');
+        console.log('  - Record review:');
+        console.log(`    node ${self} review-skill-retention --repo-root ${repoRoot}`);
+        console.log('');
+        console.log('After review, re-run:');
+        console.log(`  node ${self} advance --repo-root ${repoRoot}`);
+        process.exit(1);
+      }
+
       console.log('\n== Stage C Completion Checkpoint ==\n');
-      console.log('Stage C completed (scaffold + skills written).');
+      console.log('Stage C completed (scaffold + skills written + skill retention reviewed).');
       console.log('Next: user confirmation that scaffold and enabled capabilities match expectations.');
       console.log('After confirmation, run:');
       console.log(`  node ${self} approve --stage C --repo-root ${repoRoot}`);
-      console.log('Post-init: fill init/skill-retention-table.template.md and confirm deletions before running sync-skills.mjs --delete-skills (dry-run, then --yes).');
-      console.log('Post-init: update root README.md and AGENTS.md if needed.');
+      console.log('\nOptional: update root AGENTS.md with project-specific info:');
+      console.log(`  node ${self} update-agents --blueprint ${bpRel} --repo-root ${repoRoot} --apply`);
       console.log('\nOptional: later run cleanup-init --apply --i-understand to remove the init/ directory');
       process.exit(0);
     }
@@ -2539,6 +2852,9 @@ function main() {
 	    if (desired === 'C') {
 	      if (!state['stage-c']?.wrappersSynced) {
 	        die('[error] Stage C is not complete. Run apply first.');
+	      }
+	      if (!state['stage-c']?.skillRetentionReviewed) {
+	        die('[error] Skill retention not reviewed. Run review-skill-retention first.');
 	      }
 	      state['stage-c'].userApproved = true;
 	      state.stage = 'complete';
@@ -2642,7 +2958,7 @@ if (command === 'validate') {
     process.exit(0);
   }
 
-	  if (command === 'review-packs') {
+ 	  if (command === 'review-packs') {
     const note = opts['note'];
     const state = loadState(repoRoot);
     if (!state) die('[error] No init state found. Run the \"start\" command first.');
@@ -2651,9 +2967,28 @@ if (command === 'validate') {
 	    state['stage-b'].packsReviewed = true;
 	    addHistoryEvent(state, 'packs_reviewed', note || 'Packs reviewed');
 	    saveState(repoRoot, state);
-	    console.log('[ok] stage-b.packsReviewed = true');
-	    process.exit(0);
-	  }
+ 	    console.log('[ok] stage-b.packsReviewed = true');
+ 	    process.exit(0);
+ 	  }
+
+    if (command === 'review-skill-retention') {
+      const note = opts['note'];
+      const state = loadState(repoRoot);
+      if (!state) die('[error] No init state found. Run the \"start\" command first.');
+      if (state.stage !== 'C') {
+        die(`[error] Current stage=${state.stage}; cannot review skill retention until Stage C.`);
+      }
+      if (!state['stage-c']?.wrappersSynced) {
+        die('[error] Stage C apply has not completed (wrappers not synced). Run apply first.');
+      }
+
+      if (!state['stage-c']) state['stage-c'] = {};
+      state['stage-c'].skillRetentionReviewed = true;
+      addHistoryEvent(state, 'skill_retention_reviewed', note || 'Skill retention reviewed');
+      saveState(repoRoot, state);
+      console.log('[ok] stage-c.skillRetentionReviewed = true');
+      process.exit(0);
+    }
 
   if (command === 'suggest-packs') {
     if (!blueprintPath) die('[error] --blueprint is required for suggest-packs');
@@ -2756,10 +3091,50 @@ if (command === 'validate') {
     process.exit(0);
   }
 
-	  if (command === 'apply') {
-	    if (!blueprintPath) die('[error] --blueprint is required for apply');
-	    const providers = opts['providers'] || 'both';
-	    const requireStageA = !!opts['require-stage-a'];
+  if (command === 'update-agents') {
+    if (!blueprintPath) die('[error] --blueprint is required for update-agents');
+    const apply = !!opts['apply'];
+    const blueprint = readJson(blueprintPath);
+
+    const v = validateBlueprint(blueprint);
+    if (!v.ok) die('[error] Blueprint validation failed. Fix errors and re-run.');
+
+    const result = patchRootAgentsProjectInfo(repoRoot, blueprint, apply);
+    if (result.mode === 'failed') die(`[error] update-agents failed: ${result.reason || 'unknown error'}`);
+
+    // Auto-update state (best-effort)
+    if (apply) {
+      const state = loadState(repoRoot);
+      if (state && (state.stage === 'C' || state.stage === 'complete')) {
+        if (!state['stage-c']) state['stage-c'] = {};
+        state['stage-c'].agentsUpdated = true;
+        addHistoryEvent(state, 'agents_updated', 'Root AGENTS.md updated from blueprint');
+        saveState(repoRoot, state);
+        console.log('[auto] State updated: stage-c.agentsUpdated = true');
+      }
+    }
+
+    if (format === 'json') {
+      console.log(JSON.stringify({ ok: true, result }, null, 2));
+    } else {
+      const status = apply ? '[ok]' : '[plan]';
+      const mode = apply ? 'applied' : 'dry-run';
+      const rel = path.relative(repoRoot, result.path);
+      console.log(`${status} update-agents: ${rel} (${mode})`);
+      if (Array.isArray(result.changes) && result.changes.length > 0) {
+        console.log(`- Changes: ${result.changes.join(', ')}`);
+      }
+      if (result.summary) console.log(`- Summary: ${result.summary}`);
+      if (!apply) console.log('[hint] Re-run with --apply to write changes.');
+    }
+
+    process.exit(0);
+  }
+
+ 	  if (command === 'apply') {
+ 	    if (!blueprintPath) die('[error] --blueprint is required for apply');
+ 	    const providers = opts['providers'] || 'both';
+ 	    const requireStageA = !!opts['require-stage-a'];
 	    const skipConfigs = !!opts['skip-configs'];
 	    const cleanup = !!opts['cleanup-init'];
 	    const forceFeatures = !!opts['force-features'];
@@ -3015,11 +3390,14 @@ if (command === 'validate') {
 	    // Auto-update state
 		    const state = loadState(repoRoot);
 		    if (state) {
+		      if (!state['stage-c']) state['stage-c'] = {};
 		      state['stage-c'].scaffoldApplied = true;
 		      state['stage-c'].configsGenerated = !skipConfigs;
 		      state['stage-c'].manifestUpdated = manifestResult.mode !== 'failed';
 		      state['stage-c'].wrappersSynced = syncResult.mode === 'applied';
 		      state['stage-c'].modularBuilt = modularResult.mode === 'applied';
+		      state['stage-c'].skillRetentionReviewed = false;
+		      state['stage-c'].agentsUpdated = false;
 		      addHistoryEvent(state, 'stage_c_applied', 'Stage C apply completed');
 		      saveState(repoRoot, state);
 		      console.log('[auto] State updated: stage-c progress recorded');
@@ -3104,29 +3482,30 @@ if (command === 'validate') {
     const archiveBlueprint = archiveAll || !!opts['archive-blueprint'];
 
     const results = { init: null, archivedDocs: null, archivedBlueprint: null };
-    const destDir = path.join(repoRoot, 'docs', 'project');
+    const destProjectDir = path.join(repoRoot, 'docs', 'project');
+    const destOverviewDir = path.join(destProjectDir, 'overview');
 
     // Archive Stage A docs if requested
     const stage_a_docs_dir = path.join(repoRoot, 'init', 'stage-a-docs');
     if (fs.existsSync(stage_a_docs_dir)) {
       if (archiveDocs) {
         if (!apply) {
-          results.archivedDocs = { from: stage_a_docs_dir, to: destDir, mode: 'dry-run' };
+          results.archivedDocs = { from: stage_a_docs_dir, to: destOverviewDir, mode: 'dry-run' };
         } else {
-          fs.mkdirSync(destDir, { recursive: true });
+          fs.mkdirSync(destOverviewDir, { recursive: true });
           const files = fs.readdirSync(stage_a_docs_dir);
           for (const file of files) {
             const srcFile = path.join(stage_a_docs_dir, file);
-            const destFile = path.join(destDir, file);
+            const destFile = path.join(destOverviewDir, file);
             if (fs.statSync(srcFile).isFile()) {
               fs.copyFileSync(srcFile, destFile);
             }
           }
-          results.archivedDocs = { from: stage_a_docs_dir, to: destDir, mode: 'applied', files };
+          results.archivedDocs = { from: stage_a_docs_dir, to: destOverviewDir, mode: 'applied', files };
         }
       } else if (apply) {
         console.log('[info] Stage A docs will be deleted with init/');
-        console.log('[hint] Use --archive or --archive-docs to preserve them in docs/project/');
+        console.log('[hint] Use --archive or --archive-docs to preserve them in docs/project/overview/');
       }
     }
 
@@ -3134,17 +3513,17 @@ if (command === 'validate') {
     const blueprintSrc = path.join(repoRoot, 'init', 'project-blueprint.json');
     if (fs.existsSync(blueprintSrc)) {
       if (archiveBlueprint) {
-        const blueprintDest = path.join(destDir, 'project-blueprint.json');
+        const blueprintDest = path.join(destOverviewDir, 'project-blueprint.json');
         if (!apply) {
           results.archivedBlueprint = { from: blueprintSrc, to: blueprintDest, mode: 'dry-run' };
         } else {
-          fs.mkdirSync(destDir, { recursive: true });
+          fs.mkdirSync(destOverviewDir, { recursive: true });
           fs.copyFileSync(blueprintSrc, blueprintDest);
           results.archivedBlueprint = { from: blueprintSrc, to: blueprintDest, mode: 'applied' };
         }
       } else if (apply) {
         console.log('[info] Blueprint will be deleted with init/');
-        console.log('[hint] Use --archive or --archive-blueprint to preserve it in docs/project/');
+        console.log('[hint] Use --archive or --archive-blueprint to preserve it in docs/project/overview/');
       }
     }
 

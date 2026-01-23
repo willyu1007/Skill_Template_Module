@@ -71,6 +71,23 @@ These are provider-agnostic placeholders intended to be extended.
 
 ## User approval checkpoint (complete init)
 
+Before approving Stage C (required):
+
+1) Review skill retention (fill `init/skill-retention-table.template.md`, confirm any deletions via `sync-skills.mjs --delete-skills`).
+
+2) Record that skill retention was reviewed:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .
+```
+
+Optional (recommended): update root `AGENTS.md` from the blueprint:
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply
+```
+
 After reviewing the resulting scaffold/configs/skills changes, record approval and mark init complete:
 
 ```bash

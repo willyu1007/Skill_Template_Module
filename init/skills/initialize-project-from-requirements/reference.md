@@ -11,7 +11,7 @@ The file is the SSOT; other references should link here.
 - Stage B blueprint is the **machine-readable SSOT** used for Stage C scaffold/config generation and pack selection.
 - Pack selection is explicit:
   - declared in `init/project-blueprint.json` (`skills.packs`) during initialization
-  - archived to `docs/project/project-blueprint.json` by `cleanup-init --archive`
+  - archived to `docs/project/overview/project-blueprint.json` by `cleanup-init --archive`
   - materialized into `.ai/skills/_meta/sync-manifest.json` (flat schema)
   - synced into provider wrappers by `node .ai/scripts/sync-skills.mjs`
 - Stage transitions require explicit approval (`approve`), not manual state edits.

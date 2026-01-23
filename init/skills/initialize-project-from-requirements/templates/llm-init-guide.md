@@ -88,7 +88,9 @@ During initialization, write the answers into these files (working location):
 - `init/stage-a-docs/domain-glossary.md` - domain glossary
 - `init/stage-a-docs/risk-open-questions.md` - risks and open questions
 
-> **Note**: After initialization completes, use `cleanup-init` to move these files to `docs/project/`.
+> **Note**: After initialization completes, use `cleanup-init --archive` to archive:
+> - Stage A docs → `docs/project/overview/`
+> - Blueprint → `docs/project/overview/project-blueprint.json`
 
 ---
 
@@ -455,15 +457,18 @@ check capabilities
 
 ## Post-init: Record key info in AGENTS.md
 
-After the user approves the Stage C results (scaffold/config/packs/wrappers/`README.md`), explicitly ask:
+After Stage C `apply` completes and skill retention is reviewed (required before `approve --stage C`), explicitly ask:
 
 > Do you want to record the project type, tech stack, and key directories in the root `AGENTS.md`? (yes/no)
 
 If user says "yes":
 
-1. Update root `AGENTS.md` with project-specific facts from the blueprint.
-2. Preserve the template repo structure and constraints (Key Directories, Routing, Global Rules, `.ai/`, `workdocs/`).
-3. Show a diff and request explicit approval before writing.
+Run `update-agents` (dry-run, then apply):
+
+```bash
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root .
+node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply
+```
 
 If user says "no": proceed without changing `AGENTS.md`.
 

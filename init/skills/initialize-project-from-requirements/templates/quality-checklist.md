@@ -116,7 +116,7 @@ Run the checklist after `apply` command, **before** cleanup.
 
 ### C3. Cleanup Readiness
 
-- [ ] Are all Stage A docs preserved in `docs/project/`?
+- [ ] Are all Stage A docs preserved in `docs/project/overview/`?
 - [ ] Is `project-blueprint.json` preserved?
 - [ ] Is `.ai/skills/_meta/sync-manifest.json` preserved?
 - [ ] Are you confident the init kit is no longer needed?
@@ -138,4 +138,3 @@ Run the checklist after `apply` command, **before** cleanup.
 - Stage A: `check-docs --strict` should pass AND the quality checklist should pass.
 - Stage B: `validate` should pass AND the quality checklist should pass.
 - Stage C: `apply` should complete AND the quality checklist should pass.
-

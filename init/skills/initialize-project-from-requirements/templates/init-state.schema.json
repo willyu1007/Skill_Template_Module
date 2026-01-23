@@ -76,6 +76,8 @@
         "configsGenerated": { "type": "boolean" },
         "manifestUpdated": { "type": "boolean" },
         "wrappersSynced": { "type": "boolean" },
+        "skillRetentionReviewed": { "type": "boolean", "description": "Whether skill retention was reviewed and any pruning decisions were recorded." },
+        "agentsUpdated": { "type": "boolean", "description": "Whether root AGENTS.md was updated with project-specific information from the blueprint." },
         "modularBuilt": { "type": "boolean", "description": "Whether the modular core build step completed successfully." },
         "userApproved": { "type": "boolean" }
       }

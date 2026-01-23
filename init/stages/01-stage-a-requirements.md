@@ -8,7 +8,7 @@ Produce a verifiable set of requirement documents.
 
 > **Working location**: `init/stage-a-docs/` (created by the `start` command)
 > 
-> **Final location**: `docs/project/` (archived by `cleanup-init --archive`)
+> **Final location**: `docs/project/overview/` (archived by `cleanup-init --archive`)
 
 ## Pre-step (must-ask): Terminology alignment
 

@@ -6,7 +6,7 @@ Stage B produces and validates a **project blueprint** that will drive Stage C s
 
 > **Working location**: `init/project-blueprint.json` (created by the `start` command)
 > 
-> **Final location**: `docs/project/project-blueprint.json` (archived by `cleanup-init --archive`)
+> **Final location**: `docs/project/overview/project-blueprint.json` (archived by `cleanup-init --archive`)
 
 ## Prerequisite (entering Stage B)
 
@@ -165,4 +165,4 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 
 ## Note on blueprint location
 
-The blueprint is stored in `init/project-blueprint.json` during initialization. After Stage C completion, use `cleanup-init --archive` to archive the blueprint to `docs/project/project-blueprint.json` for long-term retention.
+The blueprint is stored in `init/project-blueprint.json` during initialization. After Stage C completion, use `cleanup-init --archive` to archive the blueprint to `docs/project/overview/project-blueprint.json` for long-term retention.
