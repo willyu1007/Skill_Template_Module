@@ -25,29 +25,6 @@ New files/directories (created if missing):
 
 ## Install
 
-### Option A: Via init pipeline (recommended)
-
-Enable in your blueprint:
-
-```json
-{
-  "features": {
-    "deployment": true
-  },
-  "deployment": {
-    "enabled": true
-  }
-}
-```
-
-Then run Stage C apply:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply   --blueprint init/project-blueprint.json
-```
-
-### Option B: Manual
-
 1. Copy templates from `.ai/skills/features/deployment/templates/` into the repo root (merge / copy-if-missing).
 2. Initialize:
 

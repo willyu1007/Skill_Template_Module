@@ -9,6 +9,7 @@
  * - Heading depth <= 4 levels
  * - Vague reference detection (it/this/above/below/related)
  * - Naming conventions (kebab-case directories, forbidden dirs)
+ * - Broken local link detection (inline and reference links)
  *
  * Complements lint-skills.mjs which focuses on skill metadata validation.
  */
@@ -35,7 +36,6 @@ const IGNORE_DIRS = new Set([
   '.hg',
   '.svn',
   '__pycache__',
-  'backup',
   'node_modules',
   '.next',
   '.nuxt',
@@ -97,6 +97,8 @@ function printHelp() {
     '  --fix-eol       Convert CRLF/CR to LF and ensure final newline (non-interactive)',
     '  --strict        Treat warnings as errors',
     '  --quiet         Only show errors, not warnings',
+    '  --no-links      Skip broken link checks',
+    '  --check-anchors Also verify that #anchor targets exist in target files',
     '  -h, --help      Show help',
     '',
     'Checks:',
@@ -108,6 +110,7 @@ function printHelp() {
     '  - Vague reference detection (it/this/above/below)',
     '  - Directory naming (kebab-case)',
     '  - Forbidden directories (misc/, temp/, resources/)',
+    '  - Broken local links (inline and reference links)',
     '',
   ].join('\n'));
 }
@@ -124,6 +127,8 @@ function parseArgs(argv) {
     strict: false,
     quiet: false,
     help: false,
+    noLinks: false,
+    checkAnchors: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -133,6 +138,8 @@ function parseArgs(argv) {
     else if (a === '--fix-eol') args.fixEol = true;
     else if (a === '--strict') args.strict = true;
     else if (a === '--quiet') args.quiet = true;
+    else if (a === '--no-links') args.noLinks = true;
+    else if (a === '--check-anchors') args.checkAnchors = true;
     else if (a === '--path' && argv[i + 1]) {
       args.path = path.resolve(argv[++i]);
     }
@@ -489,6 +496,321 @@ function checkVagueReferences(content) {
 }
 
 // ============================================================================
+// Link checks
+// ============================================================================
+
+/**
+ * Check if a link target is external (http/https/mailto/etc).
+ * Note: Pure anchors (#xxx) are NOT considered external - they need separate handling.
+ */
+function isExternalLink(target) {
+  const t = String(target || '').trim();
+  if (!t) return true;
+  // Pure anchors are internal links, not external
+  if (t.startsWith('#')) return false;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t)) return true;
+  return false;
+}
+
+/**
+ * Check if a link target is a pure anchor (same-file reference).
+ */
+function isPureAnchor(target) {
+  const t = String(target || '').trim();
+  return t.startsWith('#');
+}
+
+/**
+ * Normalize link target - handle <path> form and trim.
+ */
+function normalizeLinkTarget(target) {
+  const raw = String(target || '').trim();
+  if (!raw) return '';
+
+  // <path> form allows spaces; remove wrapping angle brackets
+  if (raw.startsWith('<') && raw.endsWith('>')) return raw.slice(1, -1).trim();
+
+  return raw;
+}
+
+/**
+ * Split link target into file path and anchor parts.
+ */
+function splitPathAndAnchor(target) {
+  const t = String(target || '');
+  const hashIdx = t.indexOf('#');
+  if (hashIdx === -1) return { filePath: t, anchor: null };
+  return { filePath: t.slice(0, hashIdx), anchor: t.slice(hashIdx + 1) || null };
+}
+
+/**
+ * Resolve a link path relative to the source file or repo root.
+ */
+function resolveRepoPath(fromFile, linkPath) {
+  if (!linkPath) return null;
+  const p = String(linkPath);
+  if (p.startsWith('/')) return path.join(repoRoot, p.slice(1));
+  return path.resolve(path.dirname(fromFile), p);
+}
+
+/**
+ * Parse link destination after "](" in Markdown.
+ * Handles: <url>, balanced parentheses, optional title.
+ */
+function parseLinkDestination(s) {
+  let i = 0;
+  while (i < s.length && /\s/.test(s[i])) i++;
+  if (i >= s.length) return null;
+
+  if (s[i] === '<') {
+    const end = s.indexOf('>', i + 1);
+    if (end === -1) return null;
+    const target = s.slice(i, end + 1);
+    const closeParen = s.indexOf(')', end + 1);
+    if (closeParen === -1) return null;
+    return { target, consumed: closeParen + 1 };
+  }
+
+  let depth = 0;
+  let targetEnd = i;
+  for (; targetEnd < s.length; targetEnd++) {
+    const ch = s[targetEnd];
+    if (ch === '\\') {
+      targetEnd++;
+      continue;
+    }
+    if (ch === '(') {
+      depth++;
+      continue;
+    }
+    if (ch === ')') {
+      if (depth === 0) break;
+      depth--;
+      continue;
+    }
+    if (/\s/.test(ch) && depth === 0) break;
+  }
+
+  if (targetEnd <= i) return null;
+  const target = s.slice(i, targetEnd);
+
+  const closeParen = s.indexOf(')', targetEnd);
+  if (closeParen === -1) return null;
+  return { target, consumed: closeParen + 1 };
+}
+
+/**
+ * Remove inline code spans from a line for link extraction.
+ */
+function stripInlineCode(line) {
+  return line.replace(/`[^`]+`/g, '   '); // Replace with spaces to preserve positions
+}
+
+/**
+ * Extract inline links [text](target) and ![alt](target) from content.
+ * Skips fenced code blocks and inline code.
+ */
+function* extractInlineLinks(content) {
+  const lines = String(content || '').split('\n');
+  let inCodeBlock = false;
+
+  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+    const line = lines[lineIdx];
+    const trimmed = line.trim();
+
+    // Toggle fenced code block state
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
+    // Skip indented code blocks (4+ spaces or tab, not list items)
+    if (/^(\s{4,}|\t)/.test(line) && !/^\s*[-*+\d]/.test(trimmed)) {
+      continue;
+    }
+
+    // Remove inline code spans before searching for links
+    const cleanLine = stripInlineCode(line);
+
+    for (let i = 0; i < cleanLine.length; i++) {
+      const idx = cleanLine.indexOf('](', i);
+      if (idx === -1) break;
+
+      const start = idx + 2;
+      const rest = cleanLine.slice(start);
+      const parsed = parseLinkDestination(rest);
+      if (parsed) {
+        yield { line: lineIdx + 1, target: parsed.target };
+        i = idx + 2 + parsed.consumed;
+      } else {
+        i = idx + 2;
+      }
+    }
+  }
+}
+
+/**
+ * Extract reference-style link definitions [id]: target from content.
+ * Skips fenced code blocks.
+ */
+function* extractReferenceLinks(content) {
+  const lines = String(content || '').split('\n');
+  let inCodeBlock = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
+    const m = line.match(/^\s*\[[^\]]+\]:\s+(.+?)\s*$/);
+    if (!m) continue;
+
+    // Keep only the destination part; strip an optional title
+    const raw = m[1];
+    const dest = raw.startsWith('<') ? raw : raw.split(/\s+/)[0];
+    yield { line: i + 1, target: dest };
+  }
+}
+
+/**
+ * Extract all headings from content as potential anchor targets.
+ * Returns a Set of normalized anchor IDs.
+ */
+function extractHeadingAnchors(content) {
+  const anchors = new Set();
+  const lines = String(content || '').split('\n');
+  let inCodeBlock = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
+    const headingMatch = line.match(/^#{1,6}\s+(.+)$/);
+    if (headingMatch) {
+      // Convert heading text to GitHub-style anchor ID
+      const anchorId = headingMatch[1]
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special chars except hyphens
+        .replace(/\s+/g, '-'); // Spaces to hyphens
+      anchors.add(anchorId);
+    }
+  }
+
+  return anchors;
+}
+
+/**
+ * Check for broken local links in a Markdown file.
+ * @param {string} filePath - Absolute path to the file
+ * @param {string} content - File content
+ * @param {boolean} checkAnchors - Whether to verify anchor targets exist
+ * @returns {Array} Array of error objects
+ */
+function checkBrokenLinks(filePath, content, checkAnchors = false) {
+  const issues = [];
+
+  const allLinks = [
+    ...extractInlineLinks(content),
+    ...extractReferenceLinks(content),
+  ];
+
+  // Cache for target file anchors (only populated if checkAnchors is true)
+  const anchorCache = new Map();
+  // Cache self anchors if needed
+  let selfAnchors = null;
+
+  for (const link of allLinks) {
+    const normalized = normalizeLinkTarget(link.target);
+    if (!normalized) continue;
+    if (isExternalLink(normalized)) continue;
+
+    const { filePath: linkPath, anchor } = splitPathAndAnchor(normalized);
+
+    // Pure anchor link to same file (#xxx)
+    if (isPureAnchor(normalized)) {
+      if (checkAnchors && anchor) {
+        if (!selfAnchors) {
+          selfAnchors = extractHeadingAnchors(content);
+        }
+        if (!selfAnchors.has(anchor.toLowerCase())) {
+          issues.push({
+            type: 'error',
+            line: link.line,
+            message: `Broken anchor: #${anchor} not found in current file`,
+            target: normalized,
+          });
+        }
+      }
+      // Pure anchors don't need file existence check
+      continue;
+    }
+
+    // Decode URL-encoded paths
+    let decoded = linkPath;
+    try {
+      decoded = decodeURI(linkPath);
+    } catch {
+      // Keep raw if decode fails
+    }
+
+    const resolved = resolveRepoPath(filePath, decoded);
+    if (!resolved) continue;
+
+    // Check if target file/directory exists
+    if (!fs.existsSync(resolved)) {
+      issues.push({
+        type: 'error',
+        line: link.line,
+        message: `Broken link: target does not exist`,
+        target: normalized,
+        resolved: path.relative(repoRoot, resolved),
+      });
+      continue;
+    }
+
+    // Optionally check if anchor exists in target file
+    if (checkAnchors && anchor) {
+      const stat = fs.statSync(resolved);
+      if (stat.isFile() && resolved.endsWith('.md')) {
+        let targetAnchors = anchorCache.get(resolved);
+        if (!targetAnchors) {
+          try {
+            const targetContent = fs.readFileSync(resolved, 'utf8');
+            targetAnchors = extractHeadingAnchors(targetContent);
+            anchorCache.set(resolved, targetAnchors);
+          } catch {
+            targetAnchors = new Set();
+          }
+        }
+
+        if (!targetAnchors.has(anchor.toLowerCase())) {
+          issues.push({
+            type: 'warning',
+            line: link.line,
+            message: `Anchor may not exist: #${anchor} in ${path.basename(resolved)}`,
+            target: normalized,
+          });
+        }
+      }
+    }
+  }
+
+  return issues;
+}
+
+// ============================================================================
 // Naming convention checks
 // ============================================================================
 
@@ -641,7 +963,14 @@ async function interactiveFix(filePath, issues) {
 // Lint single file
 // ============================================================================
 
-function lintFile(filePath) {
+/**
+ * Lint a single Markdown file.
+ * @param {string} filePath - Absolute path to the file
+ * @param {Object} options - Lint options
+ * @param {boolean} options.noLinks - Skip broken link checks
+ * @param {boolean} options.checkAnchors - Verify anchor targets exist
+ */
+function lintFile(filePath, options = {}) {
   const errors = [];
   const warnings = [];
   const relPath = path.relative(repoRoot, filePath);
@@ -686,6 +1015,18 @@ function lintFile(filePath) {
   // 5. Vague reference check
   const vagueIssues = checkVagueReferences(content);
   warnings.push(...vagueIssues);
+
+  // 6. Broken link check
+  if (!options.noLinks) {
+    const linkIssues = checkBrokenLinks(filePath, content, options.checkAnchors);
+    for (const issue of linkIssues) {
+      if (issue.type === 'error') {
+        errors.push(issue);
+      } else {
+        warnings.push(issue);
+      }
+    }
+  }
 
   return { relPath, errors, warnings, garbledIssues };
 }
@@ -732,8 +1073,13 @@ async function main() {
   const results = [];
 
   // Lint each file
+  const lintOptions = {
+    noLinks: args.noLinks,
+    checkAnchors: args.checkAnchors,
+  };
+
   for (const filePath of mdFiles) {
-    const result = lintFile(filePath);
+    const result = lintFile(filePath, lintOptions);
     results.push(result);
     totalErrors += result.errors.length;
     totalWarnings += result.warnings.length;
@@ -762,14 +1108,17 @@ async function main() {
     console.log(colors.cyan(result.relPath));
 
     for (const error of result.errors) {
-      const loc = error.line ? `:${error.line}` : '';
-      console.log(colors.red(`  ✗ ${error.message}${loc ? ` (line ${error.line})` : ''}`));
+      const loc = error.line ? ` (line ${error.line})` : '';
+      const target = error.target ? ` -> ${error.target}` : '';
+      const resolved = error.resolved ? colors.gray(` [${error.resolved}]`) : '';
+      console.log(colors.red(`  ✗ ${error.message}${loc}${target}${resolved}`));
     }
 
     if (!args.quiet) {
       for (const warning of result.warnings) {
-        const loc = warning.line ? `:${warning.line}` : '';
-        console.log(colors.yellow(`  ⚠ ${warning.message}${loc ? ` (line ${warning.line})` : ''}`));
+        const loc = warning.line ? ` (line ${warning.line})` : '';
+        const target = warning.target ? ` -> ${warning.target}` : '';
+        console.log(colors.yellow(`  ⚠ ${warning.message}${loc}${target}`));
       }
     }
 

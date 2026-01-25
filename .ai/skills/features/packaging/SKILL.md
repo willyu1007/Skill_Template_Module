@@ -25,18 +25,6 @@ Controller scripts (provided by the template SSOT):
 
 ## How to enable
 
-### During init (recommended)
-
-In `init/project-blueprint.json`:
-
-- Set `features.packaging = true`
-
-Then run:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --providers both
-```
-
 ### In an existing repo
 
 1. Copy templates from:

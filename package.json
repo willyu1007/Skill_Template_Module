@@ -1,0 +1,24 @@
+{
+  "name": "skill-template-module",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-Friendly, Module-First Repository Template",
+  "scripts": {
+    "init:start": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .",
+    "init:status": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .",
+    "init:advance": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .",
+    "init:check-docs": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --strict",
+    "init:validate": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .",
+    "init:apply": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --repo-root . --providers both",
+    "init:approve-a": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .",
+    "init:approve-b": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .",
+    "init:approve-c": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .",
+    "init:review-retention": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .",
+    "init:update-agents": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply",
+    "init:cleanup": "node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand --archive"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: plan-maker
-description: Create a macro-level roadmap under module/integration workdocs (`roadmap.md`); ask clarifying questions and confirm plan-only vs plan+implement (planning only, no code changes). strong signal words: make plan/roadmap/implementation plan.
+description: Create a goal-aligned macro-level roadmap (module/integration workdocs) by asking clarifying questions when needed; planning only (no code changes); strong signal words: make plan/roadmap/implementation plan.
 category: workflows/planning
 ssot_path: .ai/skills/workflows/planning/plan-maker
 ---

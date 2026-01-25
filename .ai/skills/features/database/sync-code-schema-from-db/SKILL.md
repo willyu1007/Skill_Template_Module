@@ -90,7 +90,7 @@ Record the instructions and the environment assumptions in `01-db-pull-instructi
     - If `db/schema/tables.json` is missing, install the mirror skeleton:
       - Copy templates from `.ai/skills/features/database/sync-code-schema-from-db/templates/` into the repo root.
       - Run `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init`, then re-run Phase B.
-    - If `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` is missing, enable the database feature via init (`features.database=true` + `db.ssot=database`), then re-run Phase B (see `init/feature-docs/database.md`).
+    - If `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` is missing, STOP: the DB mirror controller is not installed in this repo.
 
 7. Import `prisma/schema.prisma` into `db/schema/tables.json`:
 

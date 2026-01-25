@@ -20,7 +20,7 @@ The main outcome is that the LLM can load a small number of canonical entry poin
 
 ## What gets enabled
 
-When enabled (typically during init), the feature **materializes** these paths in the repo root:
+When enabled, the feature **materializes** these paths in the repo root:
 
 - `docs/context/**` (contracts + registry)
 - `config/environments/**` (environment config templates; no secrets)
@@ -45,36 +45,15 @@ That DB contract is produced by the DB SSOT workflow (see `dbssotctl`, and the d
 
 ## How to enable
 
-### Path A — During init (recommended)
-
-In `init/project-blueprint.json`:
-
-- Set `features.contextAwareness = true`
-
-Then run init Stage C apply:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --providers both
-```
-
-Init will:
-
-- Copy this feature’s templates into the repo root
-- Run `contextctl init` and `projectctl init`
-- Record feature flags in `.ai/project/state.json`
-
-### Path B — Enable in an existing repo
-
-If you must enable after init, you can:
-
 1. Copy templates from:
    - `.ai/skills/features/context-awareness/templates/`
    into the repo root.
-2. Run:
+2. Initialize:
 
 ```bash
 node .ai/scripts/projectctl.mjs init
 node .ai/scripts/projectctl.mjs set context.enabled true
+node .ai/scripts/projectctl.mjs set-context-mode contract
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs init
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch
 ```

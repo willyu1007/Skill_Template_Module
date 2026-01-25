@@ -28,23 +28,10 @@ Controller script (provided by the template SSOT):
 
 ## Dependency
 
-- **Context Awareness** SHOULD be enabled.
-  - Init enforces the dependency (observability requires a context root).
+- **Context Awareness** is mandatory in this template (do not disable it).
+  - Observability requires a context root (`docs/context/**`).
 
 ## How to enable
-
-### During init (recommended)
-
-In `init/project-blueprint.json`:
-
-- Set `features.observability = true`
-- Also set `features.contextAwareness = true`
-
-Then run:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --providers both
-```
 
 ### In an existing repo
 

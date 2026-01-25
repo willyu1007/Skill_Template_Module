@@ -23,29 +23,6 @@ New files/directories (created if missing):
 
 ## Install
 
-### Option A: Via init pipeline (recommended)
-
-Enable in your blueprint:
-
-```json
-{
-  "db": {
-    "ssot": "database"
-  },
-  "features": {
-    "database": true
-  }
-}
-```
-
-Then run Stage C apply:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --blueprint init/project-blueprint.json
-```
-
-### Option B: Install manually
-
 1. Copy templates from:
 
    - `.ai/skills/features/database/sync-code-schema-from-db/templates/`

@@ -60,4 +60,4 @@ node .ai/scripts/sync-skills.mjs --scope current --providers both
 
 Optional features (packaging, deployment, release, observability, etc.) are documented under:
 
-- `init/feature-docs/README.md`
+- `init/_tools/docs/feature-docs/README.md`

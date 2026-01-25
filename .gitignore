@@ -28,3 +28,7 @@ Thumbs.db
 .ai/.tmp/
 modules/integration/compiled/
 modules/integration/runs/
+
+# Init runtime state (generated)
+init/_work/.init-state.json
+init/.init-state.json

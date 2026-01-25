@@ -2,92 +2,197 @@
 
 > Human-facing documentation. If you are an LLM/AI assistant, skip the file to save tokens and follow `init/AGENTS.md` instead.
 
+## Pipeline overview
+
+```mermaid
+flowchart TD
+    subgraph pre [Pre-init]
+        Start[npm run init:start] --> Entry[Entry docs created]
+        Entry --> StartHere[init/START-HERE.md]
+        Entry --> Board[init/INIT-BOARD.md]
+    end
+
+    subgraph stageA [Stage A: Requirements]
+        Interview[Interview + collect requirements] --> DocsA[init/_work/stage-a-docs/*]
+        DocsA --> ValidateA[check-docs --strict]
+        ValidateA --> MustAsk{Must-ask complete?}
+        MustAsk -->|Yes| ApproveA[approve --stage A]
+        MustAsk -->|No| MarkMustAsk[mark-must-ask]
+        MarkMustAsk --> MustAsk
+    end
+
+    subgraph stageB [Stage B: Blueprint]
+        Blueprint[Edit project-blueprint.json] --> ValidateB[validate]
+        ValidateB --> SuggestB[suggest-packs / suggest-features]
+        SuggestB --> ApproveB[approve --stage B]
+    end
+
+    subgraph stageC [Stage C: Scaffold + Features]
+        Apply[apply --providers both] --> Scaffold[Directory scaffold]
+        Scaffold --> Configs[Config files]
+        Configs --> Features[Feature materialization]
+        Features --> Skills[Skill packs + wrappers]
+        Skills --> Retention{Skill retention reviewed?}
+        Retention -->|No| ReviewRetention[review-skill-retention]
+        ReviewRetention --> Retention
+        Retention -->|Yes| AgentsUpdate{AGENTS.md updated?}
+        AgentsUpdate -->|No| UpdateAgents[update-agents --apply]
+        UpdateAgents --> AgentsUpdate
+        AgentsUpdate -->|Yes| ApproveC[approve --stage C]
+    end
+
+    subgraph post [Post-init]
+        Cleanup[cleanup-init --archive] --> Archive[docs/project/overview/]
+        Archive --> Done[Init complete]
+    end
+
+    pre --> stageA
+    ApproveA --> stageB
+    ApproveB --> stageC
+    ApproveC --> post
+
+    style pre fill:#e1f5fe
+    style stageA fill:#fff3e0
+    style stageB fill:#f3e5f5
+    style stageC fill:#e8f5e9
+    style post fill:#fce4ec
+```
+
+## Start here (recommended)
+
+After you run `start`, the init kit creates two entry files:
+
+- Interview outline + routing map: `init/START-HERE.md` (copy-if-missing; LLM-maintained; not SSOT)
+- Progress + next actions board: `init/INIT-BOARD.md` (auto-generated; do not edit)
+
 The `init/` package provides a 3-stage, checkpointed workflow to bootstrap a repository from requirements:
 
-- **Stage A**: Requirements docs (working location: `init/stage-a-docs/`)
-- **Stage B**: Blueprint (working location: `init/project-blueprint.json`)
+- **Stage A**: Requirements docs (working location: `init/_work/stage-a-docs/`)
+- **Stage B**: Blueprint (working location: `init/_work/project-blueprint.json`)
 - **Stage C**: Scaffold + configs + skill packs + features + wrapper sync + modular core build
 
 It is designed for **robustness and auditability**:
-- Each stage has a **validation step** (written into `init/.init-state.json`)
+- Each stage has a **validation step** (written into `init/_work/.init-state.json`)
 - Stage transitions require **explicit user approval** (`approve` command)
-- Optional features are materialized **only when enabled in the blueprint** (`features.*`)
+- Optional features are **default-on**; set `features.<id>: false` to skip (DB and CI are controlled by `db.ssot` and `ci.provider`)
 
-> **Working directory vs. final location**: During initialization, all working files are stored in `init/`. After completion, use `cleanup-init --archive` to archive:
-> - Stage A docs → `docs/project/overview/`
-> - Blueprint → `docs/project/overview/project-blueprint.json`
+> **Working directory vs. final location**: During initialization, working files are stored under `init/_work/`. After completion, use `cleanup-init --archive` to archive to `docs/project/overview/`. See SKILL.md for details.
 
 ---
 
 ## Quick start (run from repo root)
 
+### Command shortcuts (npm scripts)
+
+The repo provides npm script aliases for common init commands:
+
+| Command | Shortcut |
+|---------|----------|
+| start | `npm run init:start` |
+| status | `npm run init:status` |
+| advance | `npm run init:advance` |
+| check-docs | `npm run init:check-docs` |
+| validate | `npm run init:validate` |
+| apply | `npm run init:apply` |
+| approve Stage A | `npm run init:approve-a` |
+| approve Stage B | `npm run init:approve-b` |
+| approve Stage C | `npm run init:approve-c` |
+| review-skill-retention | `npm run init:review-retention` |
+| update-agents | `npm run init:update-agents` |
+| cleanup-init | `npm run init:cleanup` |
+
 ### 0) Initialize state
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .
+npm run init:start
+# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .
 ```
 
 The command creates:
-- `init/stage-a-docs/` - Stage A document templates
-- `init/project-blueprint.json` - Blueprint template
-- `init/.init-state.json` - State tracking file
+- `init/START-HERE.md` - Entry doc (created by `start`, copy-if-missing; LLM-maintained; not SSOT)
+- `init/INIT-BOARD.md` - Auto-generated board (created after `start`, refreshed after every pipeline command)
+- `init/_work/AGENTS.md` - Workspace operating rules (generated by `start`, copy-if-missing)
+- `init/_work/stage-a-docs/` - Stage A document templates
+- `init/_work/project-blueprint.json` - Blueprint template
+- `init/_work/.init-state.json` - State tracking file
 
 ### Check progress / next checkpoint
 
 ```bash
 # Current progress (prints guidance when not started yet)
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
+npm run init:status
+# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
 
 # Next checkpoint actions (requires init state; exits non-zero if `start` was not run)
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .
+npm run init:advance
+# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .
 ```
 
 ### Preflight (recommended): terminology alignment
 
 Before drafting Stage A docs, ask whether the user wants to align/confirm terminology now.
 
-- If YES (sync): use `init/stage-a-docs/domain-glossary.md` as the terminology SSOT and align terms across Stage A docs.
-- If NO (skip): record the decision in `init/stage-a-docs/domain-glossary.md` and continue.
+- If YES (sync): use `init/_work/stage-a-docs/domain-glossary.md` as the terminology SSOT and align terms across Stage A docs.
+- If NO (skip): record the decision in `init/_work/stage-a-docs/domain-glossary.md` and continue.
 
-See: `init/stages/00-preflight-terminology.md`.
+See: `init/_tools/docs/stages/00-preflight-terminology.md`.
 
 ### 1) Stage A: validate docs -> approve
 ```bash
-# Edit templates in init/stage-a-docs/, then validate:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs \
+# Edit templates in init/_work/stage-a-docs/, then validate:
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs \
   --repo-root . \
   --strict
 
+# Update the must-ask checklist (required by default before Stage A approval):
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs mark-must-ask \
+  --repo-root . \
+  --key <key> \
+  --asked --answered \
+  --written-to <path>
+
 # After the user explicitly approves Stage A:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .
 ```
 
 ### 2) Stage B: validate blueprint -> approve
 ```bash
-# Edit init/project-blueprint.json, then validate:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate \
+# Edit init/_work/project-blueprint.json, then validate:
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate \
   --repo-root .
 
 # Optional: report recommended packs/features
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs \
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs \
   --repo-root .
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features \
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features \
   --repo-root .
 
 # After the user explicitly approves Stage B:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .
 ```
 
 ### 3) Stage C: apply scaffold/configs/packs/features/wrappers -> approve
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply \
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply \
   --repo-root . \
   --providers both
+```
 
-# Before Stage C approval (required): review skill retention and record it in the init state:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .
+Safety: `apply` is Stage C only and refuses to run in earlier stages by default. Override (not recommended):
 
-# After the user explicitly approves Stage C:
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
+```bash
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --repo-root . --providers both --force --i-understand
+```
+
+Before Stage C approval (required): review skill retention and record it in the init state:
+
+```bash
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .
+```
+
+After the user explicitly approves Stage C:
+
+```bash
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .
 ```
 
 ### 4) Optional: cleanup after init
@@ -95,7 +200,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 **Option A: Remove `init/` only** (Stage A docs and blueprint will be deleted)
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
   --repo-root . \
   --apply \
   --i-understand
@@ -104,7 +209,7 @@ node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs 
 **Option B: Archive to `docs/project/overview/` + remove `init/`** (recommended for retaining docs)
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init \
   --repo-root . \
   --apply \
   --i-understand \
@@ -119,7 +224,7 @@ The command archives Stage A docs and the blueprint to `docs/project/overview/`,
 
 The blueprint schema is:
 
-- `init/skills/initialize-project-from-requirements/templates/project-blueprint.schema.json`
+- `init/_tools/skills/initialize-project-from-requirements/templates/project-blueprint.schema.json`
 
 Key sections:
 
@@ -132,6 +237,14 @@ Key sections:
 - `features.*`: feature overrides (default-on; set to `false` to skip materialization)
 
 ## Optional features
+
+The init template ships many optional features. Prefer using:
+
+- `init/INIT-BOARD.md` for a human-readable “what matters / what’s missing” view
+- `init/_tools/docs/feature-docs/README.md` for feature-specific details
+
+<details>
+<summary>Feature materialization details</summary>
 
 Feature assets are integrated under `.ai/`:
 
@@ -156,9 +269,11 @@ Note (Windows): `python3` may not exist on PATH. Use `python` instead. (Stage C 
 | Observability | `features.observability` (default: `true`) | `docs/context/observability/**`, `observability/**` | `node .ai/skills/features/observability/scripts/obsctl.mjs` |
 | Release | `features.release` (default: `true`) | `release/**`, `.releaserc.json.template` | `node .ai/skills/features/release/scripts/releasectl.mjs` |
 
+</details>
+
 For feature-specific details, see:
 
-- `init/feature-docs/README.md`
+- `init/_tools/docs/feature-docs/README.md`
 - `.ai/skills/features/<feature-id>/**/SKILL.md`
 
 ## Feature selection workflow (Stage B -> Stage C)
@@ -180,8 +295,8 @@ For feature-specific details, see:
 2) Ask the pipeline for recommendations:
 
 ```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs --repo-root .
+  node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .
+  node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs --repo-root .
 ```
 
 ## Apply flags (Stage C)

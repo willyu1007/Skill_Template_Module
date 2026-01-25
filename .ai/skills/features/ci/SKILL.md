@@ -16,7 +16,7 @@ Delivery (release/packaging/deploy automation) is **opt-in** and is not installe
 
 ## What gets enabled
 
-When enabled (Stage C), this feature materializes:
+When enabled, this feature materializes:
 
 - CI metadata directory:
   - `ci/AGENTS.md`
@@ -36,19 +36,6 @@ Controller script (feature-local):
 - `node .ai/skills/features/ci/scripts/cictl.mjs`
 
 ## How to enable
-
-### During init (recommended)
-
-In `init/project-blueprint.json`:
-
-- Set `features.ci = true`
-- Set `ci.provider = "github"` or `"gitlab"`
-
-Then run:
-
-```bash
-node init/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --providers both
-```
 
 ### In an existing repo
 
