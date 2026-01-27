@@ -6,16 +6,16 @@ Use this example when the bug is reproducible from an IDE-integrated terminal an
 - Run the repro in an IDE-integrated terminal (not an external terminal window).
 - After reproduction, reply `DONE` immediately.
 - Do not clear/close the terminal output after the run.
-- If asked, tell me which terminal tab/name shows the output (preferred over pasting logs).
+- If asked, tell me which terminal tab/name shows the output (preferred over pasting logs). Only paste logs as a last resort.
 
 ## Assistant flow (what to do)
 1) Run Gate 1 as usual (hypotheses → instrumentation plan → approval).
 2) After user reproduces and replies `DONE`, collect terminal output:
-   - call `list_terminals()`
+   - call the terminal listing tool (`list_terminals()`; Codex CLI: `mcp__terminal_hook__list_terminals`)
    - choose a `terminal_key`:
      - prefer terminal `id` when present
      - otherwise use terminal `name` (ask the user to rename terminals if names collide)
-   - call `get_terminal_output(terminal_key, lines=N)` progressively (`200 → 500 → 1000 → 2000`)
+   - call the terminal output tool (`get_terminal_output(terminal_key, lines=N)`; Codex CLI: `mcp__terminal_hook__get_terminal_output`) progressively (`200 → 500 → 1000 → 2000`)
 3) Extract evidence deterministically (do not paste raw tail):
    - follow `reference/terminal_evidence_collection.md`
    - optional: use `scripts/collect_evidence.mjs` for deterministic extraction (stdin JSON → stdout JSON)

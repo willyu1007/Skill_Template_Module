@@ -143,6 +143,7 @@ Reproduction plan:
 
 What I need from you after reproduction:
 - Reproduce now, then reply `DONE` immediately (do not clear/close the terminal or log output)
+- If you ran this in an IDE-integrated terminal and Terminal Hook is available, you usually do not need to paste logs — I will attempt automatic collection first
 - If the output is not in an IDE-integrated terminal, tell me where the logs appear (e.g., Xcode console, logcat, browser console)
 - If I ask for logs as a fallback, paste only run_id-marked excerpts (`[DBG:<run_id>]`, `run_id=<run_id>`, or `"run_id":"<run_id>"`) + minimal context (do not paste full tail)
 - Any screenshots/recordings if relevant

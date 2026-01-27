@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import { collectEvidence } from "./collect_evidence.mjs";
+
+const DEBUG_MODE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("extracts merged run_id windows with defaults", () => {
   const runId = "R2026-01-19-001";
@@ -29,6 +34,22 @@ test("extracts merged run_id windows with defaults", () => {
   assert.match(out.run_id_evidence[0].text, /\[DBG:R2026-01-19-001\] hit b/);
   assert.equal(out.failure_evidence.present, false);
   assert.equal(out.truncated, false);
+});
+
+test("CLI runs from the skill directory (relative path)", () => {
+  const runId = "dbg-cli-0001";
+  const proc = spawnSync(
+    process.execPath,
+    ["scripts/collect_evidence.mjs"],
+    {
+      cwd: DEBUG_MODE_DIR,
+      input: JSON.stringify({ run_id: runId, raw_output: `[DBG:${runId}] hello` }),
+      encoding: "utf8",
+    },
+  );
+
+  assert.equal(proc.status, 0, proc.stderr);
+  assert.match(proc.stdout, new RegExp(`\"run_id\"\\s*:\\s*\"${runId}\"`));
 });
 
 test("extracts failure block when run_id is absent", () => {
