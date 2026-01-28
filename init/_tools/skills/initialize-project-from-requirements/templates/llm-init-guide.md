@@ -27,34 +27,24 @@ The document provides **step-by-step guidance** for an AI assistant to help a us
 
 ```
 user starts initialization
-       │
-       ▼
-┌────────────────────────────┐
-│ Phase 1: requirements       │  ← use modules A/B in conversation-prompts.md
-└─────────────┬──────────────┘
-              │
-              ▼
-┌────────────────────────────┐
-│ Phase 2: tech stack         │  ← decide language/framework/package manager
-└─────────────┬──────────────┘
-              │
-              ▼
-┌────────────────────────────┐
-│ Phase 3: blueprint          │  ← generate project-blueprint.json
-└─────────────┬──────────────┘
-              │
-              ▼
-┌────────────────────────────┐
-│ Phase 4: features            │  ← recommend features based on capabilities
-└─────────────┬──────────────┘
-              │
-              ▼
-┌────────────────────────────┐
-│ Phase 5: configuration      │  ← template or LLM-generated configs
-└─────────────┬──────────────┘
-              │
-              ▼
-         run apply
+  |
+  v
+Phase 1: requirements      (use modules A/B in conversation-prompts.md)
+  |
+  v
+Phase 2: tech stack        (decide language/framework/package manager)
+  |
+  v
+Phase 3: blueprint         (generate project-blueprint.json)
+  |
+  v
+Phase 4: features          (recommend features based on capabilities)
+  |
+  v
+Phase 5: configuration     (template or LLM-generated configs)
+  |
+  v
+run apply
 ```
 
 ---
@@ -100,18 +90,18 @@ During initialization, write the answers into these files (working location):
 
 | Language | Built-in template | Package manager options |
 |----------|-------------------|-------------------------|
-| TypeScript | ✅ | pnpm, npm, yarn |
-| JavaScript | ✅ | pnpm, npm, yarn |
-| Go | ✅ | go |
-| C/C++ | ✅ | xmake |
-| React Native | ✅ | pnpm, npm, yarn |
-| Python | ❌ (LLM-generated) | pip, poetry, pipenv, uv |
-| Java | ❌ (LLM-generated) | maven, gradle |
-| Kotlin | ❌ (LLM-generated) | maven, gradle |
-| .NET (C#) | ❌ (LLM-generated) | dotnet |
-| Rust | ❌ (LLM-generated) | cargo |
-| Ruby | ❌ (LLM-generated) | bundler |
-| PHP | ❌ (LLM-generated) | composer |
+| TypeScript | yes | pnpm, npm, yarn |
+| JavaScript | yes | pnpm, npm, yarn |
+| Go | yes | go |
+| C/C++ | yes | xmake |
+| React Native | yes | pnpm, npm, yarn |
+| Python | no (LLM-generated) | pip, poetry, pipenv, uv |
+| Java | no (LLM-generated) | maven, gradle |
+| Kotlin | no (LLM-generated) | maven, gradle |
+| .NET (C#) | no (LLM-generated) | dotnet |
+| Rust | no (LLM-generated) | cargo |
+| Ruby | no (LLM-generated) | bundler |
+| PHP | no (LLM-generated) | composer |
 
 Blueprint mapping notes:
 - C/C++: `repo.language: c|cpp`, `repo.packageManager: xmake`
@@ -413,43 +403,25 @@ src/
 
 ## Decision tree reference
 
-### Language → package manager
+### Language -> package manager
 
-```
-choose language
-├── TypeScript/JavaScript
-│   └── recommended: pnpm > yarn > npm
-├── Python
-│   └── recommended: poetry > pip > uv
-├── Go
-│   └── fixed: go
-├── Java/Kotlin
-│   └── recommended: gradle > maven
-├── .NET
-│   └── fixed: dotnet
-├── Rust
-│   └── fixed: cargo
-└── C/C++
-    └── recommended: xmake > cmake
-```
+- TypeScript/JavaScript: recommended pnpm > yarn > npm
+- Python: recommended poetry > pip > uv
+- Go: fixed go
+- Java/Kotlin: recommended gradle > maven
+- .NET: fixed dotnet
+- Rust: fixed cargo
+- C/C++: recommended xmake > cmake
 
-### Capabilities → feature recommendations
+### Capabilities -> feature recommendations
 
-```
-check capabilities
-├── api.style != "none"
-│   └── recommended: contextAwareness
-├── database.enabled
-│   └── recommended: contextAwareness
-├── db.ssot == "database"
-│   └── recommended: database
-├── bpmn.enabled
-│   └── recommended: contextAwareness
-└── devops needs
-    ├── containerization → packaging
-    ├── multi-environment → deployment
-    └── versioning → release
-```
+- If `api.style != "none"`: recommend `contextAwareness`
+- If `database.enabled`: recommend `contextAwareness`
+- If `db.ssot == "database"`: recommend `database`
+- If `bpmn.enabled`: recommend `contextAwareness`
+- If devops needs containerization: recommend `packaging`
+- If devops needs multi-environment: recommend `deployment`
+- If devops needs versioning: recommend `release`
 
 ---
 

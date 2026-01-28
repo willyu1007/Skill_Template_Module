@@ -6,8 +6,8 @@
 Run these commands from repo root.
 
 > **Note**: During initialization, working files are stored in `init/_work/` (legacy: `init/`). After completion, use `cleanup-init --archive` to archive:
-> - Stage A docs → `docs/project/overview/`
-> - Blueprint → `docs/project/overview/project-blueprint.json`
+> - Stage A docs -> `docs/project/overview/`
+> - Blueprint -> `docs/project/overview/project-blueprint.json`
 
 ---
 
@@ -24,7 +24,7 @@ This creates:
 
 ---
 
-## 1) Stage A: validate docs → approve
+## 1) Stage A: validate docs -> approve
 
 Edit the templates in `init/_work/stage-a-docs/`, then validate:
 
@@ -53,7 +53,7 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 
 ---
 
-## 2) Stage B: validate blueprint → approve
+## 2) Stage B: validate blueprint -> approve
 
 Edit `init/_work/project-blueprint.json`, then validate:
 
@@ -83,7 +83,7 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 
 ---
 
-## 3) Stage C: apply → approve
+## 3) Stage C: apply -> approve
 
 ```bash
 node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply \

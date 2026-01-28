@@ -6,20 +6,22 @@ Key principles:
 
 - Do not skip stages.
 - Do not advance stages without explicit user approval.
-- Do not hand-edit the init state file (`init/_work/.init-state.json`, legacy: `init/.init-state.json`) to change stages; use the pipeline commands.
+- Humans MUST NOT hand-edit the init state file (`init/_work/.init-state.json`, legacy: `init/.init-state.json`) to change stages; use the pipeline commands.
 - Do not create workdocs task bundles during initialization; use workdocs after init completes.
 
 ---
 
 ## Human entry points (recommended)
 
-- After `start`, open:
-  - Start here (interview outline + routing map): `init/START-HERE.md`
-  - Progress + next actions (auto-generated): `init/INIT-BOARD.md`
-    - The board is refreshed automatically after every pipeline command (write-if-changed).
-    - Do not edit `init/INIT-BOARD.md` manually.
-- LLM gate: before Stage A interview, ask the user to pick **one** output language, record the language choice in `init/START-HERE.md` (created by `start`), and keep init outputs single-language.
-- Maintain `init/START-HERE.md` as the single human entry point (LLM-maintained). Refresh after pipeline commands, stage approvals, and new requirements input.
+- LLM gate (MUST): before any Stage A interview work, ask the user to choose **one** output language for init outputs.
+  - Record it in the init state: `init/_work/.init-state.json` -> `outputLanguage`
+  - Humans MUST NOT edit the state file; LLM MAY update `outputLanguage` only (do not change stages/validation flags).
+- After `outputLanguage` is set, use:
+  - `init/START-HERE.md` (LLM-maintained; localized; one-screen key inputs + pending questions)
+  - `init/INIT-BOARD.md` (LLM-maintained; localized; concise progress board)
+    - The init pipeline updates a machine snapshot block inside the file after every pipeline command.
+    - LLM MUST NOT edit the machine snapshot markers/section.
+- Maintain `init/START-HERE.md` and `init/INIT-BOARD.md` in the chosen output language only.
 
 ---
 
@@ -44,15 +46,19 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 ```
 
 The command creates:
-- `init/START-HERE.md` - Entry doc (copy-if-missing; LLM-maintained; not SSOT)
-- `init/INIT-BOARD.md` - Progress board (auto-generated; do not edit)
 - `init/_work/AGENTS.md` - Workspace operating rules (copy-if-missing)
+- `init/_work/.init-state.json` - Init state file (pipeline-owned)
 - `init/_work/stage-a-docs/` - Stage A doc templates (legacy: `init/stage-a-docs/`):
   - `requirements.md`
   - `non-functional-requirements.md`
   - `domain-glossary.md`
   - `risk-open-questions.md`
 - `init/_work/project-blueprint.json` - Blueprint template (legacy: `init/project-blueprint.json`)
+
+After `outputLanguage` is set in the init state, the pipeline will create (copy-if-missing) the entry docs and keep the machine snapshot refreshed:
+
+- `init/START-HERE.md` - LLM-maintained entry doc (localized; not SSOT)
+- `init/INIT-BOARD.md` - LLM-maintained progress board (localized; contains a machine snapshot section)
 
 1) Edit the Stage A doc templates, then validate:
 ```bash

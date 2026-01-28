@@ -2,6 +2,7 @@
   "version": 1,
   "stage": "A",
   "createdAt": "2020-01-01T00:00:00.000Z",
+  "outputLanguage": "en",
   "stage-a": {
     "mustAsk": {
       "terminologyAlignment": { "asked": false, "answered": false, "writtenTo": null },

@@ -12,12 +12,45 @@ Goal: a robust, repeatable, rollback-friendly initialization workflow (not "fast
 
 ## Human entry points (recommended)
 
-- After `start`, use:
-  - Interview outline + routing map: `init/START-HERE.md` (copy-if-missing; LLM-maintained; refresh after new inputs and stage changes)
-  - Progress + next actions (auto-generated): `init/INIT-BOARD.md` (do not edit)
-    - Refreshed automatically after every pipeline command (write-if-changed)
-    - Do not edit `init/INIT-BOARD.md` manually; re-run `status`/`advance` to refresh
-- LLM gate: before Stage A interview, ask the user to pick **one** output language, record it in `init/START-HERE.md`, and keep all init outputs single-language
+- LLM-first workflow:
+  1) Ask the user to choose **one** output language for init artifacts
+  2) Record it in the init state: `init/_work/.init-state.json` -> `outputLanguage`
+  3) Then use:
+     - `init/START-HERE.md` (LLM-maintained; localized; user-friendly key input digest)
+     - `init/INIT-BOARD.md` (LLM-maintained; localized; concise progress board)
+       - The init pipeline updates a machine snapshot block inside the file after each pipeline command
+       - LLM MUST NOT edit the machine snapshot markers/section
+- LLM gate (MUST): before any Stage A interview work, confirm the output language and keep all init outputs single-language
+
+---
+
+## LLM driver protocol (required)
+
+### Output language (MUST happen first)
+
+- Ask: "What language should I use for all init outputs (choose one)?"
+- Write the result to: `init/_work/.init-state.json` -> `outputLanguage`
+  - Humans MUST NOT hand-edit the state file.
+  - LLM MAY edit the state file only to set/update `outputLanguage` (do not change stages or validation flags).
+
+After `outputLanguage` is set, run `status` once to refresh the board snapshot:
+
+```bash
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
+```
+
+### Entry docs maintenance (LLM)
+
+- `init/START-HERE.md` is the "one-screen" user entry:
+  - Keep it short and scannable.
+  - Maintain:
+    - AI pending questions (next 3-5)
+    - Key inputs table with status (`todo` | `confirmed` | `tbd`) (status values are NOT translated)
+    - Current conclusions (<= 5 bullets)
+  - At the start of each stage (A/B/C), roll the previous stage summary into a collapsed archive section at the bottom (LLM-written).
+- `init/INIT-BOARD.md` is the concise progress board:
+  - Localize it to `outputLanguage`.
+  - Use the machine snapshot section (auto-updated) + `init/_work/.init-state.json` as the source of truth.
 
 ---
 
@@ -37,8 +70,8 @@ Working location (default: `init/_work/stage-a-docs/`, legacy: `init/stage-a-doc
 Working location (default): `init/_work/project-blueprint.json` (legacy: `init/project-blueprint.json`)
 
 > After initialization completes, use `cleanup-init --archive` to archive:
-> - Stage A docs → `docs/project/overview/`
-> - Blueprint → `docs/project/overview/project-blueprint.json`
+> - Stage A docs -> `docs/project/overview/`
+> - Blueprint -> `docs/project/overview/project-blueprint.json`
 
 ### Optional: features
 
@@ -57,8 +90,8 @@ Stage C `apply` materializes enabled features by copying templates into the repo
 ### Working files (during initialization)
 
 - Entry docs:
-  - `init/START-HERE.md` (human/LLM entry; LLM-maintained; not SSOT)
-  - `init/INIT-BOARD.md` (auto-generated; do not edit)
+  - `init/START-HERE.md` (human/LLM entry; LLM-maintained; localized; not SSOT)
+  - `init/INIT-BOARD.md` (LLM-maintained; localized; contains an auto-updated machine snapshot section)
 - Workspace operating rules: `init/_work/AGENTS.md` (copy-if-missing; applies to `init/_work/**`)
 - Stage A docs: `init/_work/stage-a-docs/*` (legacy: `init/stage-a-docs/*`)
 - Blueprint: `init/_work/project-blueprint.json` (legacy: `init/project-blueprint.json`)
@@ -105,7 +138,7 @@ Stage C materializes:
 
 1. Every stage transition requires **validation + explicit user approval**.
    - Validation is recorded in `init/_work/.init-state.json` (legacy: `init/.init-state.json`) by pipeline commands.
-   - Stage advancement must use `approve` (do not hand-edit the state file to "skip" stages).
+   - Stage advancement must use `approve` (humans MUST NOT hand-edit the state file to "skip" stages).
 2. Do not advance stages without explicit user approval.
 3. Feature semantics:
    - Context awareness is **mandatory** (always enabled in Stage C).
@@ -116,7 +149,7 @@ Stage C materializes:
 4. The manifest schema is the **flat schema** (do not use older nested shapes like `collections.current`).
 5. Config generation has a single SSOT: `scripts/scaffold-configs.mjs`.
 6. Do not create workdocs task bundles during initialization; use workdocs after init completes.
-7. Keep `init/START-HERE.md` current as a living routing map (LLM-maintained). Refresh after pipeline commands and after new requirements input.
+7. Keep `init/START-HERE.md` current as a one-screen "key inputs + pending questions" page (LLM-maintained). Refresh after pipeline commands and after new requirements input.
 
 ---
 

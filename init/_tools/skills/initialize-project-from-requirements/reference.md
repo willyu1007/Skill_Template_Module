@@ -9,7 +9,8 @@
 
 - Stage A quality is enforced by **structure + placeholder checks** (`check-docs`), not deep semantic evaluation.
 - Stage B blueprint is the **machine-readable SSOT** for Stage C scaffold/config generation.
-- Pack selection is explicit: declared in blueprint → materialized to sync manifest → synced to wrappers.
+- Output language for init entry docs is stored in `init/_work/.init-state.json` (`outputLanguage`).
+- Pack selection is explicit: declared in blueprint -> materialized to sync manifest -> synced to wrappers.
 - Stage transitions require explicit approval (`approve`), not manual state edits.
 - When `skillpacksctl.mjs` is available, pack enabling uses skillpacksctl; otherwise falls back to sync manifest.
 - Optional **features** are materialized from templates under `.ai/skills/features/.../templates/`.

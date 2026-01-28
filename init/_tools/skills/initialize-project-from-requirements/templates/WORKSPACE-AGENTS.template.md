@@ -1,11 +1,11 @@
-# init/_work — Initialization workspace (operating rules)
+# init/_work - Initialization workspace (operating rules)
 
 `init/_work/` is the init pipeline **workspace**. The folder holds the Stage A/B single sources of truth (SSOT) and the pipeline runtime state.
 
 The init pipeline `start` command generates the guide (copy-if-missing) at `init/_work/AGENTS.md`.
 If you want to restore the latest template, delete `init/_work/AGENTS.md` and re-run `start` (or run any pipeline command after init has started).
 
-The workspace guide is intentionally written in English (operator/LLM-facing). Stage A docs may use the project’s chosen output language (see `init/START-HERE.md`).
+The workspace guide is intentionally written in English (operator/LLM-facing). Stage A docs may use the project's chosen output language (see `init/_work/.init-state.json` -> `outputLanguage`).
 
 ## Read first (high-signal rules)
 
@@ -22,8 +22,9 @@ The workspace guide is intentionally written in English (operator/LLM-facing). S
 ### `init/_work/.init-state.json` (runtime state; pipeline-owned)
 
 - Created/updated by `init-pipeline.mjs`.
-- Drives progress reporting and the derived board: `init/INIT-BOARD.md`.
-- MUST NOT be edited by hand.
+- Feeds progress reporting and the machine snapshot section in `init/INIT-BOARD.md`.
+- Humans MUST NOT edit this file by hand.
+  - LLM MAY update `outputLanguage` only (do not change stages or validation flags).
 - Restart policy:
   - To restart init, delete `init/_work/.init-state.json`, then re-run `start`.
   - Optional: also delete `init/_work/stage-a-docs/*` and `init/_work/project-blueprint.json` if you want a clean slate.
@@ -42,7 +43,7 @@ The `stage-a-docs/` folder contains 4 required documents:
 Rules:
 
 - Keep the template headings; replace all placeholders.
-- “TBD” is allowed, but every TBD MUST be tracked in `risk-open-questions.md` with enough context for someone else to resolve later.
+- "TBD" is allowed, but every TBD MUST be tracked in `risk-open-questions.md` with enough context for someone else to resolve later.
 
 Validation (required before Stage A approval):
 
@@ -94,8 +95,8 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 
 - `init/README.md`: human-facing overview and commands.
 - `init/AGENTS.md`: LLM/operator rules (checkpointing, approvals, safety).
-- `init/START-HERE.md`: entry doc created by `start` (chosen output language + routing map).
-- `init/INIT-BOARD.md`: derived board created after `start` and refreshed after pipeline commands (do not edit).
+- `init/START-HERE.md`: LLM-maintained entry doc (localized; key inputs + pending questions).
+- `init/INIT-BOARD.md`: LLM-maintained progress board (localized; includes a machine snapshot section auto-updated after pipeline commands).
 - `init/_tools/**`: init kit tooling (scripts, templates, deep-dive docs).
 
 ## After init: archive + optional cleanup

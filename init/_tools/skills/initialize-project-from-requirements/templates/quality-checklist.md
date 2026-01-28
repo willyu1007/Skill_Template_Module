@@ -85,9 +85,9 @@ Run the checklist after drafting `project-blueprint.json`, **before** requesting
 
 - [ ] Does `skills.packs` include `workflows` (always required)?
 - [ ] Does `skills.packs` match the enabled capabilities?
-  - `backend.enabled` → `backend` pack
-  - `frontend.enabled` → `frontend` pack
-  - `database.enabled` → `data` pack
+  - `backend.enabled` -> `backend` pack
+  - `frontend.enabled` -> `frontend` pack
+  - `database.enabled` -> `data` pack
 - [ ] Are there no **extra** packs that don't match any capability?
 
 ### B4. Repo Layout

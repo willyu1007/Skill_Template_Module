@@ -19,6 +19,10 @@
       "format": "date-time",
       "description": "ISO timestamp when init state was created"
     },
+    "outputLanguage": {
+      "type": ["string", "null"],
+      "description": "LLM-chosen output language for init entry docs (free-form string, e.g. \"zh-CN\", \"en\")"
+    },
     "stage-a": {
       "type": "object",
       "description": "Stage A: Requirements interview progress",

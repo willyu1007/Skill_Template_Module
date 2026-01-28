@@ -416,9 +416,14 @@ function resolvePath(base, p) {
   return path.resolve(base, p);
 }
 
+function stripUtf8Bom(raw) {
+  const s = String(raw ?? '');
+  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
 function readJson(filePath) {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    const raw = stripUtf8Bom(fs.readFileSync(filePath, 'utf8'));
     return JSON.parse(raw);
   } catch (e) {
     die(`[error] Failed to read JSON: ${filePath}\n${e.message}`);
@@ -503,6 +508,7 @@ function createInitialState() {
     version: 1,
     stage: 'A',
     createdAt: new Date().toISOString(),
+    outputLanguage: null,
     'stage-a': {
       mustAsk: {
         terminologyAlignment: { asked: false, answered: false, writtenTo: null },
@@ -549,7 +555,7 @@ function loadState(repoRoot) {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    return JSON.parse(stripUtf8Bom(fs.readFileSync(statePath, 'utf8')));
   } catch (e) {
     console.error(`[warn] Failed to parse state file: ${e.message}`);
     return null;
@@ -635,6 +641,8 @@ function printStatus(state, repoRoot) {
   const docsRel = path.relative(repoRoot, initPaths.docsRoot);
   const bpRel = path.relative(repoRoot, initPaths.blueprintPath);
   const retentionRel = path.relative(repoRoot, initPaths.skillRetentionPath);
+  const stateRel = path.relative(repoRoot, initPaths.statePath);
+  const self = path.relative(repoRoot, __filename) || 'init-pipeline.mjs';
 
   const progress = getStageProgress(state);
   const stageNames = { A: 'Requirements', B: 'Blueprint', C: 'Scaffold', complete: 'Complete' };
@@ -642,84 +650,116 @@ function printStatus(state, repoRoot) {
   const stage_b = progress['stage-b'] || {};
   const stage_c = progress['stage-c'] || {};
 
+  const outputLanguage = normalizeOutputLanguage(state?.outputLanguage);
+  const yn = (value) => (value ? 'yes' : 'no');
+
   console.log('');
-  console.log('┌─────────────────────────────────────────────────────────┐');
-  console.log('│  Init Status                                            │');
-  console.log('├─────────────────────────────────────────────────────────┤');
-  console.log(`│  Current stage: Stage ${progress.stage} - ${stageNames[progress.stage] || progress.stage}`);
-  console.log('│');
+  console.log('== Init Status ==');
+  console.log(`Stage: ${progress.stage} (${stageNames[progress.stage] || progress.stage})`);
+  console.log(`State: ${stateRel}`);
+  console.log(`Docs: ${docsRel}/`);
+  console.log(`Blueprint: ${bpRel}`);
+  console.log(`Output language: ${outputLanguage || '(not set)'}`);
+
+  if (!outputLanguage) {
+    console.log('Entry docs: pending (init/START-HERE.md and init/INIT-BOARD.md are created only after outputLanguage is set)');
+    console.log(`Set: ${stateRel} -> outputLanguage (LLM may edit ONLY this field; do not change stages/flags by hand)`);
+  } else {
+    console.log('Entry docs: enabled (init/START-HERE.md and init/INIT-BOARD.md)');
+  }
 
   if (progress.stage === 'A' || progress.stage === 'B' || progress.stage === 'C') {
-    console.log('│  Stage A progress:');
-    console.log(`│    Must-ask checklist: ${stage_a.mustAskCompleted}/${stage_a.mustAskTotal} complete`);
-    console.log(`│    Docs written: ${stage_a.docsWritten}/${stage_a.docsTotal} complete`);
-    console.log(`│    Validation: ${stage_a.validated ? '✓ validated' : '✗ not validated'}`);
-    console.log(`│    User approval: ${stage_a.userApproved ? '✓ approved' : '✗ not approved'}`);
+    console.log('');
+    console.log('Stage A');
+    console.log(`- Must-ask checklist: ${stage_a.mustAskCompleted}/${stage_a.mustAskTotal} complete`);
+    console.log(`- Docs written: ${stage_a.docsWritten}/${stage_a.docsTotal} complete`);
+    console.log(`- Validation: ${yn(stage_a.validated)}`);
+    console.log(`- User approval: ${yn(stage_a.userApproved)}`);
   }
 
   if (progress.stage === 'B' || progress.stage === 'C') {
-    console.log('│');
-    console.log('│  Stage B progress:');
-    console.log(`│    Drafted: ${stage_b.drafted ? '✓' : '✗'}`);
-    console.log(`│    Validated: ${stage_b.validated ? '✓' : '✗'}`);
-    console.log(`│    Packs reviewed: ${stage_b.packsReviewed ? '✓' : '✗'}`);
-    console.log(`│    User approval: ${stage_b.userApproved ? '✓' : '✗'}`);
+    console.log('');
+    console.log('Stage B');
+    console.log(`- Drafted: ${yn(stage_b.drafted)}`);
+    console.log(`- Validated: ${yn(stage_b.validated)}`);
+    console.log(`- Packs reviewed: ${yn(stage_b.packsReviewed)}`);
+    console.log(`- User approval: ${yn(stage_b.userApproved)}`);
   }
 
   if (progress.stage === 'C' || progress.stage === 'complete') {
-    console.log('│');
-    console.log('│  Stage C progress:');
-    console.log(`│    Scaffold applied: ${stage_c.scaffoldApplied ? '✓' : '✗'}`);
-    console.log(`│    Configs generated: ${stage_c.configsGenerated ? '✓' : '✗'}`);
-    console.log(`│    Manifest updated: ${stage_c.manifestUpdated ? '✓' : '✗'}`);
-    console.log(`│    Wrappers synced: ${stage_c.wrappersSynced ? '✓' : '✗'}`);
-    console.log(`│    Skill retention reviewed: ${stage_c.skillRetentionReviewed ? '✓' : '✗'}`);
-    console.log(`│    Root AGENTS.md updated: ${stage_c.agentsUpdated ? '✓' : '✗'}`);
-    console.log(`│    Modular core build: ${stage_c.modularBuilt ? '✓' : '✗'}`);
+    console.log('');
+    console.log('Stage C');
+    console.log(`- Scaffold applied: ${yn(stage_c.scaffoldApplied)}`);
+    console.log(`- Configs generated: ${yn(stage_c.configsGenerated)}`);
+    console.log(`- Manifest updated: ${yn(stage_c.manifestUpdated)}`);
+    console.log(`- Wrappers synced: ${yn(stage_c.wrappersSynced)}`);
+    console.log(`- Skill retention reviewed: ${yn(stage_c.skillRetentionReviewed)}`);
+    console.log(`- Root AGENTS.md updated: ${yn(stage_c.agentsUpdated)}`);
+    console.log(`- Modular core build: ${yn(stage_c.modularBuilt)}`);
   }
 
-  console.log('│');
-  console.log('│  Next steps:');
+  console.log('');
+  console.log('Next steps');
+  const nextSteps = [];
+
+  if (!outputLanguage) {
+    nextSteps.push(`Choose one output language and set: ${stateRel} -> outputLanguage`);
+    nextSteps.push(`Re-run status to refresh entry docs + board snapshot: node ${self} status --repo-root ${repoRoot}`);
+  }
+
   if (progress.stage === 'A') {
     if (!stage_a.validated) {
-      console.log(`│    1. Edit: ${docsRel}/`);
-      console.log('│    2. Run: check-docs --strict');
+      nextSteps.push(`Edit: ${docsRel}/`);
+      nextSteps.push(`Run: node ${self} check-docs --repo-root ${repoRoot} --strict`);
     } else if (!stage_a.userApproved) {
-      console.log('│    Have the user review the Stage A docs and explicitly approve');
-      console.log('│    Then run: advance');
+      const missingMustAsk = getMissingMustAskKeys(state['stage-a']);
+      if (missingMustAsk.length > 0) {
+        nextSteps.push(`Complete must-ask checklist: ${missingMustAsk.join(', ')}`);
+        nextSteps.push(`Record each: node ${self} mark-must-ask --repo-root ${repoRoot} --key <key> --asked --answered --written-to <path>`);
+      }
+      nextSteps.push('Have the user review the Stage A docs and explicitly approve.');
+      nextSteps.push(`Then run: node ${self} approve --stage A --repo-root ${repoRoot}`);
     }
   } else if (progress.stage === 'B') {
     if (!stage_b.validated) {
-      console.log(`│    1. Edit ${bpRel}`);
-      console.log(`│    2. Run: validate --blueprint ${bpRel}`);
+      nextSteps.push(`Edit: ${bpRel}`);
+      nextSteps.push(`Run: node ${self} validate --repo-root ${repoRoot} --blueprint ${bpRel}`);
     } else if (!stage_b.userApproved) {
-      console.log('│    Have the user review the blueprint and explicitly approve');
-      console.log('│    Then run: advance');
+      if (!stage_b.packsReviewed) {
+        nextSteps.push(`Recommended: review packs and record: node ${self} review-packs --repo-root ${repoRoot}`);
+      }
+      nextSteps.push('Have the user review the blueprint and explicitly approve.');
+      nextSteps.push(`Then run: node ${self} approve --stage B --repo-root ${repoRoot}`);
     }
   } else if (progress.stage === 'C') {
     if (!stage_c.wrappersSynced) {
-      console.log(`│    Run: apply --blueprint ${bpRel}`);
+      nextSteps.push(`Run: node ${self} apply --repo-root ${repoRoot} --providers both --blueprint ${bpRel}`);
     } else if (!stage_c.skillRetentionReviewed) {
-      console.log(`│    Review skill retention (required): fill ${retentionRel}`);
-      console.log('│    Then run: review-skill-retention');
+      nextSteps.push(`Review skill retention (required): fill ${retentionRel}`);
+      nextSteps.push(`Then run: node ${self} review-skill-retention --repo-root ${repoRoot}`);
     } else if (!stage_c.agentsUpdated) {
-      console.log('│    ⚠ AGENTS.md update (required): update root AGENTS.md with project info');
-      console.log('│      Run: update-agents --apply');
-      console.log('│      Or skip (not recommended): approve --stage C --skip-agents-update');
+      nextSteps.push('AGENTS.md update (required): update root AGENTS.md with project info.');
+      nextSteps.push(`Run: node ${self} update-agents --repo-root ${repoRoot} --apply`);
+      nextSteps.push(`Or skip (not recommended): node ${self} approve --stage C --repo-root ${repoRoot} --skip-agents-update`);
     } else if (!stage_c.userApproved) {
-      console.log('│    Have the user review the Stage C outputs and explicitly approve');
-      console.log('│    Then run: advance');
+      nextSteps.push('Have the user review the Stage C outputs and explicitly approve.');
+      nextSteps.push(`Then run: node ${self} approve --stage C --repo-root ${repoRoot}`);
     }
   } else if (progress.stage === 'complete') {
-    console.log('│    Initialization complete!');
+    nextSteps.push('Initialization complete.');
+    nextSteps.push(`Optional: node ${self} cleanup-init --repo-root ${repoRoot} --apply --i-understand --archive`);
   }
 
-  console.log('└─────────────────────────────────────────────────────────┘');
+  if (nextSteps.length === 0) {
+    nextSteps.push(`Run: node ${self} advance --repo-root ${repoRoot}`);
+  }
+
+  for (const step of nextSteps) console.log(`- ${step}`);
   console.log('');
 }
 
 // ============================================================================
-// INIT-BOARD.md (auto-generated progress board)
+// INIT-BOARD.md (legacy markdown renderer)
 // ============================================================================
 
 function escapeMarkdownTableCell(value) {
@@ -731,7 +771,7 @@ function escapeMarkdownTableCell(value) {
 
 function truncateString(str, maxLen) {
   if (str.length <= maxLen) return str;
-  return str.slice(0, Math.max(0, maxLen - 1)) + '…';
+  return str.slice(0, Math.max(0, maxLen - 3)) + '...';
 }
 
 function formatValueForBoard(value, maxLen = 120) {
@@ -810,7 +850,7 @@ function tryReadJsonSoft(filePath) {
   if (!filePath) return { ok: false, error: 'missing path' };
   if (!fs.existsSync(filePath)) return { ok: false, error: 'missing file' };
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    const raw = stripUtf8Bom(fs.readFileSync(filePath, 'utf8'));
     return { ok: true, value: JSON.parse(raw) };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -874,7 +914,7 @@ function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
   const schema = schemaRead.ok ? schemaRead.value : null;
 
   const lines = [];
-  lines.push('# INIT BOARD (auto-generated)');
+  lines.push('# INIT BOARD (legacy auto-generated)');
   lines.push('');
   lines.push(`- Source: \`node ${pipelineRel} <command>\``);
   lines.push(`- Interview outline + routing map: \`init/START-HERE.md\``);
@@ -1104,7 +1144,7 @@ function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
       for (const e of v.errors.slice(0, 50)) {
         lines.push(`- ${escapeMarkdownTableCell(e)}`);
       }
-      if (v.errors.length > 50) lines.push(`- … (${v.errors.length - 50} more)`);
+      if (v.errors.length > 50) lines.push(`- ... (${v.errors.length - 50} more)`);
       lines.push('');
       lines.push('</details>');
       lines.push('');
@@ -1117,7 +1157,7 @@ function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
       for (const w of v.warnings.slice(0, 50)) {
         lines.push(`- ${escapeMarkdownTableCell(w)}`);
       }
-      if (v.warnings.length > 50) lines.push(`- … (${v.warnings.length - 50} more)`);
+      if (v.warnings.length > 50) lines.push(`- ... (${v.warnings.length - 50} more)`);
       lines.push('');
       lines.push('</details>');
       lines.push('');
@@ -1217,7 +1257,7 @@ function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
           if (r.const !== undefined) noteParts.push(`const: ${String(r.const)}`);
           if (r.description) noteParts.push(r.description);
           lines.push(
-            `| \`${r.path}\` | ${r.required ? 'yes' : 'no'} | ${filled ? 'yes' : 'no'} | \`${escapeMarkdownTableCell(r.type || '')}\` | ${formatValueForBoard(value)} | ${escapeMarkdownTableCell(noteParts.join(' · '))} |`
+            `| \`${r.path}\` | ${r.required ? 'yes' : 'no'} | ${filled ? 'yes' : 'no'} | \`${escapeMarkdownTableCell(r.type || '')}\` | ${formatValueForBoard(value)} | ${escapeMarkdownTableCell(noteParts.join(' / '))} |`
           );
         }
         lines.push('');
@@ -1274,22 +1314,215 @@ function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
   return lines.join('\n') + '\n';
 }
 
-function syncInitBoard({ repoRoot, docsRoot, blueprintPath }) {
-  const initDir = path.join(repoRoot, 'init');
-  const marker = findInitKitMarker(repoRoot);
-  if (!fs.existsSync(initDir) || !marker) return { ok: true, skipped: true };
+const INIT_BOARD_MACHINE_SNAPSHOT_START = '<!-- INIT-BOARD:MACHINE_SNAPSHOT:START -->';
+const INIT_BOARD_MACHINE_SNAPSHOT_END = '<!-- INIT-BOARD:MACHINE_SNAPSHOT:END -->';
 
-  // Only generate the board after initialization has started.
+function normalizeOutputLanguage(value) {
+  if (value === undefined || value === null) return null;
+  const v = String(value).trim();
+  if (!v) return null;
+  if (v.toLowerCase() === 'tbd') return null;
+  return v;
+}
+
+function readOutputLanguageFromState(state) {
+  return normalizeOutputLanguage(state?.outputLanguage);
+}
+
+function readOutputLanguage(repoRoot, state) {
+  const fromState = readOutputLanguageFromState(state);
+  if (fromState) return { ok: true, value: fromState, source: 'state' };
+
+  // Back-compat: older runs stored the marker in init/START-HERE.md.
+  const legacy = readChosenOutputLanguage(repoRoot);
+  if (!legacy.ok) {
+    if (legacy.error === 'missing init/START-HERE.md') return { ok: true, value: null, source: 'none' };
+    return legacy;
+  }
+  return { ok: true, value: normalizeOutputLanguage(legacy.value), source: 'start-here' };
+}
+
+function upsertTextBetweenMarkers(raw, startMarker, endMarker, innerContent) {
+  const startIdx = raw.indexOf(startMarker);
+  const endIdx = raw.indexOf(endMarker);
+
+  const inner = String(innerContent ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trimEnd();
+
+  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+    const suffix = [
+      '',
+      '',
+      '<details>',
+      '<summary>Machine snapshot (auto-updated; do not edit)</summary>',
+      '',
+      startMarker,
+      inner,
+      endMarker,
+      '',
+      '</details>',
+      ''
+    ].join('\n');
+    const next = (raw || '').replace(/\s*$/, '') + suffix;
+    return next.endsWith('\n') ? next : next + '\n';
+  }
+
+  const before = raw.slice(0, startIdx + startMarker.length);
+  const after = raw.slice(endIdx);
+
+  const next = `${before}\n${inner}\n${after}`;
+  return next.endsWith('\n') ? next : next + '\n';
+}
+
+function deriveStateUpdatedAt(state) {
+  const history = Array.isArray(state?.history) ? state.history : [];
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const ts = history[i]?.timestamp;
+    if (ts && String(ts).trim()) return String(ts).trim();
+  }
+  const createdAt = state?.createdAt;
+  if (createdAt && String(createdAt).trim()) return String(createdAt).trim();
+  return null;
+}
+
+function renderInitBoardMachineSnapshot({ repoRoot, docsRoot, blueprintPath, state, outputLanguage }) {
+  const initPaths = resolveInitPaths(repoRoot);
+  const progress = getStageProgress(state);
+  const stage = progress?.stage || 'not-started';
+  const layout = detectInitLayoutConflicts(repoRoot);
+
+  const docs = {
+    requirements: path.join(docsRoot, 'requirements.md'),
+    nfr: path.join(docsRoot, 'non-functional-requirements.md'),
+    glossary: path.join(docsRoot, 'domain-glossary.md'),
+    riskQuestions: path.join(docsRoot, 'risk-open-questions.md')
+  };
+
+  const stage_a = progress['stage-a'] || {};
+  const stage_b = progress['stage-b'] || {};
+  const stage_c = progress['stage-c'] || {};
+
+  const requiredItems = [];
+  if (!outputLanguage) {
+    requiredItems.push({
+      id: 'outputLanguage',
+      stage: 'Pre-Stage A',
+      status: 'NOT SET',
+      action: 'Set `init/_work/.init-state.json` -> `outputLanguage`'
+    });
+  }
+
+  if (stage === 'A' || (stage !== 'complete' && !stage_a.userApproved)) {
+    const missingMustAsk = getMissingMustAskKeys(state['stage-a']);
+    if (missingMustAsk.length > 0) {
+      requiredItems.push({
+        id: 'mustAskChecklist',
+        stage: 'Stage A',
+        status: `${stage_a.mustAskCompleted}/${stage_a.mustAskTotal}`,
+        action: `Complete: ${missingMustAsk.join(', ')}`
+      });
+    }
+    if (!stage_a.validated) {
+      requiredItems.push({
+        id: 'stageADocsValidation',
+        stage: 'Stage A',
+        status: 'NOT VALIDATED',
+        action: 'Run `check-docs --strict`'
+      });
+    }
+  }
+
+  if (stage === 'B' || (stage === 'C' && !stage_b.userApproved)) {
+    if (!stage_b.validated) {
+      requiredItems.push({
+        id: 'blueprintValidation',
+        stage: 'Stage B',
+        status: 'NOT VALIDATED',
+        action: 'Run `validate`'
+      });
+    }
+  }
+
+  if (stage === 'C') {
+    if (stage_c.wrappersSynced && !stage_c.skillRetentionReviewed) {
+      requiredItems.push({
+        id: 'skillRetentionReview',
+        stage: 'Stage C',
+        status: 'NOT REVIEWED',
+        action: 'Run `review-skill-retention`'
+      });
+    }
+    if (stage_c.skillRetentionReviewed && !stage_c.agentsUpdated) {
+      requiredItems.push({
+        id: 'agentsUpdate',
+        stage: 'Stage C',
+        status: 'NOT UPDATED',
+        action: 'Run `update-agents --apply`'
+      });
+    }
+  }
+
+  const snapshot = {
+    schema: 'init-board-machine-snapshot@1',
+    stateUpdatedAt: deriveStateUpdatedAt(state),
+    outputLanguage: outputLanguage || null,
+    stage,
+    workingLayout: {
+      mode: initPaths.mode,
+      root: path.relative(repoRoot, initPaths.root)
+    },
+    paths: {
+      startHere: path.relative(repoRoot, path.join(getInitRoot(repoRoot), 'START-HERE.md')),
+      initBoard: path.relative(repoRoot, path.join(getInitRoot(repoRoot), 'INIT-BOARD.md')),
+      state: path.relative(repoRoot, initPaths.statePath),
+      docsRoot: path.relative(repoRoot, docsRoot),
+      blueprint: blueprintPath ? path.relative(repoRoot, blueprintPath) : null,
+      skillRetention: path.relative(repoRoot, initPaths.skillRetentionPath)
+    },
+    progress,
+    stageADocs: Object.fromEntries(
+      Object.entries(docs).map(([k, absPath]) => [
+        k,
+        { exists: fs.existsSync(absPath), path: path.relative(repoRoot, absPath) }
+      ])
+    ),
+    layout,
+    requiredItems,
+    historyTail: (state.history || []).slice(-10)
+  };
+
+  return ['```json', JSON.stringify(snapshot, null, 2), '```'].join('\n');
+}
+
+function syncInitBoard({ repoRoot, docsRoot, blueprintPath }) {
+  const marker = findInitKitMarker(repoRoot);
+  if (!marker) return { ok: true, skipped: true };
+
   const state = loadState(repoRoot);
   if (!state) return { ok: true, skipped: true, reason: 'init not started' };
 
-  // Ensure the START-HERE entry exists for consistent board rendering.
+  const lang = readOutputLanguage(repoRoot, state);
+  if (!lang.ok) return { ok: false, error: lang.error };
+  if (!lang.value) return { ok: true, skipped: true, reason: 'outputLanguage not set' };
+
+  // Only create entry docs after the output language is chosen.
   ensureStartHere(repoRoot, true);
+  ensureInitBoard(repoRoot, true);
   ensureWorkAgents(repoRoot, true);
 
+  const initDir = path.join(repoRoot, 'init');
   const boardPath = path.join(initDir, 'INIT-BOARD.md');
-  const content = renderInitBoardMd({ repoRoot, docsRoot, blueprintPath });
-  return writeTextIfChanged(boardPath, content);
+  if (!fs.existsSync(boardPath)) return { ok: true, skipped: true, reason: 'init/INIT-BOARD.md missing' };
+
+  const current = fs.readFileSync(boardPath, 'utf8');
+  const snapshot = renderInitBoardMachineSnapshot({
+    repoRoot,
+    docsRoot,
+    blueprintPath,
+    state,
+    outputLanguage: lang.value
+  });
+  const next = upsertTextBetweenMarkers(current, INIT_BOARD_MACHINE_SNAPSHOT_START, INIT_BOARD_MACHINE_SNAPSHOT_END, snapshot);
+  return writeTextIfChanged(boardPath, next);
 }
 
 // ============================================================================
@@ -1734,6 +1967,12 @@ function ensureStartHere(repoRoot, apply) {
   return copyFileIfMissing(srcPath, destPath, apply);
 }
 
+function ensureInitBoard(repoRoot, apply) {
+  const srcPath = path.join(TEMPLATES_DIR, 'INIT-BOARD.template.md');
+  const destPath = path.join(getInitRoot(repoRoot), 'INIT-BOARD.md');
+  return copyFileIfMissing(srcPath, destPath, apply);
+}
+
 function ensureWorkAgents(repoRoot, apply) {
   const srcPath = path.join(TEMPLATES_DIR, 'WORKSPACE-AGENTS.template.md');
   const destPath = path.join(getInitWorkRoot(repoRoot), 'AGENTS.md');
@@ -1853,21 +2092,21 @@ function generateProjectReadme(repoRoot, blueprint, apply) {
   // Project structure based on layout
   let structure;
   if (repo.layout === 'monorepo') {
-    structure = `├── apps/
-│   ├── frontend/       # Frontend application
-│   └── backend/        # Backend services
-├── packages/
-│   └── shared/         # Shared libraries
-├── .ai/skills/         # AI skills (SSOT)
-├── docs/               # Documentation
-└── ops/                # DevOps configuration`;
+    structure = `apps/
+  frontend/       # Frontend application
+  backend/        # Backend services
+packages/
+  shared/         # Shared libraries
+.ai/skills/       # AI skills (SSOT)
+docs/             # Documentation
+ops/              # DevOps configuration`;
   } else {
-    structure = `├── src/
-│   ├── frontend/       # Frontend code
-│   └── backend/        # Backend code
-├── .ai/skills/         # AI skills (SSOT)
-├── docs/               # Documentation
-└── ops/                # DevOps configuration`;
+    structure = `src/
+  frontend/       # Frontend code
+  backend/        # Backend code
+.ai/skills/       # AI skills (SSOT)
+docs/             # Documentation
+ops/              # DevOps configuration`;
   }
   replace('PROJECT_STRUCTURE', structure);
   
@@ -2132,7 +2371,7 @@ function renderDbSsotAgentsBlock(mode) {
 ` +
       commonEnabled.join('\n') +
       `
-- If the DB schema changed: use skill \`sync-code-schema-from-db\` (DB → Prisma → mirror → context).
+- If the DB schema changed: use skill \`sync-code-schema-from-db\` (DB -> Prisma -> mirror -> context).
 ` +
       `- Do NOT hand-edit \`prisma/schema.prisma\` or \`db/schema/tables.json\` as desired-state.
 
@@ -2349,7 +2588,7 @@ function patchRootAgentsProjectInfo(repoRoot, blueprint, apply) {
 
   // Replace the template intro line if it exists verbatim (keeps the rest of the template guidance).
   const templateIntro = 'This is an **AI-Friendly, Module-First Repository Template**.';
-  const projectIntro = `This repository is for **${project.name || 'my-project'}** — ${project.description || 'Project description'}.`;
+  const projectIntro = `This repository is for **${project.name || 'my-project'}** - ${project.description || 'Project description'}.`;
   const introIdx = lines.findIndex((l) => l.trim() === templateIntro);
   if (introIdx !== -1) {
     lines[introIdx] = projectIntro;
@@ -2358,7 +2597,7 @@ function patchRootAgentsProjectInfo(repoRoot, blueprint, apply) {
 
   // Project Type (upsert)
   const projectTypeHeading = '## Project Type';
-  const projectTypeBody = [`${project.name || 'my-project'} — ${project.description || 'Project description'}`];
+  const projectTypeBody = [`${project.name || 'my-project'} - ${project.description || 'Project description'}`];
   if (findH2Index(lines, projectTypeHeading) === -1) {
     const inserted = insertH2SectionBefore(lines, '## First Time?', projectTypeHeading, projectTypeBody);
     lines = inserted.lines;
@@ -3549,8 +3788,9 @@ function main() {
   if (blueprintPath) ensurePathWithinRepo(repoRoot, blueprintPath, 'blueprint');
   if (docsRoot) ensurePathWithinRepo(repoRoot, docsRoot, 'docs-root');
 
-  // Auto-sync INIT-BOARD.md on every pipeline invocation (write-if-changed).
-  // This keeps a stable, single-file progress + blueprint checklist view for async/cross-timezone collaboration.
+  // Auto-sync the init entry docs (write-if-changed):
+  // - Creates `init/START-HERE.md` and `init/INIT-BOARD.md` only after `state.outputLanguage` is set.
+  // - Updates the machine snapshot block inside `init/INIT-BOARD.md` after each pipeline command.
   process.on('exit', () => {
     try {
       syncInitBoard({ repoRoot, docsRoot, blueprintPath });
@@ -3574,12 +3814,6 @@ function main() {
     saveState(repoRoot, state);
 
 	    const initPaths = resolveInitPaths(repoRoot);
-
-	    // Create entry doc (copy-if-missing)
-	    const startHereRes = ensureStartHere(repoRoot, true);
-	    if (startHereRes.mode === 'applied') {
-	      console.log(`[ok] Entry doc created: ${path.relative(repoRoot, startHereRes.path)}`);
-	    }
 
 	    // Create workspace guide (copy-if-missing)
 	    const workAgentsRes = ensureWorkAgents(repoRoot, true);
@@ -3682,7 +3916,7 @@ function main() {
         console.log(`  node ${self} approve --stage A --repo-root ${repoRoot} --skip-must-ask`);
         process.exit(1);
       }
-      console.log('\n== Stage A → B Checkpoint ==\n');
+      console.log('\n== Stage A -> B Checkpoint ==\n');
       console.log('Stage A docs passed validation. Next: the user must review and explicitly approve.');
       console.log('After approval, run:');
       console.log(`  node ${self} approve --stage A --repo-root ${repoRoot}`);
@@ -3696,7 +3930,7 @@ function main() {
 	        console.log(`  node ${self} validate --blueprint ${bpRel}`);
 	        process.exit(1);
 	      }
-      console.log('\n== Stage B → C Checkpoint ==\n');
+      console.log('\n== Stage B -> C Checkpoint ==\n');
       console.log('Stage B blueprint passed validation. Next: the user must review and explicitly approve.');
       console.log('After approval, run:');
       console.log(`  node ${self} approve --stage B --repo-root ${repoRoot}`);
@@ -3839,20 +4073,32 @@ if (command === 'validate') {
     const blueprint = readJson(blueprintPath);
     const v = validateBlueprint(blueprint);
 
-    // Auto-update state if validation passes
-	    if (v.ok) {
-	      const state = loadState(repoRoot);
-	      const canonical = path.resolve(blueprintPath) === path.resolve(resolveInitPaths(repoRoot).blueprintPath);
-	      if (state && state.stage === 'B' && canonical) {
-	        state['stage-b'].drafted = true;
-	        state['stage-b'].validated = true;
-	        addHistoryEvent(state, 'stage_b_validated', 'Stage B blueprint validated');
-	        saveState(repoRoot, state);
-	        console.log('[auto] State updated: stage-b.validated = true');
-	      } else if (state && state.stage === 'B' && !canonical) {
-	        console.log('[warn] Blueprint validated, but state was not updated because --blueprint overrides the canonical init blueprint path.');
-	      }
-	    }
+    // Auto-update state if validation passes (only when it would change state)
+    if (v.ok) {
+      const state = loadState(repoRoot);
+      const canonical = path.resolve(blueprintPath) === path.resolve(resolveInitPaths(repoRoot).blueprintPath);
+      if (state && state.stage === 'B' && canonical) {
+        let changed = false;
+        if (!state['stage-b']) state['stage-b'] = {};
+        if (state['stage-b'].drafted !== true) {
+          state['stage-b'].drafted = true;
+          changed = true;
+        }
+        if (state['stage-b'].validated !== true) {
+          state['stage-b'].validated = true;
+          changed = true;
+        }
+        if (changed) {
+          addHistoryEvent(state, 'stage_b_validated', 'Stage B blueprint validated');
+          saveState(repoRoot, state);
+          console.log('[auto] State updated: stage-b.validated = true');
+        } else {
+          console.log('[auto] State unchanged: stage-b already validated');
+        }
+      } else if (state && state.stage === 'B' && !canonical) {
+        console.log('[warn] Blueprint validated, but state was not updated because --blueprint overrides the canonical init blueprint path.');
+      }
+    }
 
     const result = {
       ok: v.ok,
@@ -3876,25 +4122,46 @@ if (command === 'validate') {
       ? `[ok] Stage A docs check passed: ${path.relative(repoRoot, docsRoot)}`
       : `[error] Stage A docs check failed: ${path.relative(repoRoot, docsRoot)}`;
 
-	    // Auto-update state if validation passes
-	    if (ok) {
-	      const state = loadState(repoRoot);
-	      const canonical = path.resolve(docsRoot) === path.resolve(resolveInitPaths(repoRoot).docsRoot);
-	      if (state && state.stage === 'A' && canonical) {
-	        state['stage-a'].validated = true;
-	        state['stage-a'].docsWritten = {
-	          requirements: fs.existsSync(path.join(docsRoot, 'requirements.md')),
-	          nfr: fs.existsSync(path.join(docsRoot, 'non-functional-requirements.md')),
-	          glossary: fs.existsSync(path.join(docsRoot, 'domain-glossary.md')),
-	          riskQuestions: fs.existsSync(path.join(docsRoot, 'risk-open-questions.md'))
-	        };
-	        addHistoryEvent(state, 'stage_a_validated', 'Stage A docs validated');
-	        saveState(repoRoot, state);
-	        console.log('[auto] State updated: stage-a.validated = true');
-	      } else if (state && state.stage === 'A' && !canonical) {
-	        console.log('[warn] Docs validated, but state was not updated because --docs-root overrides the canonical init Stage A docs path.');
-	      }
-	    }
+    // Auto-update state if validation passes (only when it would change state)
+    if (ok) {
+      const state = loadState(repoRoot);
+      const canonical = path.resolve(docsRoot) === path.resolve(resolveInitPaths(repoRoot).docsRoot);
+      if (state && state.stage === 'A' && canonical) {
+        let changed = false;
+        if (!state['stage-a']) state['stage-a'] = {};
+
+        if (state['stage-a'].validated !== true) {
+          state['stage-a'].validated = true;
+          changed = true;
+        }
+
+        const nextDocsWritten = {
+          requirements: fs.existsSync(path.join(docsRoot, 'requirements.md')),
+          nfr: fs.existsSync(path.join(docsRoot, 'non-functional-requirements.md')),
+          glossary: fs.existsSync(path.join(docsRoot, 'domain-glossary.md')),
+          riskQuestions: fs.existsSync(path.join(docsRoot, 'risk-open-questions.md'))
+        };
+
+        const prevDocsWritten = state['stage-a'].docsWritten || {};
+        for (const k of Object.keys(nextDocsWritten)) {
+          if (prevDocsWritten[k] !== nextDocsWritten[k]) {
+            changed = true;
+            break;
+          }
+        }
+        if (changed) state['stage-a'].docsWritten = nextDocsWritten;
+
+        if (changed) {
+          addHistoryEvent(state, 'stage_a_validated', 'Stage A docs validated');
+          saveState(repoRoot, state);
+          console.log('[auto] State updated: stage-a.validated = true');
+        } else {
+          console.log('[auto] State unchanged: stage-a already validated');
+        }
+      } else if (state && state.stage === 'A' && !canonical) {
+        console.log('[warn] Docs validated, but state was not updated because --docs-root overrides the canonical init Stage A docs path.');
+      }
+    }
 
     printResult({ ok, errors: res.errors, warnings: res.warnings, summary }, format);
     process.exit(ok ? 0 : 1);
@@ -4571,18 +4838,18 @@ if (command === 'validate') {
       if (results.archivedDocs) {
         const arc = results.archivedDocs;
         if (arc.mode === 'dry-run') {
-          console.log(`[plan] archive: Stage A docs → ${path.relative(repoRoot, arc.to)} (dry-run)`);
+          console.log(`[plan] archive: Stage A docs -> ${path.relative(repoRoot, arc.to)} (dry-run)`);
         } else {
-          console.log(`[ok] archive: Stage A docs → ${path.relative(repoRoot, arc.to)}`);
+          console.log(`[ok] archive: Stage A docs -> ${path.relative(repoRoot, arc.to)}`);
           if (arc.files) console.log(`  Files: ${arc.files.join(', ')}`);
         }
       }
       if (results.archivedBlueprint) {
         const arc = results.archivedBlueprint;
         if (arc.mode === 'dry-run') {
-          console.log(`[plan] archive: Blueprint → ${path.relative(repoRoot, arc.to)} (dry-run)`);
+          console.log(`[plan] archive: Blueprint -> ${path.relative(repoRoot, arc.to)} (dry-run)`);
         } else {
-          console.log(`[ok] archive: Blueprint → ${path.relative(repoRoot, arc.to)}`);
+          console.log(`[ok] archive: Blueprint -> ${path.relative(repoRoot, arc.to)}`);
         }
       }
 

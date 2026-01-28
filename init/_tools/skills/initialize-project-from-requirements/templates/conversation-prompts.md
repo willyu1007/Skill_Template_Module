@@ -24,7 +24,7 @@ Ask the following questions before writing the first draft of `init/_work/stage-
 0. **Terminology alignment decision (skip or sync)**
    - "Do we need to align/confirm domain terminology now?"
    - If YES (sync): use `init/_work/stage-a-docs/domain-glossary.md` as the SSOT; align terms used in `requirements.md` to the glossary.
-   - If NO (skip): explicitly record “skip terminology sync for now” in `init/_work/stage-a-docs/domain-glossary.md` (and revisit only if terms become ambiguous).
+   - If NO (skip): explicitly record "skip terminology sync for now" in `init/_work/stage-a-docs/domain-glossary.md` (and revisit only if terms become ambiguous).
 
 1. **One-line purpose**
    - "In one sentence, what problem does this project solve, for whom, and what is the main outcome?"
@@ -80,7 +80,7 @@ Ask if `capabilities.database.enabled == true`.
   - `repo-prisma` (SSOT = `prisma/schema.prisma`; developers manage migrations)
   - `database` (SSOT = real DB; repo keeps mirrors via introspection)
 
-  → Write to Stage B: `db.ssot` (DB enablement is controlled by SSOT; `db.ssot=none` disables DB materialization).
+  -> Write to Stage B: `db.ssot` (DB enablement is controlled by SSOT; `db.ssot=none` disables DB materialization).
 - Backup / restore requirements
 
 Write to:
@@ -115,22 +115,22 @@ Write to:
 - Stage A: `init/_work/stage-a-docs/non-functional-requirements.md`
 - Stage B: `quality.*`
 
-## C. Answer → Artifact mapping cheat sheet
+## C. Answer -> Artifact mapping cheat sheet
 
 Use the following mapping to avoid "knowledge floating in chat":
 
 During initialization (working location):
-- Scope (MUST/OUT) → `init/_work/stage-a-docs/requirements.md` (`## Goals`, `## Non-goals`)
-- User journeys + AC → `init/_work/stage-a-docs/requirements.md` (`## Users and user journeys`)
-- Constraints/NFR → `init/_work/stage-a-docs/non-functional-requirements.md`
-- Terminology alignment decision → `init/_work/stage-a-docs/domain-glossary.md`
-- Glossary terms/entities → `init/_work/stage-a-docs/domain-glossary.md`
-- TBD decisions/risks → `init/_work/stage-a-docs/risk-open-questions.md`
-- Repo layout/pack selection decisions → `init/_work/project-blueprint.json`
+- Scope (MUST/OUT) -> `init/_work/stage-a-docs/requirements.md` (`## Goals`, `## Non-goals`)
+- User journeys + AC -> `init/_work/stage-a-docs/requirements.md` (`## Users and user journeys`)
+- Constraints/NFR -> `init/_work/stage-a-docs/non-functional-requirements.md`
+- Terminology alignment decision -> `init/_work/stage-a-docs/domain-glossary.md`
+- Glossary terms/entities -> `init/_work/stage-a-docs/domain-glossary.md`
+- TBD decisions/risks -> `init/_work/stage-a-docs/risk-open-questions.md`
+- Repo layout/pack selection decisions -> `init/_work/project-blueprint.json`
 
 After completion (archived to):
-- Stage A docs → `docs/project/overview/`
-- Blueprint → `docs/project/overview/project-blueprint.json`
+- Stage A docs -> `docs/project/overview/`
+- Blueprint -> `docs/project/overview/project-blueprint.json`
 
 ## D. Feature + provider prompts (default-on init)
 
@@ -158,7 +158,7 @@ Ask if:
 - "Are there other artifacts to package (CLI binaries, libraries)?"
 - "What target platforms/architectures?"
 
-→ If NO: Set `features.packaging: false`
+-> If NO: Set `features.packaging: false`
 
 ### D4. Multi-Environment Deployment (deployment)
 
@@ -167,7 +167,7 @@ Ask if:
 - "What deployment model? (K8s, VM, serverless, static)"
 - "Are there rollback requirements?"
 
-→ If NO: Set `features.deployment: false`
+-> If NO: Set `features.deployment: false`
 
 ### D5. Release/Version Management (release)
 
@@ -176,7 +176,7 @@ Ask if:
 - "What versioning strategy? (semantic, calendar, custom)"
 - "Are there release approval workflows?"
 
-→ If NO: Set `features.release: false`
+-> If NO: Set `features.release: false`
 
 ### D6. Observability Contracts (observability)
 
@@ -185,7 +185,7 @@ Ask if:
 - "Are there logging schema requirements?"
 - "Is distributed tracing needed?"
 
-→ If NO: Set `features.observability: false`
+-> If NO: Set `features.observability: false`
 
 ### D7. UI System SSOT (ui)
 
@@ -193,7 +193,7 @@ Ask if the project needs a stable UI/UX foundation:
 - UI tokens and contract SSOT (so UI changes are deterministic)
 - Generated UI context for LLMs (under `docs/context/ui/`)
 
-→ If NO: Set `features.ui: false`
+-> If NO: Set `features.ui: false`
 
 ### D8. Environment Contract SSOT (environment)
 
@@ -201,7 +201,7 @@ Ask if the project needs a strict env var contract:
 - `env/contract.yaml` as SSOT
 - Generate non-secret developer artifacts (`.env.example`, `docs/env.md`, `docs/context/env/contract.json`)
 
-→ If NO: Set `features.environment: false`
+-> If NO: Set `features.environment: false`
 
 ### D9. CI provider selection (ci)
 
