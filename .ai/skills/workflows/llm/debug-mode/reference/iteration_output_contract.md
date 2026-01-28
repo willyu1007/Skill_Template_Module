@@ -61,7 +61,8 @@ If you cannot edit code directly, provide a patch-like snippet the user can copy
 ## Next action block
 Precisely state:
 - what the user must do next (step-by-step),
-- what to paste back (logs filtered by run_id, screenshots, etc.),
+- what to reply/confirm back (e.g., `DONE` after a repro run),
+- what to paste back only if requested (run_id-filtered excerpts, screenshots, etc.; prefer Terminal Hook auto-collection when available),
 - acceptance criteria for the next checkpoint.
 
 ## Iteration Record (Journal)

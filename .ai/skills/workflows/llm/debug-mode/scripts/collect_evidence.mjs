@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
+import path from "node:path";
 import { fileURLToPath } from 'node:url';
 
 function stripAnsi(text) {
@@ -342,7 +343,15 @@ async function main() {
 }
 
 // ESM entry point check
-const isMain = import.meta.url === `file://${process.argv[1]}`;
+const isMain = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return path.resolve(entry) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
 if (isMain) {
   main().catch((err) => {
     process.stderr.write(`${err.stack || err.message}\n`);

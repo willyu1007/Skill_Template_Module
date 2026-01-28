@@ -25,6 +25,12 @@ The reference describes:
   - `[DBG:<run_id>]` (preferred), or
   - structured variants like `run_id=<run_id>` / `"run_id":"<run_id>"`.
 
+## Tool name mapping (platform-specific)
+This reference uses `list_terminals()` and `get_terminal_output(...)` as generic names. In tool-enabled environments, call the equivalent Terminal Hook tools exposed to you.
+
+- Codex CLI (VS Code Terminal Hook MCP): `mcp__terminal_hook__list_terminals` and `mcp__terminal_hook__get_terminal_output`
+- If your environment exposes different names, map accordingly and keep the same budgets/guardrails.
+
 ## Budgets (MUST)
 - Broad scan (all terminals): default `lines=200`.
 - Optional broad rescan: if terminal count is small and there are no candidates at `lines=200`, you MAY rescan all terminals once at `lines=500`.
@@ -40,7 +46,7 @@ The reference describes:
 - Journal excerpts remain governed by `reference/journal_policy.md` and `templates/journal_entry_templates.md` (short, redacted).
 
 ## Tool availability probe
-1) Attempt to call `list_terminals()`.
+1) Attempt to call the terminal listing tool (`list_terminals()`; Codex CLI: `mcp__terminal_hook__list_terminals`).
 2) If the tool does not exist or the call fails, follow **Fallback B** (manual paste).
 
 ## Terminal selection
