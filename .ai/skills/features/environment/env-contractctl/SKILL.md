@@ -1,6 +1,6 @@
 ---
 name: env-contractctl
-description: Maintain env contract SSOT (env/contract.yaml), validate env/values + env/secrets refs coverage, and generate .env.example + docs/context/env/*. Use when adding/renaming/deprecating config keys.
+description: Maintain env contract SSOT (env/contract.yaml), validate env/values + env/secrets refs coverage, and generate env/.env.example + docs/context/env/*. Use when adding/renaming/deprecating config keys.
 ---
 
 # Environment Contract Control (repo-env-contract SSOT)
@@ -12,7 +12,7 @@ Treat `env/contract.yaml` as the **configuration contract** Single Source of Tru
 - define/rename/deprecate environment variables (schema)
 - validate coverage across environments (`env/values/*`, `env/secrets/*`)
 - generate **non-secret** developer artifacts:
-  - `.env.example`
+  - `env/.env.example`
   - `docs/env.md`
   - `docs/context/env/contract.json` (LLM-readable contract)
 
@@ -45,7 +45,7 @@ Use when the user asks to:
 
 - add/rename/remove/deprecate an environment variable
 - change a variable's type/default/validation rules
-- ensure `.env.example` and environment docs are accurate
+- ensure `env/.env.example` and environment docs are accurate
 - fix mismatch between code expectations and environment configuration
 
 Avoid when:
@@ -57,13 +57,13 @@ Avoid when:
 
 - **No secrets in repo contract or values.**
   - Any `secret: true` variable must use a `secret_ref`.
-  - Secret values must never appear in:
+- Secret values must never appear in:
     - `env/contract.yaml`
     - `env/values/*.yaml`
-    - generated `.env.example`
+    - generated `env/.env.example`
     - evidence artifacts
 - **Generated files are generated.** Do not hand-edit:
-  - `.env.example`
+  - `env/.env.example`
   - `docs/env.md`
   - `docs/context/env/contract.json`
 
@@ -95,7 +95,7 @@ Evidence files (templates available in `./templates/`):
 
 ### Generated artifacts
 
-- `.env.example`
+- `env/.env.example`
 - `docs/env.md`
 - `docs/context/env/contract.json`
 
@@ -138,7 +138,7 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 
 ### Phase C — Generate artifacts
 
-10. Generate `.env.example`, `docs/env.md`, and LLM context:
+10. Generate `env/.env.example`, `docs/env.md`, and LLM context:
 
 ```bash
 python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py generate --root . --out <EVIDENCE_DIR>/04-context-refresh.md
@@ -157,7 +157,7 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 - [ ] Contract changes are reflected in values and secret refs
 - [ ] No secret values exist in repo files or evidence
 - [ ] Validation passes (no missing required keys)
-- [ ] `.env.example` regenerated
+- [ ] `env/.env.example` regenerated
 - [ ] `docs/context/env/contract.json` regenerated
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite environment`
 

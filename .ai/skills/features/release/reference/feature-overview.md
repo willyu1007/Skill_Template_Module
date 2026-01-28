@@ -27,7 +27,7 @@ This feature provides **version and changelog management** infrastructure for co
 
 ### semantic-release Integration
 
-`.releaserc.json.template` provides configuration for automated releases using [semantic-release](https://semantic-release.gitbook.io/).
+`release/.releaserc.json.template` provides configuration for automated releases using [semantic-release](https://semantic-release.gitbook.io/).
 
 ## AI/LLM Usage
 

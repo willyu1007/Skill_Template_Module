@@ -168,8 +168,8 @@ function getChangelogTemplatePath(repoRoot) {
   return path.join(getReleaseDir(repoRoot), 'changelog-template.md');
 }
 
-function getRootChangelogPath(repoRoot) {
-  return path.join(repoRoot, 'CHANGELOG.md');
+function getChangelogPath(repoRoot) {
+  return path.join(getReleaseDir(repoRoot), 'CHANGELOG.md');
 }
 
 function normalizeStrategy(strategy) {
@@ -293,17 +293,17 @@ All notable changes to this project will be documented in this file.
 `;
   actions.push(dryRun ? { op: 'write', path: changelogTemplatePath, mode: 'dry-run' } : writeFileIfMissing(changelogTemplatePath, changelogTemplateContent));
 
-  // Optional: seed CHANGELOG.md at repo root (copy-if-missing)
-  const rootChangelogPath = getRootChangelogPath(repoRoot);
+  // Optional: seed release/CHANGELOG.md (copy-if-missing)
+  const changelogPath = getChangelogPath(repoRoot);
   if (dryRun) {
-    actions.push({ op: 'write', path: rootChangelogPath, mode: 'dry-run' });
-  } else if (!fs.existsSync(rootChangelogPath)) {
+    actions.push({ op: 'write', path: changelogPath, mode: 'dry-run' });
+  } else if (!fs.existsSync(changelogPath)) {
     const content = fs.readFileSync(changelogTemplatePath, 'utf8');
-    actions.push(writeFileIfMissing(rootChangelogPath, content));
+    actions.push(writeFileIfMissing(changelogPath, content));
   }
 
   // Optional: create .releaserc.json from template (copy-if-missing) for semantic strategy
-  const templateRc = path.join(repoRoot, '.releaserc.json.template');
+  const templateRc = path.join(getReleaseDir(repoRoot), '.releaserc.json.template');
   const rc = path.join(repoRoot, '.releaserc.json');
   if (normalizedStrategy === 'semantic') {
     actions.push(dryRun ? { op: 'write', path: rc, mode: 'dry-run' } : copyFileIfMissing(templateRc, rc));
@@ -359,7 +359,7 @@ function cmdPrepare(repoRoot, version) {
 
   console.log(`[ok] Prepared release: ${v}`);
   console.log('\nNext steps (human-executed):');
-  console.log('  1. Update CHANGELOG.md (or release/changelog-template.md) with release notes');
+  console.log('  1. Update release/CHANGELOG.md (or release/changelog-template.md) with release notes');
   console.log('  2. Run tests and verify artifacts');
   console.log(`  3. Tag when ready: node .ai/skills/features/release/scripts/releasectl.mjs tag --version ${v}`);
 }
@@ -367,20 +367,20 @@ function cmdPrepare(repoRoot, version) {
 function cmdChangelog(repoRoot, from, to) {
   const config = loadConfig(repoRoot);
   const currentVersion = config.currentVersion || '(unknown)';
-  const rootChangelog = path.relative(repoRoot, getRootChangelogPath(repoRoot));
+  const changelogRel = path.relative(repoRoot, getChangelogPath(repoRoot));
   const template = path.relative(repoRoot, getChangelogTemplatePath(repoRoot));
 
   console.log('Changelog Guidance');
   console.log('----------------------------------------');
   console.log(`Current version: ${currentVersion}`);
   console.log(`Template: ${template}`);
-  console.log(`Changelog file: ${rootChangelog}`);
+  console.log(`Changelog file: ${changelogRel}`);
   console.log('----------------------------------------\n');
 
   console.log('Suggested steps (human-executed):');
   console.log(`1) Collect changes since ${from || '(last tag)'} until ${to || 'HEAD'}`);
   console.log('2) Summarize into Keep-a-Changelog categories: Added/Changed/Fixed/Security/etc');
-  console.log(`3) Update ${rootChangelog}`);
+  console.log(`3) Update ${changelogRel}`);
   console.log('');
   console.log('Example git commands:');
   console.log(`  git log ${from || '<last-tag>'}..${to || 'HEAD'} --oneline`);
@@ -406,7 +406,7 @@ function cmdTag(repoRoot, version) {
   console.log(`  git push origin ${tag}`);
   console.log('');
   console.log('Notes:');
-  console.log('  - Ensure CHANGELOG.md is updated and committed before tagging.');
+  console.log('  - Ensure release/CHANGELOG.md is updated and committed before tagging.');
   console.log('  - If using semantic-release, prefer CI-driven tagging.');
 }
 
@@ -430,9 +430,9 @@ function cmdVerify(repoRoot) {
   }
 
   if (config.changelog) {
-    const changelogPath = getRootChangelogPath(repoRoot);
+    const changelogPath = getChangelogPath(repoRoot);
     if (!fs.existsSync(changelogPath)) {
-      warnings.push('CHANGELOG.md is missing (changelog enabled)');
+      warnings.push('release/CHANGELOG.md is missing (changelog enabled)');
     }
   }
 

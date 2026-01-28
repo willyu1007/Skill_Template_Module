@@ -5,7 +5,7 @@ This script is intentionally dependency-light and deterministic.
 
 It supports two primary operations:
   - validate: validate env/contract.yaml, env/values/<env>.yaml, env/secrets/<env>.ref.yaml
-  - generate: generate .env.example, docs/env.md, docs/context/env/contract.json
+  - generate: generate env/.env.example, docs/env.md, docs/context/env/contract.json
 
 Design goals:
   - Keep secrets out of repo outputs (never materialize secret values).
@@ -800,10 +800,10 @@ def run_generate(root: Path) -> Tuple[ValidationResult, Dict[str, str]]:
 
     outputs: Dict[str, str] = {}
 
-    # .env.example at repo root
+    # env/.env.example
     env_example = generate_env_example(root, contract_doc)
-    write_text(root / ".env.example", env_example)
-    outputs[".env.example"] = str(root / ".env.example")
+    write_text(root / "env" / ".env.example", env_example)
+    outputs["env/.env.example"] = str(root / "env" / ".env.example")
 
     # docs/env.md
     env_docs = generate_env_docs_md(root, envs, contract_doc)
@@ -982,7 +982,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p_validate.add_argument("--root", default=".", help="Project root (default: .)")
     p_validate.add_argument("--out", default=None, help="Write markdown report to file")
 
-    p_generate = sub.add_parser("generate", help="Generate .env.example, docs/env.md, docs/context/env/contract.json")
+    p_generate = sub.add_parser("generate", help="Generate env/.env.example, docs/env.md, docs/context/env/contract.json")
     p_generate.add_argument("--root", default=".", help="Project root (default: .)")
     p_generate.add_argument("--out", default=None, help="Write markdown report to file")
 

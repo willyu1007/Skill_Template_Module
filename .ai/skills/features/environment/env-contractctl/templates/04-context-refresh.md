@@ -4,7 +4,7 @@
 
 ## Generated artifacts
 
-- `.env.example`
+- `env/.env.example`
 - `docs/env.md`
 - `docs/context/env/contract.json`
 

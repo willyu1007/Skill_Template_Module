@@ -51,7 +51,7 @@ Use this skill when you are:
 ## Boundaries
 
 - MUST NOT log or print secrets (tokens, passwords, private keys)
-- MUST NOT commit secrets to version control (use `.env.example` with placeholders)
+- MUST NOT commit secrets to version control (use `env/.env.example` with placeholders)
 - MUST NOT access `process.env` directly outside the config module
 - SHOULD NOT add optional config without explicit defaults
 - SHOULD NOT change config schema without updating the config contract documentation
