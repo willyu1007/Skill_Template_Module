@@ -4,8 +4,8 @@
  *
  * Dependency-free helper for a 3-stage, verifiable init pipeline:
  *
- *   Stage A: requirements docs under `init/_work/stage-a-docs/` (legacy: `init/stage-a-docs/`)
- *   Stage B: blueprint JSON at `init/_work/project-blueprint.json` (legacy: `init/project-blueprint.json`)
+ *   Stage A: requirements docs under `init/_work/stage-a-docs/`
+ *   Stage B: blueprint JSON at `init/_work/project-blueprint.json`
  *   Stage C: minimal scaffold + skill pack manifest update + wrapper sync
  *
  * Commands:
@@ -49,14 +49,12 @@
  *    - Must-ask checklist (isMustAskItemComplete, getMissingMustAskKeys) 574-590
  *    - getStageProgress ................................ 591-630
  *
- * ## 4. Status & Board Rendering (lines 633-1300)
- *    - printStatus() ................................... 633-725
- *    - escapeMarkdownTableCell, truncateString ......... 725-752
- *    - Schema introspection (getDeepValue, schemaNodeType) 753-808
- *    - writeTextIfChanged .............................. 820-830
- *    - readChosenOutputLanguage ........................ 831-847
- *    - renderInitBoardMd() ............................. 849-1275
- *    - syncInitBoard() ................................. 1277-1300
+ * ## 4. Status & Board Rendering
+ *    - printStatus()
+ *    - writeTextIfChanged
+ *    - normalizeOutputLanguage, readOutputLanguage
+ *    - upsertTextBetweenMarkers, renderInitBoardMachineSnapshot
+ *    - syncInitBoard()
  *
  * ## 5. Config & Pack Management (lines 1302-1625)
  *    - generateConfigFiles (import from scaffold-configs.mjs) 1302-1305
@@ -161,12 +159,8 @@ function getInitWorkRoot(repoRoot) {
 
 function getInitKitMarkerCandidates(repoRoot) {
   const initRoot = getInitRoot(repoRoot);
-  return [
-    // Current layout: marker lives under init/_tools/
-    path.join(initRoot, INIT_KIT_MARKER_RELPATH),
-    // Legacy layout: marker at init/ root
-    path.join(initRoot, INIT_KIT_MARKER_BASENAME)
-  ];
+  // Marker lives under init/_tools/
+  return [path.join(initRoot, INIT_KIT_MARKER_RELPATH)];
 }
 
 function findInitKitMarker(repoRoot) {
@@ -176,39 +170,11 @@ function findInitKitMarker(repoRoot) {
   return null;
 }
 
-function resolveInitWorkMode(repoRoot) {
-  const initRoot = getInitRoot(repoRoot);
-  const workRoot = getInitWorkRoot(repoRoot);
-
-  const legacyStatePath = path.join(initRoot, '.init-state.json');
-  const workStatePath = path.join(workRoot, '.init-state.json');
-
-  // State file is the strongest signal.
-  if (fs.existsSync(workStatePath)) return 'work';
-  if (fs.existsSync(legacyStatePath)) return 'legacy';
-
-  const legacyBlueprintPath = path.join(initRoot, 'project-blueprint.json');
-  const workBlueprintPath = path.join(workRoot, 'project-blueprint.json');
-  const legacyDocsDir = path.join(initRoot, 'stage-a-docs');
-  const workDocsDir = path.join(workRoot, 'stage-a-docs');
-  const legacyRetentionPath = path.join(initRoot, 'skill-retention-table.template.md');
-  const workRetentionPath = path.join(workRoot, 'skill-retention-table.template.md');
-
-  const hasWork = fs.existsSync(workBlueprintPath) || fs.existsSync(workDocsDir) || fs.existsSync(workRetentionPath);
-  const hasLegacy = fs.existsSync(legacyBlueprintPath) || fs.existsSync(legacyDocsDir) || fs.existsSync(legacyRetentionPath);
-
-  if (hasWork && !hasLegacy) return 'work';
-  if (hasLegacy && !hasWork) return 'legacy';
-
-  // Mixed or empty: default to the new layout.
-  return 'work';
-}
-
 function resolveInitPaths(repoRoot) {
   const initRoot = getInitRoot(repoRoot);
   const workRoot = getInitWorkRoot(repoRoot);
-  const mode = resolveInitWorkMode(repoRoot);
-  const root = mode === 'legacy' ? initRoot : workRoot;
+  const mode = 'work';
+  const root = workRoot;
 
   return {
     mode,
@@ -220,43 +186,6 @@ function resolveInitPaths(repoRoot) {
     blueprintPath: path.join(root, 'project-blueprint.json'),
     skillRetentionPath: path.join(root, 'skill-retention-table.template.md')
   };
-}
-
-function detectInitLayoutConflicts(repoRoot) {
-  const initRoot = getInitRoot(repoRoot);
-  const workRoot = getInitWorkRoot(repoRoot);
-
-  const legacy = {
-    statePath: path.join(initRoot, '.init-state.json'),
-    docsRoot: path.join(initRoot, 'stage-a-docs'),
-    blueprintPath: path.join(initRoot, 'project-blueprint.json'),
-    skillRetentionPath: path.join(initRoot, 'skill-retention-table.template.md')
-  };
-  const work = {
-    statePath: path.join(workRoot, '.init-state.json'),
-    docsRoot: path.join(workRoot, 'stage-a-docs'),
-    blueprintPath: path.join(workRoot, 'project-blueprint.json'),
-    skillRetentionPath: path.join(workRoot, 'skill-retention-table.template.md')
-  };
-
-  const legacyExists = {
-    state: fs.existsSync(legacy.statePath),
-    docs: fs.existsSync(legacy.docsRoot),
-    blueprint: fs.existsSync(legacy.blueprintPath),
-    skillRetention: fs.existsSync(legacy.skillRetentionPath)
-  };
-  const workExists = {
-    state: fs.existsSync(work.statePath),
-    docs: fs.existsSync(work.docsRoot),
-    blueprint: fs.existsSync(work.blueprintPath),
-    skillRetention: fs.existsSync(work.skillRetentionPath)
-  };
-
-  const hasLegacy = Object.values(legacyExists).some(Boolean);
-  const hasWork = Object.values(workExists).some(Boolean);
-  const mixed = hasLegacy && hasWork;
-
-  return { mixed, legacy, work, legacyExists, workExists };
 }
 
 function usage(exitCode = 0) {
@@ -342,7 +271,6 @@ Commands:
     --force-features            Overwrite existing feature files when materializing templates
     --verify-features           Run feature verify commands after installation (when available)
     --blocking-features         Fail-fast on feature errors (default: non-blocking)
-    --non-blocking-features     (legacy) Continue on feature errors (default)
 
     Modular system controls:
     --skip-modular              Skip modular core build (not recommended)
@@ -759,103 +687,8 @@ function printStatus(state, repoRoot) {
 }
 
 // ============================================================================
-// INIT-BOARD.md (legacy markdown renderer)
+// INIT-BOARD.md machine snapshot sync
 // ============================================================================
-
-function escapeMarkdownTableCell(value) {
-  return String(value ?? '')
-    .replaceAll('\r\n', '\n')
-    .replaceAll('\n', '<br>')
-    .replaceAll('|', '\\|');
-}
-
-function truncateString(str, maxLen) {
-  if (str.length <= maxLen) return str;
-  return str.slice(0, Math.max(0, maxLen - 3)) + '...';
-}
-
-function formatValueForBoard(value, maxLen = 120) {
-  if (value === undefined) return '';
-  if (value === null) return 'null';
-  let s = '';
-  if (typeof value === 'string') s = value;
-  else if (typeof value === 'number' || typeof value === 'boolean') s = String(value);
-  else {
-    try {
-      s = JSON.stringify(value);
-    } catch {
-      s = String(value);
-    }
-  }
-  return escapeMarkdownTableCell(truncateString(s, maxLen));
-}
-
-function getDeepValue(obj, pathStr) {
-  if (!obj || typeof obj !== 'object') return { exists: false, value: undefined };
-  const parts = String(pathStr || '').split('.').filter(Boolean);
-  let cur = obj;
-  for (const p of parts) {
-    if (!cur || typeof cur !== 'object' || !(p in cur)) return { exists: false, value: undefined };
-    cur = cur[p];
-  }
-  return { exists: true, value: cur };
-}
-
-function schemaNodeType(node) {
-  if (!node || typeof node !== 'object') return '';
-  if (typeof node.type === 'string') return node.type;
-  if (Array.isArray(node.type)) return node.type.join('|');
-  if (node.properties) return 'object';
-  if (node.items) return 'array';
-  return '';
-}
-
-function collectSchemaRows(schema, prefix = '') {
-  const rows = [];
-  if (!schema || typeof schema !== 'object') return rows;
-  const props = schema.properties;
-  if (!props || typeof props !== 'object') return rows;
-  const required = new Set(Array.isArray(schema.required) ? schema.required : []);
-
-  for (const key of Object.keys(props)) {
-    const node = props[key];
-    const p = prefix ? `${prefix}.${key}` : key;
-    rows.push({
-      path: p,
-      required: required.has(key),
-      type: schemaNodeType(node),
-      description: typeof node?.description === 'string' ? node.description : '',
-      enum: Array.isArray(node?.enum) ? node.enum : null,
-      default: node?.default,
-      const: node?.const,
-      node
-    });
-
-    if (node && typeof node === 'object' && node.properties && typeof node.properties === 'object') {
-      rows.push(...collectSchemaRows(node, p));
-    }
-  }
-  return rows;
-}
-
-function isValueFilled(value) {
-  if (value === undefined || value === null) return false;
-  if (typeof value === 'string') return value.trim().length > 0;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === 'object') return Object.keys(value).length > 0;
-  return true; // boolean/number
-}
-
-function tryReadJsonSoft(filePath) {
-  if (!filePath) return { ok: false, error: 'missing path' };
-  if (!fs.existsSync(filePath)) return { ok: false, error: 'missing file' };
-  try {
-    const raw = stripUtf8Bom(fs.readFileSync(filePath, 'utf8'));
-    return { ok: true, value: JSON.parse(raw) };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-}
 
 function writeTextIfChanged(filePath, content) {
   try {
@@ -866,452 +699,6 @@ function writeTextIfChanged(filePath, content) {
   } catch (e) {
     return { ok: false, error: e.message };
   }
-}
-
-function readChosenOutputLanguage(repoRoot) {
-  const p = path.join(repoRoot, 'init', 'START-HERE.md');
-  if (!fs.existsSync(p)) return { ok: false, error: 'missing init/START-HERE.md' };
-  try {
-    const content = fs.readFileSync(p, 'utf8');
-    const marker = content.match(/<!--\s*INIT:OUTPUT_LANGUAGE:\s*([^\n]*?)\s*-->/i);
-    if (marker) {
-      const v = String(marker[1] || '').trim();
-      return { ok: true, value: v || null };
-    }
-    const m = content.match(/^\*\*Chosen output language\*\*:\s*(?:`([^`]+)`|([^`\n]+))\s*$/m);
-    if (!m) return { ok: true, value: null };
-    return { ok: true, value: String(m[1] || m[2] || '').trim() || null };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-}
-
-function renderInitBoardMd({ repoRoot, docsRoot, blueprintPath }) {
-  const pipelineRel = path.relative(repoRoot, __filename) || 'init-pipeline.mjs';
-  const initPaths = resolveInitPaths(repoRoot);
-  const stateRel = path.relative(repoRoot, initPaths.statePath);
-  const retentionRel = path.relative(repoRoot, initPaths.skillRetentionPath);
-  const layout = detectInitLayoutConflicts(repoRoot);
-
-  const state = loadState(repoRoot);
-  const progress = state ? getStageProgress(state) : null;
-
-  const stage = progress?.stage || 'not-started';
-  const stageNames = { A: 'Stage A (Requirements)', B: 'Stage B (Blueprint)', C: 'Stage C (Scaffold)', complete: 'Complete' };
-
-  const docs = {
-    requirements: path.join(docsRoot, 'requirements.md'),
-    nfr: path.join(docsRoot, 'non-functional-requirements.md'),
-    glossary: path.join(docsRoot, 'domain-glossary.md'),
-    riskQuestions: path.join(docsRoot, 'risk-open-questions.md')
-  };
-
-  const blueprintRead = tryReadJsonSoft(blueprintPath);
-  const blueprint = blueprintRead.ok ? blueprintRead.value : null;
-
-  const schemaPath = path.join(TEMPLATES_DIR, 'project-blueprint.schema.json');
-  const schemaRead = tryReadJsonSoft(schemaPath);
-  const schema = schemaRead.ok ? schemaRead.value : null;
-
-  const lines = [];
-  lines.push('# INIT BOARD (legacy auto-generated)');
-  lines.push('');
-  lines.push(`- Source: \`node ${pipelineRel} <command>\``);
-  lines.push(`- Interview outline + routing map: \`init/START-HERE.md\``);
-  lines.push('');
-
-  // ------------------------------------------------------------------------
-  // Current stage + next actions
-  // ------------------------------------------------------------------------
-
-  lines.push('## Current stage');
-  lines.push('');
-  lines.push(`- Stage: \`${stage}\` ${stageNames[stage] ? `(${stageNames[stage]})` : ''}`);
-  lines.push(`- Working layout: \`${initPaths.mode}\` (\`${path.relative(repoRoot, initPaths.root)}\`)`);
-  const lang = readChosenOutputLanguage(repoRoot);
-  if (!lang.ok) {
-    lines.push(`- Output language: **REQUIRED - NOT SET** (error: \`${escapeMarkdownTableCell(lang.error)}\`)`);
-  } else if (!lang.value || lang.value.toLowerCase() === 'tbd') {
-    lines.push('- Output language: **REQUIRED - NOT SET** (set in `init/START-HERE.md` before Stage A interview)');
-  } else {
-    lines.push(`- Output language: \`${escapeMarkdownTableCell(lang.value)}\``);
-  }
-
-  if (layout.mixed) {
-    lines.push('');
-    lines.push('## Warnings');
-    lines.push('');
-    lines.push('- Mixed init work layout detected: both legacy `init/*` and `init/_work/*` working files exist.');
-    lines.push('- Recommendation: keep one layout only; for new runs prefer `init/_work/`.');
-    lines.push('');
-    lines.push('<details>');
-    lines.push('<summary>Layout evidence</summary>');
-    lines.push('');
-    lines.push('| Layout | State | Stage A docs | Blueprint | Skill retention |');
-    lines.push('|---|---:|---:|---:|---:|');
-    lines.push(`| legacy | ${layout.legacyExists.state ? 'yes' : 'no'} | ${layout.legacyExists.docs ? 'yes' : 'no'} | ${layout.legacyExists.blueprint ? 'yes' : 'no'} | ${layout.legacyExists.skillRetention ? 'yes' : 'no'} |`);
-    lines.push(`| work | ${layout.workExists.state ? 'yes' : 'no'} | ${layout.workExists.docs ? 'yes' : 'no'} | ${layout.workExists.blueprint ? 'yes' : 'no'} | ${layout.workExists.skillRetention ? 'yes' : 'no'} |`);
-    lines.push('');
-    lines.push('</details>');
-    lines.push('');
-  }
-
-  if (!state) {
-    lines.push(`- Init state: missing (\`${stateRel}\`)`);
-    lines.push('');
-    lines.push('## Next actions');
-    lines.push('');
-    lines.push(`- Run: \`node ${pipelineRel} start --repo-root .\``);
-    lines.push(`- Then open: \`init/START-HERE.md\``);
-    lines.push('');
-    return lines.join('\n') + '\n';
-  }
-
-  const stage_a = progress['stage-a'] || {};
-  const stage_b = progress['stage-b'] || {};
-  const stage_c = progress['stage-c'] || {};
-
-  lines.push(`- Stage A: must-ask complete \`${stage_a.mustAskCompleted}/${stage_a.mustAskTotal}\`, docs \`${stage_a.docsWritten}/${stage_a.docsTotal}\`, validated \`${stage_a.validated}\`, approved \`${stage_a.userApproved}\``);
-  lines.push(`- Stage B: drafted \`${stage_b.drafted}\`, validated \`${stage_b.validated}\`, packs reviewed \`${stage_b.packsReviewed}\`, approved \`${stage_b.userApproved}\``);
-  lines.push(`- Stage C: scaffold \`${stage_c.scaffoldApplied}\`, configs \`${stage_c.configsGenerated}\`, manifest \`${stage_c.manifestUpdated}\`, wrappers \`${stage_c.wrappersSynced}\`, skill retention \`${stage_c.skillRetentionReviewed}\`, **AGENTS.md** \`${stage_c.agentsUpdated}\`, approved \`${stage_c.userApproved}\``);
-  lines.push('');
-
-  // Required items summary (only show if there are incomplete required items)
-  const requiredItems = [];
-  const langValue = lang.ok ? lang.value : null;
-  if (!langValue || langValue.toLowerCase() === 'tbd') {
-    requiredItems.push({ item: 'Output Language', stage: 'Pre-Stage A', status: 'NOT SET', action: 'Set in `init/START-HERE.md`' });
-  }
-  if (stage === 'A' || (stage !== 'complete' && !stage_a.userApproved)) {
-    const missingMustAsk = getMissingMustAskKeys(state['stage-a']);
-    if (missingMustAsk.length > 0) {
-      requiredItems.push({ item: 'Must-ask checklist', stage: 'Stage A', status: `${stage_a.mustAskCompleted}/${stage_a.mustAskTotal}`, action: 'Complete interview questions' });
-    }
-    if (!stage_a.validated) {
-      requiredItems.push({ item: 'Stage A docs validation', stage: 'Stage A', status: 'NOT VALIDATED', action: 'Run `check-docs --strict`' });
-    }
-  }
-  if (stage === 'B' || (stage === 'C' && !stage_b.userApproved)) {
-    if (!stage_b.validated) {
-      requiredItems.push({ item: 'Blueprint validation', stage: 'Stage B', status: 'NOT VALIDATED', action: 'Run `validate`' });
-    }
-  }
-  if (stage === 'C') {
-    if (stage_c.wrappersSynced && !stage_c.skillRetentionReviewed) {
-      requiredItems.push({ item: 'Skill retention review', stage: 'Stage C', status: 'NOT REVIEWED', action: 'Run `review-skill-retention`' });
-    }
-    if (stage_c.skillRetentionReviewed && !stage_c.agentsUpdated) {
-      requiredItems.push({ item: 'AGENTS.md update', stage: 'Stage C', status: 'NOT UPDATED', action: 'Run `update-agents --apply`' });
-    }
-  }
-
-  if (requiredItems.length > 0) {
-    lines.push('## Required items (blocking approval)');
-    lines.push('');
-    lines.push('| Item | Stage | Status | Action |');
-    lines.push('|------|-------|--------|--------|');
-    for (const ri of requiredItems) {
-      lines.push(`| **${ri.item}** | ${ri.stage} | ${ri.status} | ${ri.action} |`);
-    }
-    lines.push('');
-  }
-
-  lines.push('## Next actions');
-  lines.push('');
-  if (stage === 'A') {
-    const missingMustAsk = getMissingMustAskKeys(state['stage-a']);
-    if (!stage_a.validated) {
-      lines.push(`- Edit: \`${path.relative(repoRoot, docsRoot)}/\``);
-      lines.push(`- Validate: \`node ${pipelineRel} check-docs --repo-root . --docs-root ${path.relative(repoRoot, docsRoot)} --strict\``);
-    }
-
-    if (missingMustAsk.length > 0) {
-      lines.push(`- Required: complete must-ask checklist (asked + answered + written-to): \`${missingMustAsk.join(', ')}\``);
-      lines.push(`- Update state: \`node ${pipelineRel} mark-must-ask --repo-root . --key <key> --asked --answered --written-to <path>\``);
-      if (stage_a.validated) {
-        lines.push(`- Override (not recommended): \`node ${pipelineRel} approve --stage A --repo-root . --skip-must-ask\``);
-      }
-    }
-
-    if (stage_a.validated && missingMustAsk.length === 0) {
-      if (!stage_a.userApproved) {
-        lines.push('- Have the user explicitly approve Stage A docs');
-        lines.push(`- Then run: \`node ${pipelineRel} approve --stage A --repo-root .\``);
-      } else {
-        lines.push('- Stage A approved; run status/advance to confirm Stage B is active');
-        lines.push(`- Run: \`node ${pipelineRel} status --repo-root .\``);
-      }
-    }
-  } else if (stage === 'B') {
-    const bpRel = path.relative(repoRoot, blueprintPath);
-    if (!stage_b.validated) {
-      lines.push(`- Edit: \`${bpRel}\``);
-      lines.push(`- Validate: \`node ${pipelineRel} validate --repo-root . --blueprint ${bpRel}\``);
-      lines.push(`- Optional: \`node ${pipelineRel} suggest-packs --repo-root . --blueprint ${bpRel}\``);
-      lines.push(`- Optional: \`node ${pipelineRel} suggest-features --repo-root . --blueprint ${bpRel}\``);
-    } else if (!stage_b.userApproved) {
-      lines.push('- Have the user explicitly approve the blueprint');
-      lines.push(`- Then run: \`node ${pipelineRel} approve --stage B --repo-root .\``);
-    } else {
-      lines.push('- Stage B approved; run status/advance to confirm Stage C is active');
-      lines.push(`- Run: \`node ${pipelineRel} status --repo-root .\``);
-    }
-  } else if (stage === 'C') {
-    const bpRel = path.relative(repoRoot, blueprintPath);
-    if (!stage_c.wrappersSynced) {
-      lines.push(`- Apply: \`node ${pipelineRel} apply --repo-root . --blueprint ${bpRel} --providers both\``);
-    } else if (!stage_c.skillRetentionReviewed) {
-      lines.push(`- Required: fill \`${retentionRel}\``);
-      lines.push(`- Record review: \`node ${pipelineRel} review-skill-retention --repo-root .\``);
-    } else if (!stage_c.agentsUpdated) {
-      lines.push('- **Required**: Update AGENTS.md with project-specific info');
-      lines.push(`- Run: \`node ${pipelineRel} update-agents --repo-root . --blueprint ${bpRel} --apply\``);
-      lines.push(`- Or skip (not recommended): \`node ${pipelineRel} approve --stage C --repo-root . --skip-agents-update\``);
-    } else if (!stage_c.userApproved) {
-      lines.push('- Have the user explicitly approve Stage C outputs');
-      lines.push(`- Then run: \`node ${pipelineRel} approve --stage C --repo-root .\``);
-    } else {
-      lines.push('- Init is complete; cleanup-init is optional');
-      lines.push(`- Optional: \`node ${pipelineRel} cleanup-init --repo-root . --apply --i-understand --archive\``);
-    }
-  } else if (stage === 'complete') {
-    lines.push('- Initialization complete');
-    lines.push(`- Optional: \`node ${pipelineRel} cleanup-init --repo-root . --apply --i-understand --archive\``);
-  } else {
-    lines.push(`- Run: \`node ${pipelineRel} status --repo-root .\``);
-  }
-  lines.push('');
-
-  // ------------------------------------------------------------------------
-  // Stage A details
-  // ------------------------------------------------------------------------
-
-  const stageADetailsOpen = stage === 'A' ? ' open' : '';
-  lines.push(`<details${stageADetailsOpen}>`);
-  lines.push('<summary>Stage A: Requirements (details)</summary>');
-  lines.push('');
-  lines.push('**Docs**');
-  lines.push('');
-  lines.push('| File | Exists | Path |');
-  lines.push('|---|---:|---|');
-  for (const [key, absPath] of Object.entries(docs)) {
-    const rel = path.relative(repoRoot, absPath);
-    const exists = fs.existsSync(absPath) ? 'yes' : 'no';
-    lines.push(`| \`${key}\` | ${exists} | \`${rel}\` |`);
-  }
-  lines.push('');
-
-  lines.push('**Must-ask checklist (state)**');
-  lines.push('');
-  lines.push('| Key | Asked | Answered | Written to |');
-  lines.push('|---|---:|---:|---|');
-  const mustAsk = state['stage-a']?.mustAsk || {};
-  for (const key of Object.keys(mustAsk)) {
-    const item = mustAsk[key] || {};
-    lines.push(`| \`${key}\` | ${item.asked ? 'yes' : 'no'} | ${item.answered ? 'yes' : 'no'} | \`${escapeMarkdownTableCell(item.writtenTo || '')}\` |`);
-  }
-  lines.push('');
-  lines.push('</details>');
-  lines.push('');
-
-  // ------------------------------------------------------------------------
-  // Stage B: Blueprint details (schema checklist + recommendations)
-  // ------------------------------------------------------------------------
-
-  const stageBDetailsOpen = stage === 'B' ? ' open' : '';
-  lines.push(`<details${stageBDetailsOpen}>`);
-  lines.push('<summary>Stage B: Blueprint (details)</summary>');
-  lines.push('');
-  lines.push(`**Blueprint**: \`${path.relative(repoRoot, blueprintPath)}\``);
-  if (!blueprintRead.ok) {
-    lines.push(`- Blueprint status: ${blueprintRead.error === 'missing file' ? 'missing' : `invalid JSON (${escapeMarkdownTableCell(blueprintRead.error)})`}`);
-    lines.push('');
-  } else {
-    const v = validateBlueprint(blueprint);
-    lines.push(`- Schema valid (computed): \`${v.ok}\``);
-    lines.push(`- Checkpoint validated (state): \`${stage_b.validated}\``);
-    if (v.errors.length > 0) lines.push(`- Errors: \`${v.errors.length}\``);
-    if (v.warnings.length > 0) lines.push(`- Warnings: \`${v.warnings.length}\``);
-    if (v.warnings.some((w) => String(w).startsWith('[template]'))) {
-      lines.push('- Template example values: `detected`');
-    }
-    lines.push('');
-
-    if (v.errors.length > 0) {
-      lines.push('<details>');
-      lines.push('<summary>Validation errors (computed)</summary>');
-      lines.push('');
-      for (const e of v.errors.slice(0, 50)) {
-        lines.push(`- ${escapeMarkdownTableCell(e)}`);
-      }
-      if (v.errors.length > 50) lines.push(`- ... (${v.errors.length - 50} more)`);
-      lines.push('');
-      lines.push('</details>');
-      lines.push('');
-    }
-
-    if (v.warnings.length > 0) {
-      lines.push('<details>');
-      lines.push('<summary>Validation warnings (computed)</summary>');
-      lines.push('');
-      for (const w of v.warnings.slice(0, 50)) {
-        lines.push(`- ${escapeMarkdownTableCell(w)}`);
-      }
-      if (v.warnings.length > 50) lines.push(`- ... (${v.warnings.length - 50} more)`);
-      lines.push('');
-      lines.push('</details>');
-      lines.push('');
-    }
-
-    // Packs / features
-    const packsCurrent = normalizePackList(blueprint.skills?.packs || []);
-    const packsRecommended = recommendedPacksFromBlueprint(blueprint);
-    const packsMissing = packsRecommended.filter(p => !packsCurrent.includes(p));
-
-    lines.push('**Packs**');
-    lines.push('');
-    lines.push(`- Current: \`${packsCurrent.join(', ') || '(none)'}\``);
-    lines.push(`- Recommended: \`${packsRecommended.join(', ') || '(none)'}\``);
-    if (packsMissing.length > 0) lines.push(`- Missing recommended: \`${packsMissing.join(', ')}\``);
-    lines.push('');
-
-    const enabledFeatures = getEnabledFeatures(blueprint);
-    lines.push('**Effective enabled features (Stage C materializes)**');
-    lines.push('');
-    lines.push(`- \`${enabledFeatures.join(', ') || '(none)'}\``);
-    lines.push('');
-
-    // Schema checklist
-    if (!schemaRead.ok) {
-      lines.push(`- Schema status: missing/invalid (\`${escapeMarkdownTableCell(schemaRead.error)}\`)`);
-      lines.push('');
-    } else {
-      const schemaRows = collectSchemaRows(schema);
-      const requiredRows = schemaRows.filter(r => r.required);
-      const missingRequired = requiredRows
-        .filter((r) => !isValueFilled(getDeepValue(blueprint, r.path).value))
-        .map((r) => r.path);
-
-      lines.push('**Blueprint required fields (schema)**');
-      lines.push('');
-      if (missingRequired.length === 0) {
-        lines.push('- All required fields are set.');
-      } else {
-        lines.push(`- Missing required: \`${missingRequired.join(', ')}\``);
-      }
-      lines.push('');
-
-      const suggestedPaths = [
-        'project.domain',
-        'project.primaryUsers',
-        'capabilities.frontend.enabled',
-        'capabilities.backend.enabled',
-        'capabilities.api.style',
-        'capabilities.api.auth',
-        'capabilities.database.enabled',
-        'capabilities.database.kind',
-        'skills.packs',
-        'context.mode',
-        'context.environments',
-        'ci.provider',
-        'ci.features',
-        'db.kind',
-        'db.environments'
-      ];
-      const missingSuggested = suggestedPaths.filter((p) => !isValueFilled(getDeepValue(blueprint, p).value));
-      lines.push('**Suggested fields (common, high-impact)**');
-      lines.push('');
-      if (missingSuggested.length === 0) {
-        lines.push('- All suggested fields are set.');
-      } else {
-        lines.push(`- Not set: \`${missingSuggested.join(', ')}\``);
-      }
-      lines.push('');
-
-      lines.push('<details>');
-      lines.push('<summary>Blueprint schema checklist (full)</summary>');
-      lines.push('');
-      const topKeys = schema?.properties && typeof schema.properties === 'object' ? Object.keys(schema.properties) : [];
-      for (const top of topKeys) {
-        const sectionRows = schemaRows.filter((r) => r.path === top || r.path.startsWith(`${top}.`));
-        const sectionRequiredMissing = sectionRows
-          .filter((r) => r.required && !isValueFilled(getDeepValue(blueprint, r.path).value))
-          .map((r) => r.path);
-
-        lines.push(`<details${top === 'project' || top === 'repo' || top === 'db' ? ' open' : ''}>`);
-        lines.push(`<summary>\`${top}\`${sectionRequiredMissing.length > 0 ? ` (missing required: ${sectionRequiredMissing.length})` : ''}</summary>`);
-        lines.push('');
-        const topNode = schema.properties[top];
-        if (typeof topNode?.description === 'string') {
-          lines.push(`- ${escapeMarkdownTableCell(topNode.description)}`);
-          lines.push('');
-        }
-        lines.push('| Field | Req | Filled | Type | Current | Notes |');
-        lines.push('|---|---:|---:|---|---|---|');
-        for (const r of sectionRows) {
-          const { value } = getDeepValue(blueprint, r.path);
-          const filled = isValueFilled(value);
-          const noteParts = [];
-          if (r.enum && r.enum.length > 0) noteParts.push(`enum: ${r.enum.join(', ')}`);
-          if (r.default !== undefined) noteParts.push(`default: ${String(r.default)}`);
-          if (r.const !== undefined) noteParts.push(`const: ${String(r.const)}`);
-          if (r.description) noteParts.push(r.description);
-          lines.push(
-            `| \`${r.path}\` | ${r.required ? 'yes' : 'no'} | ${filled ? 'yes' : 'no'} | \`${escapeMarkdownTableCell(r.type || '')}\` | ${formatValueForBoard(value)} | ${escapeMarkdownTableCell(noteParts.join(' / '))} |`
-          );
-        }
-        lines.push('');
-        lines.push('</details>');
-        lines.push('');
-      }
-      lines.push('</details>');
-      lines.push('');
-    }
-
-    if (v.errors.length > 0 || v.warnings.length > 0) {
-      lines.push('<details>');
-      lines.push('<summary>Blueprint validation output (computed)</summary>');
-      lines.push('');
-      if (v.errors.length > 0) {
-        lines.push('Errors:');
-        for (const e of v.errors) lines.push(`- ${escapeMarkdownTableCell(e)}`);
-        lines.push('');
-      }
-      if (v.warnings.length > 0) {
-        lines.push('Warnings:');
-        for (const w of v.warnings) lines.push(`- ${escapeMarkdownTableCell(w)}`);
-        lines.push('');
-      }
-      lines.push('</details>');
-      lines.push('');
-    }
-  }
-
-  lines.push('</details>');
-  lines.push('');
-
-  // ------------------------------------------------------------------------
-  // Stage C details
-  // ------------------------------------------------------------------------
-
-  const stageCDetailsOpen = stage === 'C' ? ' open' : '';
-  lines.push(`<details${stageCDetailsOpen}>`);
-  lines.push('<summary>Stage C: Scaffold + configs + skills (details)</summary>');
-  lines.push('');
-  lines.push('| Item | Done |');
-  lines.push('|---|---:|');
-  lines.push(`| scaffoldApplied | ${stage_c.scaffoldApplied ? 'yes' : 'no'} |`);
-  lines.push(`| configsGenerated | ${stage_c.configsGenerated ? 'yes' : 'no'} |`);
-  lines.push(`| manifestUpdated | ${stage_c.manifestUpdated ? 'yes' : 'no'} |`);
-  lines.push(`| wrappersSynced | ${stage_c.wrappersSynced ? 'yes' : 'no'} |`);
-  lines.push(`| skillRetentionReviewed | ${stage_c.skillRetentionReviewed ? 'yes' : 'no'} |`);
-  lines.push(`| agentsUpdated | ${stage_c.agentsUpdated ? 'yes' : 'no'} |`);
-  lines.push(`| modularBuilt | ${stage_c.modularBuilt ? 'yes' : 'no'} |`);
-  lines.push('');
-  lines.push('</details>');
-  lines.push('');
-
-  return lines.join('\n') + '\n';
 }
 
 const INIT_BOARD_MACHINE_SNAPSHOT_START = '<!-- INIT-BOARD:MACHINE_SNAPSHOT:START -->';
@@ -1329,17 +716,10 @@ function readOutputLanguageFromState(state) {
   return normalizeOutputLanguage(state?.outputLanguage);
 }
 
-function readOutputLanguage(repoRoot, state) {
+function readOutputLanguage(_repoRoot, state) {
   const fromState = readOutputLanguageFromState(state);
   if (fromState) return { ok: true, value: fromState, source: 'state' };
-
-  // Back-compat: older runs stored the marker in init/START-HERE.md.
-  const legacy = readChosenOutputLanguage(repoRoot);
-  if (!legacy.ok) {
-    if (legacy.error === 'missing init/START-HERE.md') return { ok: true, value: null, source: 'none' };
-    return legacy;
-  }
-  return { ok: true, value: normalizeOutputLanguage(legacy.value), source: 'start-here' };
+  return { ok: true, value: null, source: 'none' };
 }
 
 function upsertTextBetweenMarkers(raw, startMarker, endMarker, innerContent) {
@@ -1388,7 +768,6 @@ function renderInitBoardMachineSnapshot({ repoRoot, docsRoot, blueprintPath, sta
   const initPaths = resolveInitPaths(repoRoot);
   const progress = getStageProgress(state);
   const stage = progress?.stage || 'not-started';
-  const layout = detectInitLayoutConflicts(repoRoot);
 
   const docs = {
     requirements: path.join(docsRoot, 'requirements.md'),
@@ -1485,7 +864,6 @@ function renderInitBoardMachineSnapshot({ repoRoot, docsRoot, blueprintPath, sta
         { exists: fs.existsSync(absPath), path: path.relative(repoRoot, absPath) }
       ])
     ),
-    layout,
     requiredItems,
     historyTail: (state.history || []).slice(-10)
   };
@@ -1598,10 +976,10 @@ function validateBlueprint(blueprint) {
     errors.push('features.contextAwareness is mandatory and must be true (or omitted).');
   }
   if (Object.prototype.hasOwnProperty.call(flags, 'database')) {
-    warnings.push('features.database is deprecated/ignored. Use db.ssot to enable/disable database materialization.');
+    errors.push('features.database is not supported. Use db.ssot to enable/disable database materialization.');
   }
   if (Object.prototype.hasOwnProperty.call(flags, 'ci')) {
-    warnings.push('features.ci is deprecated/ignored. Use ci.provider to enable/disable CI materialization.');
+    errors.push('features.ci is not supported. Use ci.provider to enable/disable CI materialization.');
   }
 
   const project = blueprint.project || {};
@@ -1829,14 +1207,7 @@ function checkPackInstall(repoRoot, pack) {
   if (fs.existsSync(packFile)) {
     return { pack, installed: true, via: 'pack-file', path: path.relative(repoRoot, packFile) };
   }
-
-  // Back-compat for repos without pack files: infer install by prefix presence
-  const prefix = packPrefixMap()[pack];
-  if (!prefix) return { pack, installed: false, reason: 'missing pack-file and no prefix mapping' };
-
-  const dir = path.join(repoRoot, '.ai', 'skills', prefix.replace(/\/$/, ''));
-  if (!fs.existsSync(dir)) return { pack, installed: false, reason: `missing ${path.relative(repoRoot, dir)}` };
-  return { pack, installed: true, via: 'prefix-dir', path: path.relative(repoRoot, dir) };
+  return { pack, installed: false, reason: `missing ${path.relative(repoRoot, packFile)}` };
 }
 
 function printResult(result, format) {
@@ -1895,10 +1266,7 @@ function checkDocs(docsRoot) {
 
   const placeholderPatterns = [
     { re: /^\s*[-*]\s*\.\.\.\s*$/gm, msg: 'placeholder bullet "- ..."' },
-    { re: /:\s*\.\.\.\s*$/gm, msg: 'placeholder value ": ..."' },
-    // Legacy Stage A templates used "<summary>" which conflicts with HTML <summary> tags.
-    // Only treat it as a placeholder in the typical template form: "<label>: <summary>".
-    { re: /:\s*<summary>\s*$/gm, msg: 'legacy template placeholder ": <summary>"' }
+    { re: /:\s*\.\.\.\s*$/gm, msg: 'placeholder value ": ..."' }
   ];
 
   const missingFiles = [];
@@ -2944,19 +2312,7 @@ function findFeatureCtlScript(repoRoot, featureId, ctlScriptName) {
   if (!ctlScriptName) return null;
 
   const dash = String(featureId || '').replace(/_/g, '-');
-  const candidates = [
-    // preferred: feature-local controller
-    path.join(repoRoot, '.ai', 'skills', 'features', dash, 'scripts', ctlScriptName),
-    // back-compat: repo-level controller
-    path.join(repoRoot, '.ai', 'scripts', ctlScriptName),
-  ];
-
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
-  }
-
-  // Default expected path for error messages
-  return candidates[0];
+  return path.join(repoRoot, '.ai', 'skills', 'features', dash, 'scripts', ctlScriptName);
 }
 
 function ensureFeature(repoRoot, featureId, apply, ctlScriptName, options = {}) {
@@ -3370,7 +2726,7 @@ function planScaffold(repoRoot, blueprint, apply) {
   results.push(ensureDir(path.join(repoRoot, 'docs'), apply));
   results.push(ensureDir(path.join(repoRoot, 'docs', 'project'), apply));
 
-  // Create init/_work/stage-a-docs/ (or legacy init/stage-a-docs/) and copy Stage A templates
+  // Create init/_work/stage-a-docs/ and copy Stage A templates
   results.push(ensureDir(initPaths.docsRoot, apply));
   const stage_a_templates = [
     { src: 'requirements.template.md', dest: 'requirements.md' },
@@ -4381,17 +3737,9 @@ if (command === 'validate') {
 		    const verifyFeatures = !!opts['verify-features'];
 		    const blockingFeatures = !!opts['blocking-features'];
 		    const skipModular = !!opts['skip-modular'];
-		    const blockingModular = !!opts['blocking-modular'];
-		    const nonBlockingFeatures = !blockingFeatures;
-		    const iUnderstand = !!opts['i-understand'];
-
-		    if (opts['cleanup-init']) {
-		      die(
-		        '[error] The flag "--cleanup-init" on "apply" is deprecated and refused.\n' +
-		          'Reason: deleting init/ from apply can destroy Stage A/B SSOT without archiving.\n' +
-		          'Use: cleanup-init --apply --i-understand --archive (after Stage C approval).'
-		      );
-		    }
+ 		    const blockingModular = !!opts['blocking-modular'];
+ 		    const nonBlockingFeatures = !blockingFeatures;
+ 		    const iUnderstand = !!opts['i-understand'];
 
 		    // Stage gating: apply is a Stage C command and should not run earlier by default.
 		    const stateForGate = loadState(repoRoot);
@@ -4741,7 +4089,7 @@ if (command === 'validate') {
 	    process.exit(0)
 	  }
 
-	  if (command === 'cleanup-init') {
+ 	  if (command === 'cleanup-init') {
     if (!opts['i-understand']) die('[error] cleanup-init requires --i-understand');
     const apply = !!opts['apply'];
     const force = !!opts['force'];
@@ -4749,11 +4097,18 @@ if (command === 'validate') {
     const archiveDocs = archiveAll || !!opts['archive-docs'];
     const archiveBlueprint = archiveAll || !!opts['archive-blueprint'];
     const state = loadState(repoRoot);
-    const layout = detectInitLayoutConflicts(repoRoot);
+    const initPaths = resolveInitPaths(repoRoot);
 
     if (apply) {
       const stage = state ? String(state.stage || '').toLowerCase() : null;
-      const hasWorkArtifacts = Object.values(layout.legacyExists).some(Boolean) || Object.values(layout.workExists).some(Boolean);
+      const hasWorkArtifacts = [
+        initPaths.statePath,
+        initPaths.docsRoot,
+        initPaths.blueprintPath,
+        initPaths.skillRetentionPath,
+        path.join(repoRoot, 'init', 'START-HERE.md'),
+        path.join(repoRoot, 'init', 'INIT-BOARD.md')
+      ].some((p) => fs.existsSync(p));
 
       if (state && stage !== 'complete') {
         if (!force) {
@@ -4777,13 +4132,8 @@ if (command === 'validate') {
     const destOverviewDir = path.join(destProjectDir, 'overview');
 
     // Archive Stage A docs if requested
-    const stageDocsCandidates = uniq([
-      resolveInitPaths(repoRoot).docsRoot,
-      path.join(repoRoot, 'init', 'stage-a-docs'),
-      path.join(repoRoot, 'init', '_work', 'stage-a-docs')
-    ]);
-    const stage_a_docs_dir = stageDocsCandidates.find((p) => fs.existsSync(p));
-    if (stage_a_docs_dir) {
+    const stage_a_docs_dir = initPaths.docsRoot;
+    if (fs.existsSync(stage_a_docs_dir)) {
       if (archiveDocs) {
         if (!apply) {
           results.archivedDocs = { from: stage_a_docs_dir, to: destOverviewDir, mode: 'dry-run' };
@@ -4806,13 +4156,8 @@ if (command === 'validate') {
     }
 
     // Archive blueprint if requested
-    const blueprintCandidates = uniq([
-      resolveInitPaths(repoRoot).blueprintPath,
-      path.join(repoRoot, 'init', 'project-blueprint.json'),
-      path.join(repoRoot, 'init', '_work', 'project-blueprint.json')
-    ]);
-    const blueprintSrc = blueprintCandidates.find((p) => fs.existsSync(p));
-    if (blueprintSrc) {
+    const blueprintSrc = initPaths.blueprintPath;
+    if (fs.existsSync(blueprintSrc)) {
       if (archiveBlueprint) {
         const blueprintDest = path.join(destOverviewDir, 'project-blueprint.json');
         if (!apply) {
