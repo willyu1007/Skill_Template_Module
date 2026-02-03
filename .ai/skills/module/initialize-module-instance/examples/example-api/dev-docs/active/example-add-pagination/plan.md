@@ -68,5 +68,5 @@ npm run lint
 
 | Date | Status | Notes |
 |------|--------|-------|
-| 2025-01-02 | Started | Created workdocs, defined types |
+| 2025-01-02 | Started | Created dev-docs bundle, defined types |
 | 2025-01-02 | In Progress | Cursor utility implemented |

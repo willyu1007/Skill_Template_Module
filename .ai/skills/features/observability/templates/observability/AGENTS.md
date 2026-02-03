@@ -19,7 +19,7 @@
 1. **Review** existing metrics/logs/traces contracts
 2. **Propose** new observability points via `obsctl`
 3. **Generate** instrumentation hints
-4. **Document** in `workdocs/`
+4. **Document** in `handbook/`
 
 ## Metric Types
 
@@ -65,4 +65,3 @@
 - Logging sensitive data (PII, credentials)
 - High-cardinality labels on metrics (e.g., user_id as label)
 - Excessive logging in hot paths
-

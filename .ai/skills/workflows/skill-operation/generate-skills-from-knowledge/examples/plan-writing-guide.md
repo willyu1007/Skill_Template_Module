@@ -3,6 +3,7 @@
 A plan is a contract: it should be reviewable before any files are written.
 
 ## What a good plan contains
+
 - Stable skill names (kebab-case).
 - A high-signal `description` sentence per skill.
 - A clean mapping from skill -> source docs.
@@ -10,11 +11,12 @@ A plan is a contract: it should be reviewable before any files are written.
 - A small list of examples/templates to extract.
 
 ## How to prompt an LLM to produce the plan
+
 Provide:
 - the list of source documents
 - your portability constraints (provider-agnostic, no repo paths, etc.)
 - your desired taxonomy (if any)
-- what you consider “workdocs exception” (if applicable)
+- what you consider a "dev-docs exception" (if applicable)
 
 Prompt template:
 
@@ -35,7 +37,9 @@ Quality rules:
 - Do not include cross-skill references.
 
 ## Common mistakes
+
 - One skill per file (instead of one skill per capability).
-- Descriptions that are generic (“do the thing”).
+- Descriptions that are generic ("do the thing").
 - Skills that include multiple unrelated procedures.
 - Massive `SKILL.md` files that should have been split.
+

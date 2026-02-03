@@ -14,13 +14,13 @@
 - Prisma schema mirror: `prisma/schema.prisma`
 - Repo mirror snapshot: `db/schema/tables.json`
 - LLM DB contract: `docs/context/db/schema.json`
-- Proposals/plans: `db/workdocs/`
+- Proposals/plans: `db/handbook/`
 
 ## 2) End-to-end workflow
 
 ### 2.1 Propose a schema change (desired state)
 
-1. Write a short proposal in `db/workdocs/`:
+1. Write a short proposal in `db/handbook/`:
    - intended DDL change
    - risk assessment
    - rollout + verification checklist
@@ -56,7 +56,7 @@ Repositories remain the boundary and must return domain entities.
 
 - To read DB shape: open `docs/context/db/schema.json`.
 - To update mirrors after DB change: use skill `sync-code-schema-from-db`.
-- To change persisted fields: create `db/workdocs/` proposals; do not edit `schema.prisma` as SSOT.
+- To change persisted fields: create `db/handbook/` proposals; do not edit `schema.prisma` as SSOT.
 
 ## 5) Checklist
 

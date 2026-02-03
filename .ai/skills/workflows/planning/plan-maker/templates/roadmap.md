@@ -95,10 +95,10 @@ Rules:
 | <risk> | <low/med/high> | <low/med/high> | <...> | <...> | <...> |
 
 ## Optional detailed documentation layout (convention)
-If you maintain a detailed workdocs bundle for the task, the repository convention is:
+If you maintain a detailed dev-docs bundle for the task, the repository convention is:
 
 ```
-modules/<module_id>/workdocs/active/<task_slug>/
+modules/<module_id>/dev-docs/active/<task_slug>/
   roadmap.md              # Macro-level planning (plan-maker)
   requirement.md          # Optional requirements alignment (plan-maker)
   00-overview.md
@@ -112,7 +112,7 @@ modules/<module_id>/workdocs/active/<task_slug>/
 For cross-module work, use:
 
 ```
-modules/integration/workdocs/active/<task_slug>/
+modules/integration/dev-docs/active/<task_slug>/
   roadmap.md
   requirement.md          # Optional
   00-overview.md

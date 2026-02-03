@@ -300,7 +300,7 @@ function cmdInit(repoRoot, dryRun) {
     path.join(packagingDir, 'jobs'),
     path.join(packagingDir, 'apps'),
     path.join(packagingDir, 'scripts'),
-    path.join(packagingDir, 'workdocs'),
+    path.join(packagingDir, 'handbook'),
     path.join(repoRoot, 'docs', 'packaging')
   ];
 

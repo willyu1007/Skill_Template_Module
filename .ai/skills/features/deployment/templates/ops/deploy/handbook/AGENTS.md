@@ -1,7 +1,7 @@
-# Deployment Workdocs
+# Deployment Handbook
 
 ## Purpose
-Store deployment planning notes and runbooks under `ops/deploy/workdocs/`.
+Store deployment planning notes and runbooks under `ops/deploy/handbook/`.
 
 ## What belongs here
 - Environment-specific decisions (namespaces, domains, rollout strategy)
@@ -13,4 +13,4 @@ Store deployment planning notes and runbooks under `ops/deploy/workdocs/`.
 
 ## Boundaries
 - No secrets (tokens/keys/credentials) in docs.
-- Execution entry points should live under `ops/deploy/scripts/` (not inside workdocs).
+- Execution entry points should live under `ops/deploy/scripts/` (not inside the handbook).

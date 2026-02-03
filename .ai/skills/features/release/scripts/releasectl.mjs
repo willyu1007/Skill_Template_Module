@@ -237,7 +237,7 @@ function cmdInit(repoRoot, dryRun, strategy) {
   const releaseDir = getReleaseDir(repoRoot);
   const actions = [];
 
-  const dirs = [releaseDir, path.join(releaseDir, 'workdocs')];
+  const dirs = [releaseDir, path.join(releaseDir, 'handbook')];
   for (const dir of dirs) {
     actions.push(dryRun ? { op: 'mkdir', path: dir, mode: 'dry-run' } : ensureDir(dir));
   }

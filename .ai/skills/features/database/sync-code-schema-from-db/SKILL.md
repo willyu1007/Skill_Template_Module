@@ -37,7 +37,7 @@ Use when:
 
 Avoid when:
 
-- you want to propose new persisted fields by changing repo schema (use DB workdocs + human-first DB change)
+- you want to propose new persisted fields by changing repo schema (use DB handbook + human-first DB change)
 - you want migrations to be the authoritative change mechanism (that is repo-prisma mode)
 
 See `./reference/database-ssot-mechanism.md` for the end-to-end pattern (including domain/repository boundaries).
@@ -46,7 +46,7 @@ See `./reference/database-ssot-mechanism.md` for the end-to-end pattern (includi
 
 - Target environment (`dev` / `staging` / `prod`) and how to connect (without exposing secrets)
 - Whether `prisma/schema.prisma` is already present
-- Whether the DB mirror assets are present (`db/schema/tables.json`, `db/workdocs/`, etc)
+- Whether the DB mirror assets are present (`db/schema/tables.json`, `db/handbook/`, etc)
 
 ## Outputs (evidence)
 
@@ -127,4 +127,4 @@ Record output in `03-context-refresh-log.md`.
 - MUST NOT treat `prisma/schema.prisma` as SSOT in database mode
 - MUST NOT hand-edit `db/schema/tables.json` (generated snapshot)
 - MUST NOT request or log credentials
-- SHOULD document desired-state proposals in `db/workdocs/` before asking humans to change DB
+- SHOULD document desired-state proposals in `db/handbook/` before asking humans to change DB

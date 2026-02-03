@@ -288,8 +288,8 @@ function cmdInit(repoRoot, dryRun) {
 
   const dirs = [
     obsDir,
-    path.join(obsDir, 'workdocs'),
-    path.join(obsDir, 'workdocs', 'alert-runbooks'),
+    path.join(obsDir, 'handbook'),
+    path.join(obsDir, 'handbook', 'alert-runbooks'),
     contextObsDir
   ];
 
@@ -331,7 +331,7 @@ node .ai/skills/features/observability/scripts/obsctl.mjs verify
 ## Directory Structure
 
 - \`observability/config.json\` - Configuration
-- \`observability/workdocs/alert-runbooks/\` - Alert runbooks
+  - \`observability/handbook/alert-runbooks/\` - Alert runbooks
 - \`docs/context/observability/\` - Metrics/logs/traces contracts
 
 ## Metric Types

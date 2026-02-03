@@ -61,7 +61,7 @@ When working with deployments, AI should:
 
 1. **Register** services via `deployctl add-service`
 2. **Plan** deployments via `deployctl plan`
-3. **Document** decisions in `workdocs/`
+3. **Document** decisions in `handbook/`
 4. **Never** execute deployments directly
 
 Humans execute and approve all deployments.

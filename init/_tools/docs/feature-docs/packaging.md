@@ -50,7 +50,7 @@ node .ai/skills/features/packaging/scripts/packctl.mjs verify --repo-root .
 
 ## Key outputs
 
-- `ops/packaging/**` (targets + scripts + workdocs)
+- `ops/packaging/**` (targets + scripts + handbook under `ops/packaging/handbook/`)
 - `docs/packaging/**` (registry + docs)
 
 ## Common commands

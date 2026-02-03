@@ -97,7 +97,7 @@ purpose: Module agent instructions for ${moduleId}
 
 - Read this file first when working inside this module.
 - Keep changes local to this module unless explicitly cross-cutting.
-- For multi-step/multi-file work: create/resume \`workdocs/active/<task_slug>/\` and keep workdocs synced (see \`workdocs/AGENTS.md\`).
+- For multi-step/multi-file work: create/resume \`dev-docs/active/<task_slug>/\` and keep dev docs synced (see \`dev-docs/AGENTS.md\`).
 - If you change this module's manifest, run:
   - node .ai/scripts/modules/modulectl.mjs registry-build
   - node .ai/scripts/modules/flowctl.mjs update-from-manifests
@@ -107,18 +107,18 @@ purpose: Module agent instructions for ${moduleId}
 
 - MANIFEST.yaml (SSOT)
 - interact/registry.json (SSOT)
-- workdocs/AGENTS.md (how to use workdocs)
-- workdocs/ (long-running module notes)
+- dev-docs/AGENTS.md (how to use dev docs)
+- dev-docs/ (long-running module notes)
 ${desc}`;
 }
 
-function templateWorkdocsAgentsMd(moduleId) {
+function templateDevDocsAgentsMd(moduleId) {
   return `---
-name: ${moduleId}-workdocs
-purpose: Workdocs operating rules for ${moduleId}
+name: ${moduleId}-dev-docs
+purpose: Dev-docs operating rules for ${moduleId}
 ---
 
-# ${moduleId} — workdocs
+# ${moduleId} — dev-docs
 
 ## Scope
 
@@ -135,7 +135,7 @@ Long-running task tracking, design decisions, and handoff documentation for this
   - \`01-plan.md\` (checklist + newly discovered TODOs)
   - \`03-implementation-notes.md\` (what changed + decisions + deviations)
   - \`04-verification.md\` (commands run + results + blockers)
-- Before context switch / handoff / wrap-up: run \`update-workdocs-for-handoff\` and ensure \`handoff.md\` is present and actionable.
+- Before context switch / handoff / wrap-up: run \`update-dev-docs-for-handoff\` and ensure \`handoff.md\` is present and actionable.
 
 ## Structure
 
@@ -147,9 +147,9 @@ Long-running task tracking, design decisions, and handoff documentation for this
 ## Workflow
 
 1. If the user asks for planning before coding, write \`active/<task_slug>/roadmap.md\` via \`plan-maker\` (planning-only).
-2. Create (or resume) the task bundle via \`create-workdocs-plan\`.
+2. Create (or resume) the task bundle via \`create-dev-docs-plan\`.
 3. Execute work while continuously syncing \`01-plan.md\`, \`03-implementation-notes.md\`, and \`04-verification.md\`.
-4. Before handoff: use \`update-workdocs-for-handoff\`.
+4. Before handoff: use \`update-dev-docs-for-handoff\`.
 5. On completion: move the folder to \`archive/\`.
 `;
 }
@@ -220,41 +220,41 @@ function cmdInit(repoRoot, opts) {
   const agentsPath = path.join(moduleDir, 'AGENTS.md');
   const abilityPath = path.join(moduleDir, 'ABILITY.md');
   const registryPath = path.join(moduleDir, 'interact', 'registry.json');
-  const workdocsReadmePath = path.join(moduleDir, 'workdocs', 'README.md');
-  const workdocsAgentsPath = path.join(moduleDir, 'workdocs', 'AGENTS.md');
+  const devDocsReadmePath = path.join(moduleDir, 'dev-docs', 'README.md');
+  const devDocsAgentsPath = path.join(moduleDir, 'dev-docs', 'AGENTS.md');
 
   const manifestObj = defaultManifest(moduleId, moduleType, description);
   const manifestYaml = dumpYaml(manifestObj);
 
-  const workdocsReadme = `# ${moduleId} — workdocs
+  const devDocsReadme = `# ${moduleId} — dev-docs
 
 This folder contains long-running notes for the module.
 
 Read first:
-- workdocs/AGENTS.md (how to use workdocs)
+- dev-docs/AGENTS.md (how to use dev docs)
 
 Recommended structure:
 
 - active/ — current tasks
 - archive/ — closed tasks
 
-For integration-related work, prefer writing in modules/integration/workdocs/.
+For integration-related work, prefer writing in modules/integration/dev-docs/.
 `;
 
   filesToWrite.push({ path: manifestPath, content: manifestYaml });
   filesToWrite.push({ path: agentsPath, content: templateAgentsMd(moduleId, moduleType, description) });
   filesToWrite.push({ path: abilityPath, content: templateAbilityMd(moduleId) });
   filesToWrite.push({ path: registryPath, content: JSON.stringify(defaultModuleContextRegistry(moduleId), null, 2) + '\n' });
-  filesToWrite.push({ path: workdocsReadmePath, content: workdocsReadme });
-  filesToWrite.push({ path: workdocsAgentsPath, content: templateWorkdocsAgentsMd(moduleId) });
+  filesToWrite.push({ path: devDocsReadmePath, content: devDocsReadme });
+  filesToWrite.push({ path: devDocsAgentsPath, content: templateDevDocsAgentsMd(moduleId) });
 
   const dirsToEnsure = [
     path.join(moduleDir, 'interact'),
     path.join(moduleDir, 'config'),
     path.join(moduleDir, 'src'),
     path.join(moduleDir, 'tests'),
-    path.join(moduleDir, 'workdocs', 'active'),
-    path.join(moduleDir, 'workdocs', 'archive')
+    path.join(moduleDir, 'dev-docs', 'active'),
+    path.join(moduleDir, 'dev-docs', 'archive')
   ];
 
   if (!apply) {

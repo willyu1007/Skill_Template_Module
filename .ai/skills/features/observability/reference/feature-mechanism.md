@@ -17,7 +17,7 @@ New files/directories (created if missing):
 - `observability/` (observability root)
   - `observability/AGENTS.md` (LLM guidance)
   - `observability/config.json` (observability configuration)
-  - `observability/workdocs/` (observability planning)
+  - `observability/handbook/` (observability planning)
 - `.ai/skills/features/observability/scripts/obsctl.mjs` (observability management)
 - `.ai/skills/features/observability/` (feature documentation)
 

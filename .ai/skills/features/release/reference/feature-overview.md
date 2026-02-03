@@ -36,7 +36,7 @@ When working with releases, AI should:
 1. **Check** status: `releasectl status`
 2. **Prepare** release: `releasectl prepare --version x.y.z`
 3. **Generate** changelog: `releasectl changelog`
-4. **Document** in `workdocs/`
+4. **Document** in `handbook/`
 5. **Request human** to approve and tag
 
 Never directly create git tags or modify version files.

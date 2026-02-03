@@ -18,7 +18,7 @@ New files/directories (created if missing):
   - `ops/deploy/k8s/` (Kubernetes-specific, if enabled)
   - `ops/deploy/environments/` (environment configs)
   - `ops/deploy/scripts/` (deployment scripts)
-- `ops/deploy/workdocs/` (deployment plans)
+- `ops/deploy/handbook/` (deployment plans)
 - `.ai/skills/features/deployment/scripts/deployctl.mjs` (deployment management)
 - `.ai/skills/features/deployment/scripts/rollback.mjs` (rollback script)
 - `.ai/skills/features/deployment/` (feature documentation)

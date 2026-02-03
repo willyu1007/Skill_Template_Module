@@ -20,8 +20,8 @@ This repository is a starter template for building **LLM-first**, **module-orien
 
 ```
 modules/                      # Module instances + integration workspace
-  integration/                # Cross-module scenarios + workdocs
-  <module_id>/                # Module-local SSOT + workdocs
+  integration/                # Cross-module scenarios + dev-docs
+  <module_id>/                # Module-local SSOT + dev-docs
 
 .system/modular/              # Modular SSOT (flow graph, bindings) + derived graphs/indexes
 

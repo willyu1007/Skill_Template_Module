@@ -16,7 +16,7 @@ When enabled, this feature materializes:
 - `ops/packaging/**`
   - `ops/packaging/templates/Dockerfile.*`
   - `ops/packaging/scripts/docker-build.mjs`
-  - `ops/packaging/workdocs/**`
+  - `ops/packaging/handbook/**`
 - `docs/packaging/registry.json` (packaging targets registry)
 
 Controller scripts (provided by the template SSOT):
@@ -41,7 +41,7 @@ node .ai/skills/features/packaging/scripts/packctl.mjs verify
 
 - Builds are **human-executed** (CI can be added later).
 - Treat image naming/versioning/provenance as first-class.
-- Record packaging plans and build logs in `ops/packaging/workdocs/`.
+- Record packaging plans and build logs in `ops/packaging/handbook/`.
 
 ## Verification
 

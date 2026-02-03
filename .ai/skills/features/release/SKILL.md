@@ -38,7 +38,7 @@ node .ai/skills/features/release/scripts/releasectl.mjs verify
 ## Operating rules
 
 - Releases are **human-executed** unless CI automation is explicitly configured.
-- Keep release decisions and checklists under `release/workdocs/`.
+- Keep release decisions and checklists under `release/handbook/`.
 
 ## Verification
 

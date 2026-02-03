@@ -1,7 +1,7 @@
-# Database Workdocs
+# Database Handbook
 
 ## Purpose
-Store database design notes and migration plans under `db/workdocs/`.
+Store database design notes and migration plans under `db/handbook/`.
 
 ## What belongs here
 - Schema change proposals (desired state)

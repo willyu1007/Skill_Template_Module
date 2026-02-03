@@ -12,7 +12,7 @@ It holds:
 - `scenarios.yaml` (SSOT; manual but validated)
 - `compiled/` (derived scenario plans)
 - `runs/` (derived run reports)
-- `workdocs/` (handoff/triage notes)
+- `dev-docs/` (handoff/triage notes)
 
 ## Rules
 

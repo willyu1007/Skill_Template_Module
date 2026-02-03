@@ -1760,7 +1760,7 @@ function renderDbSsotAgentsBlock(mode) {
 ` +
     commonDisabled.join('\n') +
     `
-- DB sync skills are disabled. Document DB changes in workdocs and ask a human to provide a schema snapshot.
+- DB sync skills are disabled. Document DB changes in dev-docs and ask a human to provide a schema snapshot.
 `
   );
 }
@@ -2805,7 +2805,7 @@ function planScaffold(repoRoot, blueprint, apply) {
       path.join(repoRoot, 'ops', 'README.md'),
       `# Ops
 
-This folder holds DevOps-oriented configuration and workdocs.
+This folder holds DevOps-oriented configuration and handbook material.
 
 High-level split (created only when enabled):
 - ops/packaging/  Build artifacts (often container images for services)
@@ -2814,7 +2814,7 @@ High-level split (created only when enabled):
 Guidelines:
 - Keep definitions small and structured.
 - Prefer a small number of scripts as execution entry points.
-- Record decisions and history under ops/*/workdocs/.
+- Record decisions and history under ops/*/handbook/.
 `,
       apply
     ));
@@ -2826,7 +2826,7 @@ Guidelines:
       results.push(ensureDir(path.join(repoRoot, 'ops', 'packaging', 'jobs'), apply));
       results.push(ensureDir(path.join(repoRoot, 'ops', 'packaging', 'apps'), apply));
       results.push(ensureDir(path.join(repoRoot, 'ops', 'packaging', 'scripts'), apply));
-      results.push(ensureDir(path.join(repoRoot, 'ops', 'packaging', 'workdocs'), apply));
+      results.push(ensureDir(path.join(repoRoot, 'ops', 'packaging', 'handbook'), apply));
       results.push(writeFileIfMissing(
         path.join(repoRoot, 'ops', 'packaging', 'README.md'),
         `# Packaging
@@ -2838,7 +2838,7 @@ Repository layout:
 - ops/packaging/jobs/       Packaging definitions per workload/job
 - ops/packaging/apps/       Packaging definitions per client/distribution app
 - ops/packaging/scripts/    Shared build scripts (preferred entry points)
-- ops/packaging/workdocs/   Plans, checklists, and build records
+- ops/packaging/handbook/   Plans, checklists, and build records
 
 Guidelines:
 - Keep definitions small and structured.
@@ -2848,8 +2848,8 @@ Guidelines:
         apply
       ));
       results.push(writeFileIfMissing(
-        path.join(repoRoot, 'ops', 'packaging', 'workdocs', 'README.md'),
-        `# Packaging workdocs
+        path.join(repoRoot, 'ops', 'packaging', 'handbook', 'README.md'),
+        `# Packaging handbook
 
 Use this folder for:
 - Packaging plans (inputs, outputs, artifact naming)
@@ -2882,7 +2882,7 @@ process.exit(0);
       results.push(ensureDir(path.join(repoRoot, 'ops', 'deploy', 'workloads'), apply));
       results.push(ensureDir(path.join(repoRoot, 'ops', 'deploy', 'clients'), apply));
       results.push(ensureDir(path.join(repoRoot, 'ops', 'deploy', 'scripts'), apply));
-      results.push(ensureDir(path.join(repoRoot, 'ops', 'deploy', 'workdocs'), apply));
+      results.push(ensureDir(path.join(repoRoot, 'ops', 'deploy', 'handbook'), apply));
       results.push(writeFileIfMissing(
         path.join(repoRoot, 'ops', 'deploy', 'README.md'),
         `# Deploy
@@ -2894,7 +2894,7 @@ Repository layout:
 - ops/deploy/workloads/      Deployment descriptors for jobs/event-driven workloads
 - ops/deploy/clients/        Deployment descriptors for client apps (web/mobile/desktop)
 - ops/deploy/scripts/        Shared deploy/rollback scripts (preferred entry points)
-- ops/deploy/workdocs/       Runbooks and deployment history
+- ops/deploy/handbook/       Runbooks and deployment history
 
 Guidelines:
 - Capture environment-specific parameters explicitly.
@@ -2903,8 +2903,8 @@ Guidelines:
         apply
       ));
       results.push(writeFileIfMissing(
-        path.join(repoRoot, 'ops', 'deploy', 'workdocs', 'README.md'),
-        `# Deploy workdocs
+        path.join(repoRoot, 'ops', 'deploy', 'handbook', 'README.md'),
+        `# Deploy handbook
 
 Use this folder for:
 - Environment definitions (dev/stage/prod)

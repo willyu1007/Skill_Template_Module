@@ -4,7 +4,7 @@
 
 - [ ] All tests passing
 - [ ] Documentation updated
-- [ ] CHANGELOG updated
+- [ ] release/CHANGELOG.md updated
 - [ ] Version bumped in package files
 - [ ] Dependencies updated
 - [ ] Security audit passed
@@ -23,4 +23,3 @@
 - [ ] Update project board
 - [ ] Close milestone
 - [ ] Notify stakeholders
-

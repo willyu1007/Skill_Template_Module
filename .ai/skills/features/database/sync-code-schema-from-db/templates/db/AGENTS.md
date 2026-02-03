@@ -20,7 +20,7 @@ Typical end-to-end flow:
 ## Directory structure
 
 - `db/schema/tables.json` - **current-state** mirror snapshot (generated)
-- `db/workdocs/` - desired-state proposals, risk notes, rollout and verification plans
+- `db/handbook/` - desired-state proposals, risk notes, rollout and verification plans
 - `db/migrations/` - optional SQL files for human execution/tracking (not authoritative)
 - `db/config/db-environments.json` - environment metadata (NO secrets)
 - `db/samples/` - sample/seed artifacts (optional)
@@ -28,7 +28,7 @@ Typical end-to-end flow:
 ## Allowed AI actions
 
 - Read and reference the mirror (`db/schema/tables.json`).
-- Draft desired-state changes in `db/workdocs/`.
+- Draft desired-state changes in `db/handbook/`.
 - Generate placeholder migration SQL files for humans (optional).
 - Keep `docs/context/db/schema.json` updated by running `dbssotctl` (best effort).
 

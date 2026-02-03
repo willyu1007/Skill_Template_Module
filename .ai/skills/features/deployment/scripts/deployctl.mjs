@@ -275,8 +275,8 @@ function cmdInit(repoRoot, dryRun, model, k8sTool) {
     path.join(deployDir, 'workloads'),
     path.join(deployDir, 'clients'),
     path.join(deployDir, 'scripts'),
-    path.join(deployDir, 'workdocs'),
-    path.join(deployDir, 'workdocs', 'runbooks'),
+    path.join(deployDir, 'handbook'),
+    path.join(deployDir, 'handbook', 'runbooks'),
     path.join(deployDir, 'k8s'),
     path.join(deployDir, 'k8s', 'helm'),
     path.join(deployDir, 'k8s', 'kustomize'),
@@ -484,7 +484,7 @@ function cmdPlan(repoRoot, serviceId, envId, tagOverride) {
 
     console.log('# Optional: verify health (adjust URL)\nnode ops/deploy/scripts/healthcheck.mjs --url https://example.com/health\n');
   } else {
-    console.log(`# Model "${config.model}"\n# See: ops/deploy/workdocs/runbooks/rollback-procedure.md\n# Add your deploy procedure here.\n`);
+    console.log(`# Model "${config.model}"\n# See: ops/deploy/handbook/runbooks/rollback-procedure.md\n# Add your deploy procedure here.\n`);
   }
 
   config.history.push({

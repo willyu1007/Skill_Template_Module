@@ -17,7 +17,7 @@ New files/directories (created if missing):
   - `ops/packaging/apps/` (app Dockerfiles)
   - `ops/packaging/templates/` (Dockerfile templates)
   - `ops/packaging/scripts/` (build scripts)
-  - `ops/packaging/workdocs/` (packaging plans)
+  - `ops/packaging/handbook/` (packaging plans)
 - `docs/packaging/registry.json` (artifact registry)
 - `.ai/skills/features/packaging/scripts/packctl.mjs` (packaging management)
 - `.ai/skills/features/packaging/` (feature documentation)

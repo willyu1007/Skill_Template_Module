@@ -1,7 +1,7 @@
 # Alert Runbooks
 
 ## Purpose
-Store alert-specific runbooks under `observability/workdocs/alert-runbooks/`.
+Store alert-specific runbooks under `observability/handbook/alert-runbooks/`.
 
 ## Runbook template (MUST include)
 - Alert name (exact identifier used by your alerting system)

@@ -21,7 +21,7 @@ When enabled, this feature materializes:
 - CI metadata directory:
   - `ci/AGENTS.md`
   - `ci/config.json`
-  - `ci/workdocs/`
+  - `ci/handbook/`
 - Provider workflow file (copy-if-missing):
   - GitHub Actions: `.github/workflows/ci.yml`
   - GitLab CI: `.gitlab-ci.yml`

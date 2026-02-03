@@ -119,11 +119,11 @@ kubectl rollout history deployment/${service} -n ${env}
   } else {
     console.log(`
 # Refer to your ${config.model} rollback procedure
-# Check ops/deploy/workdocs/runbooks/rollback-procedure.md
+# Check ops/deploy/handbook/runbooks/rollback-procedure.md
 `);
   }
 
-  console.log(`\nSee: ops/deploy/workdocs/runbooks/rollback-procedure.md`);
+  console.log(`\nSee: ops/deploy/handbook/runbooks/rollback-procedure.md`);
   return 0;
 }
 

@@ -24,5 +24,5 @@ This feature provides a **repo-local mirror** of the database schema so an LLM c
 ## AI/LLM guidelines
 
 - Do NOT hand-edit `db/schema/tables.json`.
-- Draft desired changes as workdocs under `db/workdocs/`.
+- Draft desired changes under `db/handbook/`.
 - Humans execute DDL and migrations.

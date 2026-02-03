@@ -29,7 +29,7 @@ Example API module demonstrating the module-first template structure.
 |------|---------|
 | `MANIFEST.yaml` | Module metadata (SSOT) |
 | `interact/registry.json` | Context artifacts (SSOT) |
-| `workdocs/` | Task tracking |
+| `dev-docs/` | Task tracking |
 | `src/` | Source code |
 | `tests/` | Unit/integration tests |
 | `config/` | Module configuration |
@@ -41,7 +41,7 @@ Example API module demonstrating the module-first template structure.
   - `node .ai/scripts/modules/modulectl.mjs registry-build`
   - `node .ai/scripts/modules/flowctl.mjs update-from-manifests`
   - `node .ai/scripts/modules/flowctl.mjs lint`
-- Use workdocs for multi-step tasks (see `workdocs/README.md`)
+- Use dev-docs for multi-step tasks (see `dev-docs/AGENTS.md`)
 
 ## Description
 

@@ -45,7 +45,7 @@ When working with packaging, AI should:
 
 1. **Register** new targets via `packctl`
 2. **Customize** Dockerfiles based on application needs
-3. **Document** decisions in `workdocs/`
+3. **Document** decisions in `handbook/`
 4. **Never** execute builds directly (human responsibility)
 
 ## Quick Reference

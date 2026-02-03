@@ -15,7 +15,7 @@ New files/directories (created if missing):
 - `release/config.json` (release configuration)
 - `release/changelog-template.md` (changelog template)
 - `release/CHANGELOG.md` (project changelog)
-- `release/workdocs/` (release planning)
+- `release/handbook/` (release planning)
 - `.ai/skills/features/release/scripts/releasectl.mjs` (release management)
 - `release/.releaserc.json.template` (semantic-release config template)
 - `.ai/skills/features/release/` (feature documentation)

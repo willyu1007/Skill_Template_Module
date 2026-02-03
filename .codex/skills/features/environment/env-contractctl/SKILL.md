@@ -1,6 +1,6 @@
 ---
 name: env-contractctl
-description: Maintain env contract SSOT (env/contract.yaml), validate env/values + env/secrets refs coverage, and generate .env.example + docs/context/env/*. Use when adding/renaming/deprecating config keys.
+description: Maintain env contract SSOT (env/contract.yaml), validate env/values + env/secrets refs coverage, and generate env/.env.example + docs/context/env/*. Use when adding/renaming/deprecating config keys.
 category: features/environment
 ssot_path: .ai/skills/features/environment/env-contractctl
 ---

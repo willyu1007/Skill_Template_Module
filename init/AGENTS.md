@@ -7,7 +7,7 @@ Key principles:
 - Do not skip stages.
 - Do not advance stages without explicit user approval.
 - Humans MUST NOT hand-edit the init state file (`init/_work/.init-state.json`, legacy: `init/.init-state.json`) to change stages; use the pipeline commands.
-- Do not create workdocs task bundles during initialization; use workdocs after init completes.
+- Do not create dev-docs task bundles during initialization; use dev-docs after init completes.
 
 ---
 
@@ -201,7 +201,7 @@ The root `AGENTS.md` contains template repo structure that MUST be kept:
 | Routing table | YES | Task dispatch |
 | Global Rules | YES | Cross-cutting constraints |
 | `.ai/` reference | YES | SSOT location |
-| `workdocs/` reference | YES | Task documentation system |
+| `dev-docs/` reference | YES | Task documentation system |
 
 ### What to add
 

@@ -35,17 +35,17 @@ Read `init/AGENTS.md` for project initialization instructions.
 
 ## Coding Workflow (MUST)
 
-- Before modifying code/config for a non-trivial task, apply the Decision Gate in `.ai/skills/module/workdocs/AGENTS.md` and create/update the workdocs task bundle as required.
+ - Before modifying code/config for a non-trivial task, apply the Decision Gate in `.ai/skills/module/dev-docs/AGENTS.md` and create/update the dev-docs task bundle as required.
 - If the user asks for planning artifacts (plan/roadmap/milestones) before coding:
   - If the task meets the Decision Gate, use `.ai/skills/workflows/planning/plan-maker` first, then ask for confirmation to proceed with implementation.
-  - If the task is trivial (< 30 min), provide an in-chat plan (do NOT create workdocs).
-  - If the task needs context preservation (multi-session, handoff) or qualifies as complex, follow `.ai/skills/module/workdocs/AGENTS.md`.
+  - If the task is trivial (< 30 min), provide an in-chat plan (do NOT create a dev-docs bundle).
+  - If the task needs context preservation (multi-session, handoff) or qualifies as complex, follow `.ai/skills/module/dev-docs/AGENTS.md`.
 
 ## Rules
 - For LLM engineering tasks, open `.ai/llm-config/AGENTS.md`
 - Treat `.system/modular/*` SSOT files as **manual but validated**.
 - Treat derived artifacts as **overwritable**.
-- Keep module documentation local: `modules/<module_id>/workdocs/`.
+- Keep module documentation local: `modules/<module_id>/dev-docs/`.
 - Never edit `.codex/` or `.claude/` directly; they are generated.
 
 ## Workspace Safety (MUST)

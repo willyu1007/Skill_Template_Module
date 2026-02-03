@@ -791,7 +791,7 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
   writeJson(summaryPath, summary);
 
   // Write triage doc stub
-  const triagePath = path.join(repoRoot, 'modules', 'integration', 'workdocs', `run_${runId}.md`);
+  const triagePath = path.join(repoRoot, 'modules', 'integration', 'dev-docs', `run_${runId}.md`);
   ensureDir(path.dirname(triagePath));
   const failures = summary.scenarios.flatMap(s => s.steps.filter(st => st.status === 'FAIL').map(st => ({ scenario: s.id, ...st })));
   const triageMd = [
@@ -805,7 +805,7 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
     failures.length === 0 ? `- None` : failures.map(f => `- **${f.scenario}.${f.id}** - ${f.reason || 'unknown'} (endpoint: ${f.endpoint_id || 'n/a'})`).join('\n'),
     ``,
     `## Next actions`,
-    `- If failures are deterministic, create module-local workdocs under the owning module(s) and link them here.`,
+    `- If failures are deterministic, create module-local dev-docs under the owning module(s) and link them here.`,
     `- If failures are environment/config related, update .system/modular/runtime_endpoints.yaml or relevant module config.`,
     ``
   ].join('\n');
@@ -821,7 +821,7 @@ async function runPlans(repoRoot, scenarioIdOpt, execute, outDirOpt) {
 function cmdInit(repoRoot) {
   const dir = path.join(repoRoot, 'modules', 'integration');
   ensureDir(dir);
-  ensureDir(path.join(dir, 'workdocs'));
+  ensureDir(path.join(dir, 'dev-docs'));
   ensureDir(path.join(dir, 'compiled'));
   ensureDir(path.join(dir, 'runs'));
 

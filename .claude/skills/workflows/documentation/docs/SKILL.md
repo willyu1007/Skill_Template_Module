@@ -1,6 +1,6 @@
 ---
 name: docs
-description: Router skill for documentation work: author developer docs, create a workdocs task bundle, or update workdocs for handoff/archival with progressive disclosure.
+description: Router skill for documentation work: author developer docs, create a dev-docs task bundle, or update dev-docs for handoff/archival with progressive disclosure.
 category: workflows/documentation
 ssot_path: .ai/skills/workflows/documentation/docs
 ---

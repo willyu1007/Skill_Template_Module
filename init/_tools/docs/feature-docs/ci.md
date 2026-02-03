@@ -36,7 +36,7 @@ node .ai/skills/features/ci/scripts/cictl.mjs init --provider <github|gitlab> --
 2) Materializes (copy-if-missing):
 - GitHub Actions: `.github/workflows/ci.yml`
 - GitLab CI: `.gitlab-ci.yml`
-- CI metadata: `ci/**` (`ci/config.json`, `ci/workdocs/`, etc.)
+- CI metadata: `ci/**` (`ci/config.json`, `ci/handbook/`, etc.)
 
 3) Optional verification (when Stage C is run with `--verify-features`):
 

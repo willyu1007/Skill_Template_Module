@@ -14,13 +14,13 @@
 - `k8s/` - Kubernetes-specific configs (if enabled)
 - `environments/` - Environment-specific configs
 - `scripts/` - Deployment helper scripts
-- `workdocs/` - Deployment plans and runbooks
+- `handbook/` - Deployment plans and runbooks
 
 ## AI Workflow
 
 1. **Register** services: `node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id <id>`
 2. **Plan** deployment: `node .ai/skills/features/deployment/scripts/deployctl.mjs plan --service <id> --env <env>`
-3. **Document** in `workdocs/`
+3. **Document** in `handbook/`
 4. **Request human** to execute deployment
 
 ## Environment Rules

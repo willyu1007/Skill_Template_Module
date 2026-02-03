@@ -13,13 +13,13 @@
 - `apps/` - Application Dockerfiles (CLI tools, etc.)
 - `templates/` - Dockerfile templates by language
 - `scripts/` - Build helper scripts
-- `workdocs/` - Packaging plans and notes
+- `handbook/` - Packaging plans and notes
 
 ## AI Workflow
 
 1. **Register** targets: `node .ai/skills/features/packaging/scripts/packctl.mjs add-service --id <id> --module <path>`
 2. **Customize** Dockerfile if needed (copy from template)
-3. **Document** decisions in `workdocs/`
+3. **Document** decisions in `handbook/`
 4. **Request human** to build and push
 
 ## Dockerfile Templates

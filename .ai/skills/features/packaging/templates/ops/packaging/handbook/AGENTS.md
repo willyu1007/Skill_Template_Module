@@ -1,7 +1,7 @@
-# Packaging Workdocs
+# Packaging Handbook
 
 ## Purpose
-Store packaging decisions and plans under `ops/packaging/workdocs/` (design notes, tradeoffs, checklists).
+Store packaging decisions and plans under `ops/packaging/handbook/` (design notes, tradeoffs, checklists).
 
 ## What belongs here
 - Base image choices and rationale

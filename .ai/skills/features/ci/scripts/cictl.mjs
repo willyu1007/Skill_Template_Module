@@ -277,7 +277,7 @@ function cmdInit(repoRoot, provider, dryRun) {
   }
 
   // Create directories
-  const dirs = [ciDir, path.join(ciDir, 'workdocs')];
+  const dirs = [ciDir, path.join(ciDir, 'handbook')];
   for (const dir of dirs) {
     if (dryRun) {
       actions.push({ op: 'mkdir', path: dir, mode: 'dry-run' });

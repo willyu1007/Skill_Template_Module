@@ -17,7 +17,7 @@ New files/directories (created if missing):
   - `db/migrations/` (optional SQL files for humans)
   - `db/config/` (environment metadata; no secrets)
   - `db/samples/` (sample/seed data)
-  - `db/workdocs/` (DB change proposals, rollout plans)
+  - `db/handbook/` (DB change proposals, rollout plans)
 - `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (mirror controller)
 - `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs` (optional migration tracking)
 
@@ -81,7 +81,7 @@ node .ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs m
 When working with the feature, AI SHOULD:
 
 1. Read `db/schema/tables.json` for **current state**.
-2. Write proposals in `db/workdocs/` (desired state, risk notes, rollout plan).
+2. Write proposals in `db/handbook/` (desired state, risk notes, rollout plan).
 3. Ask humans to apply DDL/migrations.
 4. After DB changes: re-run `prisma db pull`, `dbctl import-prisma`, and `dbssotctl sync-to-context`.
 

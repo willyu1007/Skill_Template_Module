@@ -19,7 +19,7 @@ When enabled, this feature materializes:
   - `ops/deploy/environments/*.yaml`
   - `ops/deploy/k8s/manifests/deployment.template.yaml`
   - `ops/deploy/scripts/healthcheck.mjs`
-  - `ops/deploy/workdocs/**` (runbooks, rollback procedure)
+  - `ops/deploy/handbook/**` (runbooks, rollback procedure)
 
 Controller scripts (provided by the template SSOT):
 
@@ -43,7 +43,7 @@ node .ai/skills/features/deployment/scripts/deployctl.mjs verify
 ## Operating rules
 
 - Deployment and rollback are **human-executed** operations.
-- Record plans and run results under `ops/deploy/workdocs/`.
+- Record plans and run results under `ops/deploy/handbook/`.
 - Never store secrets in repo; use environment secret managers.
 
 ## Verification
