@@ -6,12 +6,12 @@ description: GitLab CI skill: integrate automated tests (web/api/mobile/perf) wi
 # GitLab CI Integration (workflow)
 
 ## Operating mode (token-efficient)
-- Treat this skill as a **router + governor**.
+- Treat `gitlab-ci` as a **router + governor**.
 - Do **not** load multiple procedures. Select exactly **one** procedure below and follow the chosen procedure end-to-end.
 
 ## Routing (pick one procedure)
 
-| Task | Open this procedure | Optional templates |
+| Task | Open the procedure | Optional templates |
 |---|---|---|
 | Enable/adjust test jobs (web/api/mobile/perf) | `reference/procedures/enable-test-jobs.md` | `reference/templates/gitlab-ci/` |
 | Standardize artifacts + reporting | `reference/procedures/artifacts-and-reporting.md` | — |
@@ -20,18 +20,23 @@ description: GitLab CI skill: integrate automated tests (web/api/mobile/perf) wi
 ## Shared non-negotiables (apply to all procedures)
 
 1) **Test command contract**
-   - Each suite must have a single deterministic command runnable in CI:
-     - API (Newman): `pnpm test:api`
-     - Web (Playwright): `pnpm test:e2e:playwright`
-     - Web (Cypress): `pnpm test:e2e:cypress`
-     - Perf (k6): `pnpm test:perf:k6` or direct runner (`k6 run ...` / `docker run grafana/k6 ...`)
-     - Mobile: `pnpm test:mobile:<detox|maestro|appium>`
+   - Each suite must have a single deterministic command runnable in CI.
+   - Template repo baseline commands:
+     - `node .ai/scripts/lint-skills.mjs --strict`
+     - `node .ai/scripts/lint-docs.mjs`
+     - `node .ai/tests/run.mjs --suite <suite>`
+   - For project test suites, define equivalent deterministic commands (examples):
+     - API (Newman): `pnpm test:api` / `npm run test:api`
+     - Web (Playwright): `pnpm test:e2e:playwright` / `npm run test:e2e:playwright`
+     - Web (Cypress): `pnpm test:e2e:cypress` / `npm run test:e2e:cypress`
+     - Perf (k6): `k6 run ...` (or containerized runner)
+     - Mobile: `pnpm test:mobile:<detox|maestro|appium>` / custom runner script
    - Commands must:
      - exit non-zero on test failures
-     - write artifacts to `artifacts/<suite>/`
+     - write evidence/artifacts to a predictable directory (e.g. `.ai/.tmp/test-evidence/` for the template repo, or `artifacts/<suite>/` for app suites)
 
 2) **Artifacts are mandatory**
-   - Always upload artifacts even on failure: `artifacts/` or `artifacts/<suite>/`
+   - Always upload artifacts/evidence even on failure: `artifacts/` or `.ai/.tmp/test-evidence/`
    - Keep artifacts size-bounded (videos/traces on failure only when possible).
 
 3) **Secrets management**

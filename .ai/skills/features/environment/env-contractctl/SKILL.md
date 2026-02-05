@@ -144,6 +144,18 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py generate --root . --out <EVIDENCE_DIR>/04-context-refresh.md
 ```
 
+### Phase C.1 — Module slices (module-first repos; recommended)
+
+If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` env declarations (`env.owns` / `env.requires`), refresh module env slices after contract changes:
+
+```bash
+node .ai/scripts/modules/env-contractctl-module.mjs verify --strict
+node .ai/scripts/modules/env-contractctl-module.mjs conflicts
+node .ai/scripts/modules/env-contractctl-module.mjs sync-slices
+```
+
+This keeps per-module LLM context in sync and catches ownership conflicts early (no SSOT changes).
+
 ### Phase D — Handoff to runtime skills
 
 11. If the user also needs local/cloud alignment:

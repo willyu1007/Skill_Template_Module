@@ -7,7 +7,7 @@
 ```mermaid
 flowchart TD
     subgraph pre [Pre-init]
-        Start[npm run init:start] --> State[State + templates created]
+        Start[node init-pipeline start] --> State[State + templates created]
         State --> Lang[Output language chosen]
         Lang --> Entry[Entry docs created]
         Entry --> StartHere[init/START-HERE.md]
@@ -87,29 +87,30 @@ It is designed for **robustness and auditability**:
 
 ## Quick start (run from repo root)
 
-### Command shortcuts (npm scripts)
+### Command shortcuts (Node CLI)
 
-The repo provides npm script aliases for common init commands:
+Canonical CLI pattern:
+
+- `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs <command> --repo-root .`
 
 | Command | Shortcut |
 |---------|----------|
-| start | `npm run init:start` |
-| status | `npm run init:status` |
-| advance | `npm run init:advance` |
-| check-docs | `npm run init:check-docs` |
-| validate | `npm run init:validate` |
-| apply | `npm run init:apply` |
-| approve Stage A | `npm run init:approve-a` |
-| approve Stage B | `npm run init:approve-b` |
-| approve Stage C | `npm run init:approve-c` |
-| review-skill-retention | `npm run init:review-retention` |
-| update-agents | `npm run init:update-agents` |
-| cleanup-init | `npm run init:cleanup` |
+| start | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .` |
+| status | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .` |
+| advance | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .` |
+| check-docs | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --strict` |
+| validate | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .` |
+| apply | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --repo-root . --providers both` |
+| approve Stage A | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .` |
+| approve Stage B | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .` |
+| approve Stage C | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .` |
+| review-skill-retention | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .` |
+| update-agents | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply` |
+| cleanup-init | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand --archive` |
 
 ### 0) Initialize state
 ```bash
-npm run init:start
-# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs start --repo-root .
 ```
 
 The command creates:
@@ -127,12 +128,10 @@ After the output language is chosen and recorded in `init/_work/.init-state.json
 
 ```bash
 # Current progress (prints guidance when not started yet)
-npm run init:status
-# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs status --repo-root .
 
 # Next checkpoint actions (requires init state; exits non-zero if `start` was not run)
-npm run init:advance
-# or: node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs advance --repo-root .
 ```
 
 ### Preflight (recommended): terminology alignment

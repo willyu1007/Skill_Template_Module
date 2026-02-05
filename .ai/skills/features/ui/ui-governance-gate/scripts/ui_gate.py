@@ -1141,6 +1141,24 @@ def approval_is_expired(approval: Dict[str, object]) -> bool:
     return str(exp) < utc_now_iso()  # ISO Zulu sorts lexicographically
 
 
+def has_valid_approval(
+    approvals: List[Dict[str, object]], approval_type: str, fingerprint: str
+) -> bool:
+    """Returns True if any non-expired approval matches the current fingerprint.
+
+    This avoids "latest approval" ambiguity when multiple approvals share the same
+    second-level timestamp (common in CI tests / fast local flows).
+    """
+    for a in approvals:
+        if str(a.get("approval_type")) != approval_type:
+            continue
+        if approval_is_expired(a):
+            continue
+        if str(a.get("fingerprint") or "") == fingerprint:
+            return True
+    return False
+
+
 def list_ui_ssot_files(repo_root: Path) -> List[Path]:
     """SSOT files that require spec approval when changed."""
     files: List[Path] = []
@@ -1836,9 +1854,9 @@ def main() -> int:
         # Spec approval
         if ap_cfg.get("enforce_spec_approval", True):
             cur_fp, cur_map = compute_spec_fingerprint(repo_root)
-            latest = latest_approval(approvals, "spec_change")
-            prev_fp = str(latest.get("fingerprint")) if latest else None
-            if prev_fp and prev_fp != cur_fp:
+            if not has_valid_approval(approvals, "spec_change", cur_fp):
+                latest = latest_approval(approvals, "spec_change")
+                prev_fp = str(latest.get("fingerprint")) if latest else None
                 # build change list (best-effort)
                 # if baseline approval stored per-file list only, we still provide file list (not per-file hash)
                 old_map: Dict[str, str] = {}
@@ -1882,11 +1900,11 @@ def main() -> int:
         # Exception approval
         if ap_cfg.get("enforce_exception_approval", True):
             cur_exc = compute_exception_fingerprint(cfg)
-            latest_exc = latest_approval(approvals, "exception")
-            prev_exc = str(latest_exc.get("fingerprint")) if latest_exc else None
-            if latest_exc and approval_is_expired(latest_exc):
-                prev_exc = None
-            if prev_exc and prev_exc != cur_exc:
+            if not has_valid_approval(approvals, "exception", cur_exc):
+                latest_exc = latest_approval(approvals, "exception")
+                prev_exc = str(latest_exc.get("fingerprint")) if latest_exc else None
+                if latest_exc and approval_is_expired(latest_exc):
+                    prev_exc = None
                 notes = "Governance policy changed (may relax enforcement). Approve exception to proceed (expiry recommended)."
                 req = build_approval_request(
                     approval_type="exception",

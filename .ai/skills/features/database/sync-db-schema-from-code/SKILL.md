@@ -145,6 +145,16 @@ Record evidence in `04-post-verify.md`.
 
 (If context-awareness is enabled, the command also runs `contextctl touch` best-effort.)
 
+### Phase E — Module slices (module-first repos; recommended)
+
+If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` DB declarations (`db.owns` / `db.uses`), refresh module DB slices after the DB contract is updated:
+
+```bash
+node .ai/scripts/modules/dbssotctl-module.mjs verify --strict
+node .ai/scripts/modules/dbssotctl-module.mjs conflicts
+node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
+```
+
 ## Verification
 
 - [ ] SSOT mode is `repo-prisma`
@@ -154,6 +164,7 @@ Record evidence in `04-post-verify.md`.
 - [ ] Post-verify evidence captured
 - [ ] Domain/repository mapping updated (no Prisma types in business layer)
 - [ ] `docs/context/db/schema.json` refreshed via `dbssotctl`
+- [ ] Module DB slices refreshed (module-first repos): `dbssotctl-module sync-slices`
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite database`
 
 ## Boundaries

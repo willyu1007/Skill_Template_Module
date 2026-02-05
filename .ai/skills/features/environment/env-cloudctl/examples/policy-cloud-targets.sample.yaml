@@ -1,4 +1,11 @@
-# NOTE: env/inventory/* is removed. This is a policy.env.cloud.targets example.
+# policy.env.cloud.targets example (envfile provider with local transport)
+#
+# This file demonstrates how to configure cloud injection targets in
+# docs/project/policy.yaml. The old env/inventory/* format has been removed
+# to avoid dual SSOT.
+#
+# For more examples, see: ../references/inventory-format.md
+
 version: 1
 policy:
   env:

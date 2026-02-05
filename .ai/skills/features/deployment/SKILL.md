@@ -46,6 +46,10 @@ node .ai/skills/features/deployment/scripts/deployctl.mjs verify
 - Record plans and run results under `ops/deploy/handbook/`.
 - Never store secrets in repo; use environment secret managers.
 
+## Module-first integration (recommended)
+
+If your repo has multiple deployable modules under `modules/`, prefer aligning deployment target ids with module ids (or service ids) and keep module-specific notes in the module dev-docs, while operational runbooks live in `ops/deploy/handbook/`.
+
 ## Verification
 
 ```bash

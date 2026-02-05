@@ -65,6 +65,9 @@ Avoid when:
 - MUST require `--approve-remote` before any SSH/SCP remote command.
 - MUST treat **Identity/IAM changes as out of scope for automatic apply**.
   - You may generate a runbook or policy diff, but do not apply permissions changes automatically.
+- Template limitation (v1):
+  - `rotate` and `decommission` are only implemented for `provider=mockcloud` in this template.
+  - For `provider=envfile` (local/ssh), use `plan/apply/verify/drift`. Implement a provider adapter if you need rotation/decommission semantics for real infrastructure.
 
 ## Inputs
 

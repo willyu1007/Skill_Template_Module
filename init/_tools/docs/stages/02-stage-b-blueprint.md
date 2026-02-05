@@ -10,11 +10,11 @@ Produce and validate a project blueprint at `init/_work/project-blueprint.json`.
 
 | Task | Command |
 |------|---------|
-| Validate | `npm run init:validate` |
+| Validate | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs validate --repo-root .` |
 | Suggest packs | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-packs --repo-root .` |
 | Suggest features | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs suggest-features --repo-root .` |
 | Review packs | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-packs --repo-root .` |
-| Approve | `npm run init:approve-b` |
+| Approve | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage B --repo-root .` |
 
 ## Key blueprint fields
 

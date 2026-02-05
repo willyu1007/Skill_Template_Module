@@ -43,7 +43,7 @@ When omitted or `none`, IaC feature is **not** enabled.
 ## Operating rules
 
 - **No dual SSOT**: do not keep both `ops/iac/ros/` and `ops/iac/terraform/`.
-- IaC `plan/apply` is **human/CI executed**. This feature does not auto-apply infrastructure.
+- IaC `plan/apply` is **human/CI executed**. The `iac` feature does not auto-apply infrastructure.
 - Never store secret values in IaC code or context artifacts.
 
 ## Verification
@@ -54,6 +54,6 @@ node .ai/skills/features/iac/scripts/iacctl.mjs verify --repo-root .
 
 ## Boundaries
 
-- This feature does **not** execute IaC apply. `terraform/ros` plan/apply is human/CI executed.
-- This feature does **not** configure IAM/identity; treat identity as IaC-owned.
+- The `iac` feature does **not** execute IaC apply. `terraform/ros` plan/apply is human/CI executed.
+- The `iac` feature does **not** configure IAM/identity; treat identity as IaC-owned.
 - Never write secret values into `ops/iac/**` templates or `docs/context/iac/*`.

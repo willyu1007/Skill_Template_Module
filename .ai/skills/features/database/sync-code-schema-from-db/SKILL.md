@@ -84,13 +84,15 @@ Record the instructions and the environment assumptions in `01-db-pull-instructi
 ### Phase B — Import Prisma schema into repo mirror (LLM-safe)
 
 6. Ensure the DB mirror assets are present (required for the mirror workflow):
-   - Required paths:
-     - `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs`
-     - `db/schema/tables.json`
-    - If `db/schema/tables.json` is missing, install the mirror skeleton:
-      - Copy templates from `.ai/skills/features/database/sync-code-schema-from-db/templates/` into the repo root.
-      - Run `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init`, then re-run Phase B.
-    - If `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` is missing, STOP: the DB mirror controller is not installed in this repo.
+
+- Required file: `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs`
+- Required file: `db/schema/tables.json`
+
+If `db/schema/tables.json` is missing, install the mirror skeleton:
+- Copy templates from `.ai/skills/features/database/sync-code-schema-from-db/templates/` into the repo root.
+- Run `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init`, then re-run Phase B.
+
+If `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` is missing, STOP: the DB mirror controller is not installed in this repo.
 
 7. Import `prisma/schema.prisma` into `db/schema/tables.json`:
 
@@ -106,7 +108,17 @@ Record output in `02-import-prisma-log.md`.
 
 Record output in `03-context-refresh-log.md`.
 
-### Phase D — Keep developer layers coherent
+### Phase D — Module slices (module-first repos; recommended)
+
+If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` DB declarations (`db.owns` / `db.uses`), refresh module DB slices after the DB contract is updated:
+
+```bash
+node .ai/scripts/modules/dbssotctl-module.mjs verify --strict
+node .ai/scripts/modules/dbssotctl-module.mjs conflicts
+node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
+```
+
+### Phase E — Keep developer layers coherent
 
 9. Update repository mappings and domain entities to match the mirrored schema:
 
@@ -119,6 +131,7 @@ Record output in `03-context-refresh-log.md`.
 - [ ] Human ran `prisma db pull` against the correct environment
 - [ ] `dbctl import-prisma` updated `db/schema/tables.json`
 - [ ] `dbssotctl sync-to-context` updated `docs/context/db/schema.json`
+- [ ] Module DB slices refreshed (module-first repos): `dbssotctl-module sync-slices`
 - [ ] Domain/repository mapping updated (no Prisma types in business layer)
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite database`
 

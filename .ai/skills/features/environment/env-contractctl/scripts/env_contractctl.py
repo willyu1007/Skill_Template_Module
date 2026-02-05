@@ -1041,9 +1041,10 @@ policy:
           auth_mode: role-only
           preflight:
             mode: fail
-          sts_bootstrap:
-            allowed: true
-            allow_ak_for_sts_only: true
+          # sts_bootstrap: reserved for future implementation (v1: not enforced)
+          # sts_bootstrap:
+          #   allowed: true
+          #   allow_ak_for_sts_only: true
 
       - id: dev-local
         match:
@@ -1054,11 +1055,14 @@ policy:
           preflight:
             mode: warn
           ak_fallback:
-            allowed: true
-            require_explicit_policy: true
-            record: true
+            # allowed: reserved for future implementation (v1: not enforced)
+            # allowed: true
+            record: true  # only this field is currently enforced
 
   iac:
+    # NOTE: iac.tool is controlled by init blueprint (init/_work/project-blueprint.json → iac.tool),
+    # NOT by this policy file. The init stage applies the chosen tool (ros|terraform)
+    # and generates corresponding IaC scaffolds under ops/iac/.
     cloud_scope: aliyun-only
     evidence_dir: ops/iac/handbook
     identity:

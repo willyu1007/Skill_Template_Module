@@ -10,9 +10,9 @@ Produce a verifiable set of requirement documents under `init/_work/stage-a-docs
 
 | Task | Command |
 |------|---------|
-| Validate docs | `npm run init:check-docs` |
+| Validate docs | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs check-docs --repo-root . --strict` |
 | Mark must-ask | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs mark-must-ask --repo-root . --key <key> --asked --answered --written-to <path>` |
-| Approve | `npm run init:approve-a` |
+| Approve | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage A --repo-root .` |
 
 ## Outputs
 

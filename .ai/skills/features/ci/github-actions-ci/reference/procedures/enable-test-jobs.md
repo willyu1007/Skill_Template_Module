@@ -84,7 +84,7 @@ Enable automated test suites in GitHub Actions with:
 | Symptom | Possible Cause | Solution |
 |---------|----------------|----------|
 | Job skipped unexpectedly | `if:` condition or path filter | Check job conditions and trigger events |
-| pnpm/npm cache miss | Wrong cache key or lock file | Verify cache key includes lock file hash |
+| Package manager cache miss | Wrong cache key or lock file | Verify cache key includes lock file hash |
 | Secret not available | Wrong secret name or scope | Check repository/org secret settings |
 | macOS runner slow/unavailable | Resource contention | Use larger runner or schedule off-peak |
 
@@ -92,8 +92,7 @@ Enable automated test suites in GitHub Actions with:
 
 **1. Dependencies install every run**
 - Verify cache configuration uses correct key
-- For pnpm: cache `.pnpm-store/`, key on `pnpm-lock.yaml`
-- Add `cache: 'pnpm'` to `actions/setup-node`
+- If you use pnpm: cache `.pnpm-store/`, key on `pnpm-lock.yaml`, and add `cache: 'pnpm'` to `actions/setup-node`
 
 **2. Tests pass locally but fail in CI**
 - Check Node version matches

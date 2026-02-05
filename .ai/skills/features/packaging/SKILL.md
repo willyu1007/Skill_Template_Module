@@ -43,6 +43,15 @@ node .ai/skills/features/packaging/scripts/packctl.mjs verify
 - Treat image naming/versioning/provenance as first-class.
 - Record packaging plans and build logs in `ops/packaging/handbook/`.
 
+## Module-first integration (recommended)
+
+In module-first repos, packaging targets often map 1:1 to modules/services. Prefer aligning target ids with module ids and pointing `--module` at `modules/<module_id>/`:
+
+```bash
+node .ai/skills/features/packaging/scripts/packctl.mjs add-service --id billing.api --module modules/billing.api --repo-root .
+node .ai/skills/features/packaging/scripts/packctl.mjs list --repo-root .
+```
+
 ## Verification
 
 ```bash

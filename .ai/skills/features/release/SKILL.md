@@ -40,6 +40,10 @@ node .ai/skills/features/release/scripts/releasectl.mjs verify
 - Releases are **human-executed** unless CI automation is explicitly configured.
 - Keep release decisions and checklists under `release/handbook/`.
 
+## Module-first note
+
+In module-first repos (or monorepos), decide explicitly whether versioning is repo-wide or per-module. This template feature assumes a **repo-wide** release by default; if you need per-module versioning, document the policy and adjust tooling accordingly.
+
 ## Verification
 
 ```bash

@@ -14,7 +14,7 @@ Goal: a robust, repeatable, rollback-friendly initialization workflow (not "fast
 
 - LLM-first workflow:
   1) Ask the user to choose **one** output language for init artifacts
-  2) Record it in the init state: `init/_work/.init-state.json` -> `outputLanguage`
+  2) Record the chosen language in the init state: `init/_work/.init-state.json` -> `outputLanguage`
   3) Then use:
      - `init/START-HERE.md` (LLM-maintained; localized; user-friendly key input digest)
      - `init/INIT-BOARD.md` (LLM-maintained; localized; concise progress board)
@@ -42,14 +42,14 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 ### Entry docs maintenance (LLM)
 
 - `init/START-HERE.md` is the "one-screen" user entry:
-  - Keep it short and scannable.
+  - Keep the file short and scannable.
   - Maintain:
     - AI pending questions (next 3-5)
     - Key inputs table with status (`todo` | `confirmed` | `tbd`) (status values are NOT translated)
     - Current conclusions (<= 5 bullets)
   - At the start of each stage (A/B/C), roll the previous stage summary into a collapsed archive section at the bottom (LLM-written).
 - `init/INIT-BOARD.md` is the concise progress board:
-  - Localize it to `outputLanguage`.
+  - Localize the board to `outputLanguage`.
   - Use the machine snapshot section (auto-updated) + `init/_work/.init-state.json` as the source of truth.
 
 ---

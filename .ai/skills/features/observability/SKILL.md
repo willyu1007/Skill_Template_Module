@@ -52,6 +52,16 @@ node .ai/skills/features/observability/scripts/obsctl.mjs verify
 node .ai/skills/features/observability/scripts/obsctl.mjs verify
 ```
 
+## Module-first integration (recommended)
+
+If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` observability declarations, keep per-module slices in sync after contract changes:
+
+```bash
+node .ai/scripts/modules/obsctl-module.mjs verify --strict
+node .ai/scripts/modules/obsctl-module.mjs conflicts
+node .ai/scripts/modules/obsctl-module.mjs sync-slices
+```
+
 ## Boundaries
 
 - No secrets in repo.

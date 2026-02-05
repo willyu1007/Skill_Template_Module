@@ -186,6 +186,7 @@ Before any SSOT change or DB execution:
 - Confirm whether changes are destructive
 - For non-null additions on existing tables: require a backfill plan
 - Ensure the resulting schema contract is refreshed (`dbssotctl sync-to-context`)
+- If using `modules/`: refresh module DB slices after contract refresh (`node .ai/scripts/modules/dbssotctl-module.mjs sync-slices`)
 
 ## Verification
 

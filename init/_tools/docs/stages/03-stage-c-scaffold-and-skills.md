@@ -10,11 +10,11 @@ Apply the blueprint: create scaffold, generate configs, enable skill packs, sync
 
 | Task | Command |
 |------|---------|
-| Apply all | `npm run init:apply` |
-| Review skill retention | `npm run init:review-retention` |
-| Update AGENTS.md | `npm run init:update-agents` |
-| Approve | `npm run init:approve-c` |
-| Cleanup + archive | `npm run init:cleanup` |
+| Apply all | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs apply --repo-root . --providers both` |
+| Review skill retention | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs review-skill-retention --repo-root .` |
+| Update AGENTS.md | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs update-agents --repo-root . --apply` |
+| Approve | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs approve --stage C --repo-root .` |
+| Cleanup + archive | `node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand --archive` |
 
 ## What `apply` does
 
@@ -39,8 +39,7 @@ After user explicitly approves Stage C results, init is complete.
 Archive init kit to `docs/project/overview/` (recommended):
 
 ```bash
-npm run init:cleanup
-# or with options: cleanup-init --repo-root . --apply --i-understand --archive
+node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeline.mjs cleanup-init --repo-root . --apply --i-understand --archive
 ```
 
 See SKILL.md for complete workflow, feature details, and troubleshooting.

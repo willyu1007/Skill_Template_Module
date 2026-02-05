@@ -75,8 +75,8 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 ## Procedure
 
 1. Infer scope
-   - If the task is clearly about a single module, treat it as module-scoped.
-   - If the task spans multiple modules (or involves scenario testing), treat it as integration-scoped.
+   - If the task is clearly about a single module, treat the task as module-scoped.
+   - If the task spans multiple modules (or involves scenario testing), treat the task as integration-scoped.
    - If scope is unclear:
      1. Ask the user to confirm `module_id` or `integration`.
      2. If user cannot decide or explicitly requests a temporary location, use `.ai/.tmp/dev-docs/<task_slug>/` as the fallback.
@@ -87,7 +87,7 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
      - Module: `modules/<module_id>/dev-docs/active/`
      - Integration: `modules/integration/dev-docs/active/`
      - Temporary: `.ai/.tmp/dev-docs/`
-   - If an active task already matches the user's request, reuse it and only update missing artifacts.
+   - If an active task already matches the user's request, reuse the matching task and only update missing artifacts.
    - If you reuse an existing task, read these first before doing any work:
      - `03-implementation-notes.md`
      - `05-pitfalls.md`
@@ -121,7 +121,7 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 
 ## Execution sync rules (what "good" looks like)
 
-Even though `create-dev-docs-plan` is docs-only, it is designed to make execution robust:
+Even though `create-dev-docs-plan` is docs-only, the workflow is designed to make execution robust:
 - During implementation, keep these files current:
   - `01-plan.md` (check off completed items; add newly discovered TODOs)
   - `03-implementation-notes.md` (what changed + decisions + deviations)
@@ -177,4 +177,3 @@ modules/<module_id>/dev-docs/active/<task_slug>/
 - Write purpose + outcome first in `00-overview.md`.
 - Add verification commands with expected results in `04-verification.md`.
 - Before finalizing, do a reader test: can a fresh agent answer "what do I do next?" using only the dev-docs bundle?
-
