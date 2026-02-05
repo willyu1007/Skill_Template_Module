@@ -981,6 +981,9 @@ function validateBlueprint(blueprint) {
   if (Object.prototype.hasOwnProperty.call(flags, 'ci')) {
     errors.push('features.ci is not supported. Use ci.provider to enable/disable CI materialization.');
   }
+  if (Object.prototype.hasOwnProperty.call(flags, 'iac')) {
+    errors.push('features.iac is not supported. Use iac.tool to enable/disable IaC materialization (none|ros|terraform).');
+  }
 
   const project = blueprint.project || {};
   if (!project.name || typeof project.name !== 'string') errors.push('project.name is required (string).');
@@ -1060,6 +1063,15 @@ function validateBlueprint(blueprint) {
     if (ci.enabled === true && provider === 'none') {
       warnings.push('ci.enabled=true but ci.provider=none. CI materialization is controlled by ci.provider (ci.enabled is informational only).');
     }
+  }
+
+  // IaC tool selection (provider-driven IaC feature)
+  const iac = blueprint.iac && typeof blueprint.iac === 'object' ? blueprint.iac : {};
+  const rawIacTool = typeof iac.tool === 'string' ? iac.tool.trim() : '';
+  const normalizedIacTool = rawIacTool ? rawIacTool.toLowerCase() : 'none';
+  const validIacTools = ['none', 'ros', 'terraform'];
+  if (rawIacTool && !validIacTools.includes(normalizedIacTool)) {
+    errors.push(`iac.tool must be one of: ${validIacTools.join(', ')}.`);
   }
 
   // Default-on feature config "enabled" fields are informational only.
@@ -1174,6 +1186,7 @@ function recommendedFeaturesFromBlueprint(blueprint) {
   if (dbSsotMode(blueprint) !== 'none') rec.push('database');
   const provider = ciProvider(blueprint);
   if (provider && provider !== 'none') rec.push('ci');
+  if (iacTool(blueprint) !== 'none') rec.push('iac');
 
   // Default-on, override-disable features
   if (defaultOnFeature(blueprint, 'ui')) rec.push('ui');
@@ -1191,6 +1204,7 @@ function getEnabledFeatures(blueprint) {
   
   if (isContextAwarenessEnabled(blueprint)) enabled.push('contextAwareness');
   if (isDatabaseEnabled(blueprint)) enabled.push('database');
+  if (isIacEnabled(blueprint)) enabled.push('iac');
   if (isUiEnabled(blueprint)) enabled.push('ui');
   if (isEnvironmentEnabled(blueprint)) enabled.push('environment');
   if (isPackagingEnabled(blueprint)) enabled.push('packaging');
@@ -2267,6 +2281,20 @@ function isDatabaseEnabled(blueprint) {
   return dbSsotMode(blueprint) !== 'none';
 }
 
+function iacTool(blueprint) {
+  const iac = blueprint && blueprint.iac && typeof blueprint.iac === 'object' ? blueprint.iac : {};
+  const t = String(iac.tool || '').trim().toLowerCase();
+  if (!t) return 'none';
+  if (t === 'none' || t === 'ros' || t === 'terraform') return t;
+  // Validation should catch invalid values; default to none for safety.
+  return 'none';
+}
+
+function isIacEnabled(blueprint) {
+  // Provider-driven: enabled when iac.tool != "none".
+  return iacTool(blueprint) !== 'none';
+}
+
 function isUiEnabled(blueprint) {
   // Default-on; can be disabled via features.ui=false
   return defaultOnFeature(blueprint, 'ui');
@@ -2579,6 +2607,74 @@ function ensureEnvironmentFeature(repoRoot, blueprint, apply, options = {}) {
   return result;
 }
 
+function ensureIacFeature(repoRoot, blueprint, apply, options = {}) {
+  const { force = false, verify = false } = options;
+  const tool = iacTool(blueprint);
+  const enabled = tool !== 'none';
+  const result = { enabled, featureId: 'iac', op: enabled ? 'ensure' : 'skip', actions: [], warnings: [], errors: [] };
+
+  if (!enabled) return result;
+
+  const markRes = markProjectFeature(repoRoot, 'iac', apply);
+  result.actions.push(markRes);
+  if (apply && markRes.mode === 'failed') {
+    result.warnings.push('projectctl feature flag update failed for "iac" (continuing).');
+  }
+
+  const templatesRoot = findFeatureTemplatesDir(repoRoot, 'iac');
+  if (!templatesRoot) {
+    result.errors.push('IaC feature templates not found. Expected: .ai/skills/features/iac/templates/');
+    return result;
+  }
+
+  const toolTemplatesDir = path.join(templatesRoot, tool);
+  if (!fs.existsSync(toolTemplatesDir) || !fs.statSync(toolTemplatesDir).isDirectory()) {
+    result.errors.push(`IaC templates not found for iac.tool="${tool}". Expected: ${path.relative(repoRoot, toolTemplatesDir)}`);
+    return result;
+  }
+
+  const copyRes = copyDirIfMissing(toolTemplatesDir, repoRoot, apply, force);
+  if (!copyRes.ok) {
+    result.errors.push(copyRes.error || `Failed to copy IaC templates for tool "${tool}".`);
+    return result;
+  }
+  result.actions.push({
+    op: force ? 'reinstall-feature' : 'install-feature',
+    featureId: 'iac',
+    tool,
+    from: toolTemplatesDir,
+    to: repoRoot,
+    mode: apply ? 'applied' : 'dry-run'
+  });
+  result.actions.push(...copyRes.actions);
+
+  const iacctl = path.join(repoRoot, '.ai', 'skills', 'features', 'iac', 'scripts', 'iacctl.mjs');
+  if (!fs.existsSync(iacctl)) {
+    result.errors.push(`IaC control script not found: ${path.relative(repoRoot, iacctl)}`);
+    return result;
+  }
+
+  const initArgs = ['init', '--tool', tool, '--repo-root', repoRoot];
+  if (force) initArgs.push('--force');
+  const initRes = runNodeScriptWithRepoRootFallback(repoRoot, iacctl, initArgs, apply);
+  result.actions.push(initRes);
+  if (apply && initRes.mode === 'failed') {
+    result.errors.push('IaC feature init failed (see logs above).');
+    return result;
+  }
+
+  if (verify && apply) {
+    const verifyRes = runNodeScriptWithRepoRootFallback(repoRoot, iacctl, ['verify', '--repo-root', repoRoot], apply);
+    result.actions.push(verifyRes);
+    if (verifyRes.mode === 'failed') {
+      result.verifyFailed = true;
+      result.verifyError = 'IaC feature verify failed';
+    }
+  }
+
+  return result;
+}
+
 function ensureCiFeature(repoRoot, blueprint, apply, options = {}) {
   const { verify = false } = options;
   const enabled = isCiEnabled(blueprint);
@@ -2798,8 +2894,9 @@ function planScaffold(repoRoot, blueprint, apply) {
   // - CI alone should not create `ops/packaging` or `ops/deploy`.
   const wantsPackaging = isPackagingEnabled(blueprint);
   const wantsDeployment = isDeploymentEnabled(blueprint);
+  const wantsIac = isIacEnabled(blueprint);
 
-  if (wantsPackaging || wantsDeployment) {
+  if (wantsPackaging || wantsDeployment || wantsIac) {
     results.push(ensureDir(path.join(repoRoot, 'ops'), apply));
     results.push(writeFileIfMissing(
       path.join(repoRoot, 'ops', 'README.md'),
@@ -2810,6 +2907,7 @@ This folder holds DevOps-oriented configuration and handbook material.
 High-level split (created only when enabled):
 - ops/packaging/  Build artifacts (often container images for services)
 - ops/deploy/     Run artifacts in environments (deploy/rollback/runbooks)
+- ops/iac/        Infrastructure as Code (provisioning, identity, and infra runbooks)
 
 Guidelines:
 - Keep definitions small and structured.
@@ -3888,6 +3986,13 @@ if (command === 'validate') {
       console.log('[info] Enabling Environment feature...');
       const res = ensureEnvironmentFeature(repoRoot, blueprint, true, featureOptions);
       handleFeatureResult(res, 'environment');
+    }
+
+    // IaC feature
+    if (isIacEnabled(blueprint)) {
+      console.log('[info] Enabling IaC feature...');
+      const res = ensureIacFeature(repoRoot, blueprint, true, featureOptions);
+      handleFeatureResult(res, 'iac');
     }
 
     // CI feature

@@ -19,13 +19,16 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import socket
 import stat
+import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -68,6 +71,298 @@ def get_ssot_mode(root: Path) -> Optional[str]:
             if k in data and isinstance(data[k], str):
                 return data[k]
     return None
+
+
+AUTH_MODES = {"role-only", "auto", "ak-only"}
+PREFLIGHT_MODES = {"fail", "warn", "off"}
+
+
+@dataclass(frozen=True)
+class PolicyDecision:
+    env: str
+    runtime_target: str
+    workload: Optional[str]
+    auth_mode: str
+    preflight_mode: str
+    rule_id: Optional[str]
+    fallback_dir: str
+    ak_fallback_record: bool
+
+
+def load_policy_doc(root: Path) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+    policy_path = root / "docs" / "project" / "policy.yaml"
+    if not policy_path.exists():
+        return None, [f"Missing policy file: {policy_path} (run env-contractctl init to scaffold)"]
+    try:
+        doc = load_yaml(policy_path)
+    except Exception as e:  # noqa: BLE001
+        return None, [f"Failed to parse policy YAML {policy_path}: {e}"]
+    if not isinstance(doc, dict):
+        return None, [f"Policy file {policy_path} must be a YAML mapping"]
+    return doc, []
+
+
+def get_policy_env(doc: Mapping[str, Any]) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+    errors: List[str] = []
+    version = doc.get("version")
+    if version not in (1, "1"):
+        errors.append(f"Unsupported policy version: {version!r} (expected 1)")
+    policy = doc.get("policy")
+    if not isinstance(policy, dict):
+        errors.append("Policy file must contain top-level mapping: policy: {...}")
+        return None, errors
+    env = policy.get("env")
+    if not isinstance(env, dict):
+        errors.append("Policy file must contain mapping: policy.env")
+        return None, errors
+    return env, errors
+
+
+def decide_policy_env(policy_env: Mapping[str, Any], *, env: str, runtime_target: str, workload: Optional[str]) -> Tuple[Optional[PolicyDecision], List[str]]:
+    errors: List[str] = []
+
+    defaults = policy_env.get("defaults") if isinstance(policy_env.get("defaults"), dict) else {}
+    auth_mode = str(defaults.get("auth_mode") or "auto").strip()
+    if auth_mode not in AUTH_MODES:
+        errors.append(f"policy.env.defaults.auth_mode must be one of {sorted(AUTH_MODES)}, got {auth_mode!r}")
+        auth_mode = "auto"
+
+    preflight = defaults.get("preflight") if isinstance(defaults.get("preflight"), dict) else {}
+    preflight_mode = str(preflight.get("mode") or "warn").strip()
+    if preflight_mode not in PREFLIGHT_MODES:
+        errors.append(f"policy.env.defaults.preflight.mode must be one of {sorted(PREFLIGHT_MODES)}, got {preflight_mode!r}")
+        preflight_mode = "warn"
+
+    evidence = policy_env.get("evidence") if isinstance(policy_env.get("evidence"), dict) else {}
+    fallback_dir = str(evidence.get("fallback_dir") or ".ai/.tmp/env/fallback").strip()
+
+    rules = policy_env.get("rules") if isinstance(policy_env.get("rules"), list) else []
+    matched: List[Tuple[int, Dict[str, Any]]] = []
+    for r in rules:
+        if not isinstance(r, dict):
+            continue
+        match = r.get("match")
+        if match is None:
+            continue
+        if not isinstance(match, dict):
+            errors.append("policy.env.rules[].match must be a mapping when present")
+            continue
+
+        allowed_match_keys = {"env", "runtime_target", "workload"}
+        unknown_keys = sorted([k for k in match.keys() if k not in allowed_match_keys])
+        if unknown_keys:
+            errors.append(f"policy.env.rules[].match has unknown keys: {unknown_keys} (allowed: {sorted(allowed_match_keys)})")
+            continue
+
+        if "env" in match and str(match.get("env")).strip() != env:
+            continue
+        if "runtime_target" in match and str(match.get("runtime_target")).strip() != runtime_target:
+            continue
+        if "workload" in match:
+            if workload is None or str(match.get("workload")).strip() != workload:
+                continue
+
+        specificity = len([k for k, v in match.items() if v is not None])
+        matched.append((specificity, r))
+
+    rule_id: Optional[str] = None
+    ak_fallback_record = False
+    if matched:
+        matched.sort(key=lambda t: t[0], reverse=True)
+        top_spec = matched[0][0]
+        top = [r for spec, r in matched if spec == top_spec]
+        if len(top) > 1:
+            ids = [str(r.get("id") or "<missing-id>") for r in top]
+            errors.append(f"policy.env.rules has multiple matching rules with same specificity ({top_spec}): {ids}")
+        else:
+            r = top[0]
+            rule_id = str(r.get("id")) if isinstance(r.get("id"), str) and str(r.get("id")).strip() else None
+            set_cfg = r.get("set") if isinstance(r.get("set"), dict) else {}
+
+            am = set_cfg.get("auth_mode")
+            if isinstance(am, str) and am.strip():
+                if am.strip() not in AUTH_MODES:
+                    errors.append(f"policy.env.rules[].set.auth_mode must be one of {sorted(AUTH_MODES)}, got {am!r}")
+                else:
+                    auth_mode = am.strip()
+
+            pf = set_cfg.get("preflight") if isinstance(set_cfg.get("preflight"), dict) else {}
+            pm = pf.get("mode")
+            if isinstance(pm, str) and pm.strip():
+                if pm.strip() not in PREFLIGHT_MODES:
+                    errors.append(f"policy.env.rules[].set.preflight.mode must be one of {sorted(PREFLIGHT_MODES)}, got {pm!r}")
+                else:
+                    preflight_mode = pm.strip()
+
+            akfb = set_cfg.get("ak_fallback") if isinstance(set_cfg.get("ak_fallback"), dict) else {}
+            ak_fallback_record = bool(akfb.get("record", False))
+
+    decision = PolicyDecision(
+        env=env,
+        runtime_target=runtime_target,
+        workload=workload,
+        auth_mode=auth_mode,
+        preflight_mode=preflight_mode,
+        rule_id=rule_id,
+        fallback_dir=fallback_dir,
+        ak_fallback_record=ak_fallback_record,
+    )
+    return decision, errors
+
+
+def _safe_str_list(v: Any) -> List[str]:
+    if not isinstance(v, list):
+        return []
+    out: List[str] = []
+    for x in v:
+        if isinstance(x, str) and x.strip():
+            out.append(x.strip())
+    return out
+
+
+def _map_has(env_map: Mapping[str, Any], var: str) -> bool:
+    return bool(str(env_map.get(var) or "").strip())
+
+
+def detect_preflight_signals(policy_env: Mapping[str, Any], *, env_map: Mapping[str, Any], check_files: bool) -> Dict[str, Any]:
+    """Detect potentially unsafe credential-chain signals (no values)."""
+    preflight = policy_env.get("preflight") if isinstance(policy_env.get("preflight"), dict) else {}
+    detect = preflight.get("detect") if isinstance(preflight.get("detect"), dict) else {}
+    providers = detect.get("providers") if isinstance(detect.get("providers"), dict) else {}
+
+    out: Dict[str, Any] = {"providers": {}, "summary": {"has_ak": False, "has_sts": False}}
+    all_ak_vars: List[str] = []
+    all_sts_vars: List[str] = []
+    all_presence_vars: List[str] = []
+    all_cred_files: List[str] = []
+
+    for pname, pcfg in providers.items():
+        if not isinstance(pname, str) or not isinstance(pcfg, dict):
+            continue
+
+        ak_sets: List[Dict[str, Any]] = []
+        sts_sets: List[Dict[str, Any]] = []
+        presence_vars: List[str] = []
+        cred_files: List[str] = []
+
+        for s in pcfg.get("env_credential_sets") if isinstance(pcfg.get("env_credential_sets"), list) else []:
+            if not isinstance(s, dict):
+                continue
+            id_vars = _safe_str_list(s.get("id_vars"))
+            secret_vars = _safe_str_list(s.get("secret_vars"))
+            token_vars = _safe_str_list(s.get("token_vars"))
+            id_var = next((v for v in id_vars if _map_has(env_map, v)), None)
+            secret_var = next((v for v in secret_vars if _map_has(env_map, v)), None)
+            token_var = next((v for v in token_vars if _map_has(env_map, v)), None)
+            if not id_var or not secret_var:
+                continue
+            if token_var:
+                sts_sets.append({"id_var": id_var, "secret_var": secret_var, "token_var": token_var})
+                all_sts_vars.extend([id_var, secret_var, token_var])
+            else:
+                ak_sets.append({"id_var": id_var, "secret_var": secret_var})
+                all_ak_vars.extend([id_var, secret_var])
+
+        for v in _safe_str_list(pcfg.get("env_var_presence")):
+            if _map_has(env_map, v):
+                presence_vars.append(v)
+                all_presence_vars.append(v)
+
+        cfiles = pcfg.get("credential_files") if isinstance(pcfg.get("credential_files"), dict) else {}
+        if check_files:
+            for p in _safe_str_list(cfiles.get("paths")):
+                expanded = os.path.expanduser(p)
+                if Path(expanded).exists():
+                    cred_files.append(p)
+                    all_cred_files.append(p)
+
+        out["providers"][pname] = {
+            "ak_env": ak_sets,
+            "sts_env": sts_sets,
+            "env_var_presence": presence_vars,
+            "credential_files": cred_files,
+        }
+
+    out["summary"]["has_ak"] = bool(all_ak_vars or all_cred_files or all_presence_vars)
+    out["summary"]["has_sts"] = bool(all_sts_vars)
+    out["summary"]["ak_env_vars"] = sorted(list(set(all_ak_vars)))
+    out["summary"]["sts_env_vars"] = sorted(list(set(all_sts_vars)))
+    out["summary"]["env_var_presence"] = sorted(list(set(all_presence_vars)))
+    out["summary"]["credential_files"] = sorted(list(set(all_cred_files)))
+    return out
+
+
+def _new_run_id() -> str:
+    ts = time.strftime("%Y%m%d-%H%M%SZ", time.gmtime())
+    return f"{ts}-{uuid.uuid4().hex[:8]}"
+
+
+def run_policy_preflight(
+    root: Path,
+    *,
+    policy_env: Mapping[str, Any],
+    decision: PolicyDecision,
+    env_map: Mapping[str, Any],
+    check_files: bool,
+) -> Tuple[List[str], List[str], Optional[Path]]:
+    """Return (errors, warnings, evidence_path)."""
+    if decision.preflight_mode == "off":
+        return [], [], None
+
+    signals = detect_preflight_signals(policy_env, env_map=env_map, check_files=check_files)
+    summary = signals.get("summary") if isinstance(signals.get("summary"), dict) else {}
+    has_ak = bool(summary.get("has_ak"))
+    has_sts = bool(summary.get("has_sts"))
+
+    ak_env_vars = summary.get("ak_env_vars") if isinstance(summary.get("ak_env_vars"), list) else []
+    cred_files = summary.get("credential_files") if isinstance(summary.get("credential_files"), list) else []
+    presence_vars = summary.get("env_var_presence") if isinstance(summary.get("env_var_presence"), list) else []
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    evidence_path: Optional[Path] = None
+
+    # Role-only: fail-fast on AK signals (env vars and credential files).
+    if decision.auth_mode == "role-only" and has_ak:
+        msg = "Preflight violation (auth_mode=role-only): detected credential-chain signals that may enable AK fallback."
+        details: List[str] = []
+        if ak_env_vars:
+            details.append(f"ak_env_vars={sorted(ak_env_vars)}")
+        if presence_vars:
+            details.append(f"env_var_presence={sorted(presence_vars)}")
+        if cred_files:
+            details.append(f"credential_files={sorted(cred_files)}")
+        if details:
+            msg += " " + "; ".join(details)
+
+        if decision.preflight_mode == "fail":
+            errors.append(msg)
+        else:
+            warnings.append(msg)
+
+    # Auto: warn when AK signals exist; optionally record evidence.
+    if decision.auth_mode == "auto" and has_ak:
+        warnings.append("Preflight: credential-chain signals detected (auth_mode=auto). Ensure AK fallback is intended and scoped to dev(local) only.")
+
+        if decision.ak_fallback_record and (not has_sts):
+            base = Path(decision.fallback_dir)
+            base = base if base.is_absolute() else (root / base)
+            run_id = _new_run_id()
+            evidence_path = base / run_id / "preflight.json"
+            evidence_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "generated_at_utc": utc_now_iso(),
+                "env": decision.env,
+                "runtime_target": decision.runtime_target,
+                "workload": decision.workload,
+                "auth_mode": decision.auth_mode,
+                "rule_id": decision.rule_id,
+                "signals": signals,
+            }
+            evidence_path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+            warnings.append(f"Preflight evidence recorded (no secrets): {evidence_path}")
+
+    return errors, warnings, evidence_path
 
 
 @dataclass
@@ -326,10 +621,6 @@ def discover_envs(root: Path) -> List[str]:
     if secrets_dir.exists():
         for p in secrets_dir.glob("*.ref.yaml"):
             envs.add(p.name.replace(".ref.yaml", ""))
-    inventory_dir = root / "env" / "inventory"
-    if inventory_dir.exists():
-        for p in inventory_dir.glob("*.yaml"):
-            envs.add(p.stem)
     return sorted(envs)
 
 
@@ -365,14 +656,10 @@ def load_secrets_ref(path: Path) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
     if data is None:
         return {}, [f"Secrets ref {path} is empty"]
 
-    # Preferred format: {version: 1, secrets: {name: {backend, ref, ...}}}
-    if isinstance(data, dict) and "secrets" in data and isinstance(data["secrets"], dict):
-        secrets = data["secrets"]
-    elif isinstance(data, dict):
-        # Back-compat: allow top-level mapping of secrets (ignore metadata keys like version)
-        secrets = {k: v for k, v in data.items() if k not in {"version"}}
-    else:
-        return {}, [f"Secrets ref {path} must be a mapping"]
+    if not isinstance(data, dict) or "secrets" not in data or not isinstance(data.get("secrets"), dict):
+        return {}, [f"Secrets ref {path} must be a mapping with top-level 'secrets' mapping (versioned format)."]
+
+    secrets = data["secrets"]
 
     out: Dict[str, Dict[str, Any]] = {}
     errors: List[str] = []
@@ -383,12 +670,37 @@ def load_secrets_ref(path: Path) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
         if not isinstance(cfg, dict):
             errors.append(f"Secret {name} in {path}: definition must be a mapping")
             continue
+        if "ref" in cfg:
+            errors.append(
+                f"Secret {name} in {path}: legacy key 'ref' is not supported (to avoid dual semantics). "
+                "Remove 'ref' and use structured fields only."
+            )
+        if "value" in cfg:
+            errors.append(
+                f"Secret {name} in {path}: forbidden key 'value' detected (secret values must never be stored in repo files). "
+                "Remove 'value' and use a supported backend."
+            )
         backend = cfg.get("backend")
-        ref = cfg.get("ref")
         if not isinstance(backend, str) or not backend.strip():
             errors.append(f"Secret {name} in {path}: backend must be a non-empty string")
-        if not isinstance(ref, str) or not ref.strip():
-            errors.append(f"Secret {name} in {path}: ref must be a non-empty string")
+            continue
+        b = backend.strip()
+        if b == "mock":
+            pass
+        elif b == "env":
+            env_var = cfg.get("env_var")
+            if not isinstance(env_var, str) or not ENV_VAR_RE.match(env_var.strip()):
+                errors.append(f"Secret {name} in {path}: env backend requires env_var (e.g. OAUTH_CLIENT_SECRET)")
+        elif b == "file":
+            p = cfg.get("path")
+            if not isinstance(p, str) or not p.strip():
+                errors.append(f"Secret {name} in {path}: file backend requires non-empty path")
+        elif b == "bws":
+            scope = cfg.get("scope")
+            if not isinstance(scope, str) or scope.strip() not in {"project", "shared"}:
+                errors.append(f"Secret {name} in {path}: bws backend requires scope: project|shared")
+        else:
+            errors.append(f"Secret {name} in {path}: unsupported backend {b!r} (supported: mock, env, file, bws)")
         out[name] = cfg
     return out, errors
 
@@ -420,45 +732,229 @@ def type_check_value(v: VarDef, value: Any) -> Optional[str]:
     return None
 
 
-def resolve_secret(root: Path, env: str, secret_name: str, secret_cfg: Mapping[str, Any]) -> Tuple[Optional[str], Optional[str]]:
-    """Return (value, error). Never print value elsewhere."""
-    backend = str(secret_cfg.get("backend", "")).strip()
-    ref = str(secret_cfg.get("ref", "")).strip()
+def _is_placeholder(s: str) -> bool:
+    return "<org>" in s or "<project>" in s
+
+
+def _bws_access_token_present() -> bool:
+    return bool(str(os.getenv("BWS_ACCESS_TOKEN") or "").strip())
+
+
+def _bws_run_json(args: Sequence[str]) -> Tuple[Optional[Any], Optional[str]]:
+    cmd = ["bws", *list(args), "--output", "json", "--color", "no"]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return None, "bws CLI not found in PATH (install Bitwarden Secrets Manager CLI: bws)"
+    except Exception as e:  # noqa: BLE001
+        return None, f"bws command failed to start: {e}"
+
+    if res.returncode != 0:
+        # Never include stdout/stderr to avoid accidental leaks on CLI errors.
+        return None, f"bws command failed (exit code {res.returncode}): {' '.join(cmd[:3])} ..."
+
+    try:
+        return json.loads(res.stdout), None
+    except Exception as e:  # noqa: BLE001
+        return None, f"bws returned non-JSON output: {e}"
+
+
+@dataclass
+class _BwsCache:
+    project_name_to_id: Dict[str, str]
+    project_id_to_key_to_id: Dict[str, Dict[str, str]]
+
+
+@dataclass
+class SecretResolverCtx:
+    policy_doc: Optional[Dict[str, Any]]
+    bws: _BwsCache
+
+
+def new_secret_ctx(policy_doc: Optional[Dict[str, Any]]) -> SecretResolverCtx:
+    return SecretResolverCtx(policy_doc=policy_doc, bws=_BwsCache(project_name_to_id={}, project_id_to_key_to_id={}))
+
+
+def _policy_bws_config(policy_doc: Optional[Mapping[str, Any]]) -> Tuple[Optional[Mapping[str, Any]], Optional[str]]:
+    if not policy_doc:
+        return None, "Missing policy doc (docs/project/policy.yaml) required for bws backend"
+    policy_env, p_errs = get_policy_env(policy_doc)
+    if p_errs:
+        return None, f"Invalid policy.env: {p_errs[0]}"
+    assert policy_env is not None
+    secrets = policy_env.get("secrets") if isinstance(policy_env.get("secrets"), dict) else {}
+    backends = secrets.get("backends") if isinstance(secrets.get("backends"), dict) else {}
+    bws = backends.get("bws") if isinstance(backends.get("bws"), dict) else None
+    if not isinstance(bws, dict):
+        return None, "policy.env.secrets.backends.bws is missing or invalid"
+    return bws, None
+
+
+def _bws_project_name_for_env(policy_doc: Optional[Mapping[str, Any]], env: str) -> Tuple[Optional[str], Optional[str]]:
+    bws, err = _policy_bws_config(policy_doc)
+    if err:
+        return None, err
+    assert bws is not None
+    projects = bws.get("projects") if isinstance(bws.get("projects"), dict) else {}
+    name = projects.get(env)
+    if not isinstance(name, str) or not name.strip():
+        return None, f"policy.env.secrets.backends.bws.projects.{env} is missing"
+    if _is_placeholder(name):
+        return None, f"policy.env.secrets.backends.bws.projects.{env} is a placeholder; update docs/project/policy.yaml"
+    return name.strip(), None
+
+
+def _bws_key_for_secret(policy_doc: Optional[Mapping[str, Any]], *, env: str, secret_name: str, scope: str) -> Tuple[Optional[str], Optional[str]]:
+    bws, err = _policy_bws_config(policy_doc)
+    if err:
+        return None, err
+    assert bws is not None
+    keys = bws.get("keys") if isinstance(bws.get("keys"), dict) else {}
+    project_prefix = str(keys.get("project_prefix") or "project/{env}/")
+    shared_prefix = str(keys.get("shared_prefix") or "shared/")
+    prefix = shared_prefix if scope == "shared" else project_prefix.replace("{env}", env)
+    if not prefix:
+        return None, "policy.env.secrets.backends.bws.keys prefix is empty"
+    return f"{prefix}{secret_name}", None
+
+
+def _bws_project_id_for_name(ctx: SecretResolverCtx, project_name: str) -> Tuple[Optional[str], Optional[str]]:
+    cached = ctx.bws.project_name_to_id.get(project_name)
+    if cached:
+        return cached, None
+    data, err = _bws_run_json(["project", "list"])
+    if err:
+        return None, err
+    if not isinstance(data, list):
+        return None, "bws project list returned unexpected JSON shape"
+    for p in data:
+        if not isinstance(p, dict):
+            continue
+        name = p.get("name")
+        pid = p.get("id")
+        if isinstance(name, str) and isinstance(pid, str) and name == project_name:
+            ctx.bws.project_name_to_id[project_name] = pid
+            return pid, None
+    return None, f"bws project not found: {project_name!r}"
+
+
+def _bws_secret_id_for_key(ctx: SecretResolverCtx, project_id: str, key: str) -> Tuple[Optional[str], Optional[str]]:
+    cached = ctx.bws.project_id_to_key_to_id.get(project_id)
+    if cached and key in cached:
+        return cached[key], None
+    data, err = _bws_run_json(["secret", "list", project_id])
+    if err:
+        return None, err
+    if not isinstance(data, list):
+        return None, "bws secret list returned unexpected JSON shape"
+    key_to_id: Dict[str, str] = {}
+    for s in data:
+        if not isinstance(s, dict):
+            continue
+        sid = s.get("id")
+        skey = s.get("key")
+        if isinstance(sid, str) and isinstance(skey, str):
+            key_to_id[skey] = sid
+    ctx.bws.project_id_to_key_to_id[project_id] = key_to_id
+    if key not in key_to_id:
+        return None, f"bws secret key not found in project {project_id!r}: {key!r}"
+    return key_to_id[key], None
+
+
+def _bws_secret_value(ctx: SecretResolverCtx, secret_id: str) -> Tuple[Optional[str], Optional[str]]:
+    data, err = _bws_run_json(["secret", "get", secret_id])
+    if err:
+        return None, err
+    if not isinstance(data, dict):
+        return None, "bws secret get returned unexpected JSON shape"
+    value = data.get("value")
+    if not isinstance(value, str):
+        return None, "bws secret get JSON does not contain string field 'value'"
+    return value, None
+
+
+def check_secret_resolvable(root: Path, env: str, secret_name: str, secret_cfg: Mapping[str, Any], *, ctx: SecretResolverCtx) -> Optional[str]:
+    backend = str(secret_cfg.get("backend") or "").strip()
 
     if backend == "mock":
-        # Read from env/.secrets-store/<env>/<name>
+        store_path = root / "env" / ".secrets-store" / env / secret_name
+        if not store_path.exists():
+            return f"mock secret missing: create {store_path}"
+        return None
+
+    if backend == "env":
+        var = str(secret_cfg.get("env_var") or "").strip()
+        if not var:
+            return "env backend requires env_var"
+        if os.getenv(var) is None:
+            return f"missing environment variable for secret backend env: {var}"
+        return None
+
+    if backend == "file":
+        p = str(secret_cfg.get("path") or "").strip()
+        if not p:
+            return "file backend requires path"
+        path = Path(p)
+        if not path.is_absolute():
+            path = (root / path).resolve()
+        if not path.exists():
+            return f"file secret missing: {path}"
+        return None
+
+    if backend == "bws":
+        if not _bws_access_token_present():
+            return "bws backend requires BWS_ACCESS_TOKEN in the environment"
+        scope = str(secret_cfg.get("scope") or "").strip()
+        if scope not in {"project", "shared"}:
+            return "bws backend requires scope: project|shared"
+
+        project_id = str(secret_cfg.get("project_id") or "").strip() or None
+        if project_id is None:
+            project_name = str(secret_cfg.get("project_name") or "").strip() or None
+            if project_name is None:
+                project_name, err = _bws_project_name_for_env(ctx.policy_doc, env)
+                if err:
+                    return err
+            project_id, err = _bws_project_id_for_name(ctx, project_name)
+            if err:
+                return err
+
+        key = str(secret_cfg.get("key") or "").strip() or None
+        if key is None:
+            key, err = _bws_key_for_secret(ctx.policy_doc, env=env, secret_name=secret_name, scope=scope)
+            if err:
+                return err
+
+        _sid, err = _bws_secret_id_for_key(ctx, project_id, key)
+        return err
+
+    return f"unsupported secret backend: {backend!r} (supported: mock, env, file, bws)"
+
+
+def resolve_secret_value(root: Path, env: str, secret_name: str, secret_cfg: Mapping[str, Any], *, ctx: SecretResolverCtx) -> Tuple[Optional[str], Optional[str]]:
+    """Return (value, error). Never print value elsewhere."""
+    backend = str(secret_cfg.get("backend") or "").strip()
+
+    if backend == "mock":
         store_path = root / "env" / ".secrets-store" / env / secret_name
         if not store_path.exists():
             return None, f"mock secret missing: create {store_path}"
         val = read_text(store_path)
-        # Allow multiline but strip trailing newlines to keep .env stable.
         return val.rstrip("\n"), None
 
     if backend == "env":
-        # Supported ref forms: env://VAR or env:VAR
-        var = ref
-        if ref.startswith("env://"):
-            var = ref[len("env://") :]
-        elif ref.startswith("env:"):
-            var = ref[len("env:") :]
-        var = var.strip()
+        var = str(secret_cfg.get("env_var") or "").strip()
         if not var:
-            return None, f"env backend requires ref like env://VAR_NAME (got {ref!r})"
+            return None, "env backend requires env_var"
         val = os.getenv(var)
         if val is None:
             return None, f"missing environment variable for secret backend env: {var}"
         return val, None
 
     if backend == "file":
-        # Supported ref forms: file:///abs/path or file:relative/path
-        p = ref
-        if ref.startswith("file://"):
-            p = ref[len("file://") :]
-        elif ref.startswith("file:"):
-            p = ref[len("file:") :]
-        p = p.strip()
+        p = str(secret_cfg.get("path") or "").strip()
         if not p:
-            return None, f"file backend requires ref like file:///abs/path (got {ref!r})"
+            return None, "file backend requires path"
         path = Path(p)
         if not path.is_absolute():
             path = (root / path).resolve()
@@ -467,7 +963,38 @@ def resolve_secret(root: Path, env: str, secret_name: str, secret_cfg: Mapping[s
         val = read_text(path)
         return val.rstrip("\n"), None
 
-    return None, f"unsupported secret backend: {backend!r} (supported: mock, env, file)"
+    if backend == "bws":
+        err = check_secret_resolvable(root, env, secret_name, secret_cfg, ctx=ctx)
+        if err:
+            return None, err
+
+        scope = str(secret_cfg.get("scope") or "").strip()
+        project_id = str(secret_cfg.get("project_id") or "").strip() or None
+        if project_id is None:
+            project_name = str(secret_cfg.get("project_name") or "").strip() or None
+            if project_name is None:
+                project_name, err = _bws_project_name_for_env(ctx.policy_doc, env)
+                if err:
+                    return None, err
+            project_id, err = _bws_project_id_for_name(ctx, project_name)
+            if err:
+                return None, err
+
+        key = str(secret_cfg.get("key") or "").strip() or None
+        if key is None:
+            key, err = _bws_key_for_secret(ctx.policy_doc, env=env, secret_name=secret_name, scope=scope)
+            if err:
+                return None, err
+
+        sid, err = _bws_secret_id_for_key(ctx, project_id, key)
+        if err:
+            return None, err
+        val, err = _bws_secret_value(ctx, sid)
+        if err:
+            return None, err
+        return val.rstrip("\n"), None
+
+    return None, f"unsupported secret backend: {backend!r} (supported: mock, env, file, bws)"
 
 
 def redact_effective(vars_def: Mapping[str, VarDef], effective: Mapping[str, Any]) -> Dict[str, Any]:
@@ -486,6 +1013,7 @@ def envfile_name_for(env: str) -> str:
 
 
 def write_env_file(path: Path, kv: Mapping[str, Any]) -> None:
+    ensure_dirs(path)
     lines: List[str] = []
     lines.append("# Generated by env-localctl. Do not hand-edit; regenerate via env_localctl.py compile")
     lines.append(f"# Generated at: {utc_now_iso()}")
@@ -630,7 +1158,9 @@ def render_markdown_compile(report: Mapping[str, Any]) -> str:
     lines.append(f"- Env: `{report.get('env')}`")
     lines.append(f"- Status: **{report.get('status')}**")
     lines.append(f"- Env file: `{report.get('env_file')}`")
-    lines.append(f"- Effective context: `{report.get('effective_context')}`")
+    ctx = report.get("effective_context")
+    ctx_label = "(skipped)" if ctx in (None, "", False) else str(ctx)
+    lines.append(f"- Effective context: `{ctx_label}`")
     lines.append("")
 
     missing = list(report.get("missing") or [])
@@ -672,7 +1202,7 @@ def ensure_dirs(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def cmd_doctor(root: Path, env: str, out: Optional[Path]) -> int:
+def cmd_doctor(root: Path, env: str, runtime_target: str, workload: Optional[str], out: Optional[Path]) -> int:
     ts = utc_now_iso()
 
     mode = get_ssot_mode(root)
@@ -682,6 +1212,31 @@ def cmd_doctor(root: Path, env: str, out: Optional[Path]) -> int:
 
     if mode != "repo-env-contract":
         errors.append("SSOT mode gate failed: docs/project/env-ssot.json must set mode=repo-env-contract")
+
+    policy_doc, p_err = load_policy_doc(root)
+    errors.extend(p_err)
+    policy_env: Optional[Dict[str, Any]] = None
+    decision: Optional[PolicyDecision] = None
+    if policy_doc:
+        policy_env, pe_err = get_policy_env(policy_doc)
+        errors.extend(pe_err)
+        if policy_env:
+            decision, d_err = decide_policy_env(policy_env, env=env, runtime_target=runtime_target, workload=workload)
+            errors.extend(d_err)
+            warnings.append(
+                f"Policy decision: auth_mode={decision.auth_mode}; preflight={decision.preflight_mode}; runtime_target={runtime_target}; workload={workload or '-'}; rule_id={decision.rule_id or '-'}"
+            )
+            pf_err, pf_warn, _pf_evidence = run_policy_preflight(
+                root,
+                policy_env=policy_env,
+                decision=decision,
+                env_map=os.environ,
+                check_files=True,
+            )
+            errors.extend(pf_err)
+            warnings.extend(pf_warn)
+
+    secret_ctx = new_secret_ctx(policy_doc)
 
     vars_def, contract_errors = parse_contract(root)
     errors.extend(contract_errors)
@@ -721,8 +1276,7 @@ def cmd_doctor(root: Path, env: str, out: Optional[Path]) -> int:
             if ref_cfg is None:
                 missing_required.append(f"{name} (missing secret ref entry: {vdef.secret_ref} in env/secrets/{env}.ref.yaml)")
                 continue
-            # Try resolve but do not store in report.
-            _val, err = resolve_secret(root, env, vdef.secret_ref, ref_cfg)
+            err = check_secret_resolvable(root, env, vdef.secret_ref, ref_cfg, ctx=secret_ctx)
             if err:
                 missing_required.append(f"{name} (secret material unavailable: {err})")
             continue
@@ -754,6 +1308,7 @@ def cmd_doctor(root: Path, env: str, out: Optional[Path]) -> int:
     if any("secret" in e for e in missing_required):
         actions.append(f"Ensure env/secrets/{env}.ref.yaml contains the referenced secrets and provide secret material via approved backend (never via chat).")
         actions.append(f"For mock backend: create files under env/.secrets-store/{env}/<secret_name>.")
+        actions.append("For bws backend: ensure `bws` is installed and `BWS_ACCESS_TOKEN` is set in your shell (do not commit tokens).")
 
     status = "PASS" if not errors else "FAIL"
     summary = {
@@ -775,7 +1330,17 @@ def cmd_doctor(root: Path, env: str, out: Optional[Path]) -> int:
     return 0 if status == "PASS" else 1
 
 
-def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = False) -> int:
+def cmd_compile(
+    root: Path,
+    env: str,
+    runtime_target: str,
+    workload: Optional[str],
+    out: Optional[Path],
+    *,
+    no_write: bool = False,
+    env_file: Optional[Path] = None,
+    no_context: bool = False,
+) -> int:
     ts = utc_now_iso()
     errors: List[str] = []
     missing: List[str] = []
@@ -784,6 +1349,22 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
     mode = get_ssot_mode(root)
     if mode != "repo-env-contract":
         errors.append("SSOT mode gate failed: docs/project/env-ssot.json must set mode=repo-env-contract")
+
+    policy_doc, p_err = load_policy_doc(root)
+    errors.extend(p_err)
+    policy_env: Optional[Dict[str, Any]] = None
+    decision: Optional[PolicyDecision] = None
+    if policy_doc:
+        policy_env, pe_err = get_policy_env(policy_doc)
+        errors.extend(pe_err)
+        if policy_env:
+            decision, d_err = decide_policy_env(policy_env, env=env, runtime_target=runtime_target, workload=workload)
+            errors.extend(d_err)
+            warnings.append(
+                f"Policy decision: auth_mode={decision.auth_mode}; preflight={decision.preflight_mode}; runtime_target={runtime_target}; workload={workload or '-'}; rule_id={decision.rule_id or '-'}"
+            )
+
+    secret_ctx = new_secret_ctx(policy_doc)
 
     vars_def, contract_errors = parse_contract(root)
     errors.extend(contract_errors)
@@ -845,7 +1426,7 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
         if ref_cfg is None:
             missing.append(f"{name} (missing secret ref entry: {vdef.secret_ref} in env/secrets/{env}.ref.yaml)")
             continue
-        val, err = resolve_secret(root, env, vdef.secret_ref, ref_cfg)
+        val, err = resolve_secret_value(root, env, vdef.secret_ref, ref_cfg, ctx=secret_ctx)
         if err:
             missing.append(f"{name} (secret material unavailable: {err})")
             continue
@@ -869,10 +1450,25 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
     if "APP_ENV" in vars_def and applicable(vars_def["APP_ENV"], env) and vars_def["APP_ENV"].state != "removed":
         effective["APP_ENV"] = env
 
+    if policy_env and decision:
+        pf_err, pf_warn, _pf_evidence = run_policy_preflight(
+            root,
+            policy_env=policy_env,
+            decision=decision,
+            env_map=effective,
+            check_files=True,
+        )
+        errors.extend(pf_err)
+        warnings.extend(pf_warn)
+
     status = "PASS" if not errors else "FAIL"
 
-    env_file_name = envfile_name_for(env)
-    env_file_path = root / env_file_name
+    if env_file is None:
+        env_file_path = root / envfile_name_for(env)
+    else:
+        env_file_path = env_file
+        if not env_file_path.is_absolute():
+            env_file_path = (root / env_file_path).resolve()
 
     ctx_path = root / "docs" / "context" / "env" / f"effective-{env}.json"
 
@@ -890,7 +1486,7 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
         "env": env,
         "status": status,
         "env_file": str(env_file_path),
-        "effective_context": str(ctx_path),
+        "effective_context": None if no_context else str(ctx_path),
         "missing": missing,
         "errors": errors,
         "warnings": warnings,
@@ -900,13 +1496,14 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
     if status == "PASS":
         if not no_write:
             write_env_file(env_file_path, effective)
-        ensure_dirs(ctx_path)
-        redacted = {
-            "generated_at_utc": ts,
-            "env": env,
-            "values": redact_effective(vars_def, effective),
-        }
-        ctx_path.write_text(json.dumps(redacted, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+        if not no_context:
+            ensure_dirs(ctx_path)
+            redacted = {
+                "generated_at_utc": ts,
+                "env": env,
+                "values": redact_effective(vars_def, effective),
+            }
+            ctx_path.write_text(json.dumps(redacted, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
 
     md = render_markdown_compile(report)
     if out:
@@ -918,7 +1515,7 @@ def cmd_compile(root: Path, env: str, out: Optional[Path], no_write: bool = Fals
     return 0 if status == "PASS" else 1
 
 
-def cmd_connectivity(root: Path, env: str, out: Optional[Path]) -> int:
+def cmd_connectivity(root: Path, env: str, runtime_target: str, workload: Optional[str], out: Optional[Path]) -> int:
     # Use compile's effective env resolution but do not write env file.
     # We'll re-run compile logic with no_write and capture effective values.
 
@@ -938,15 +1535,31 @@ def cmd_connectivity(root: Path, env: str, out: Optional[Path]) -> int:
             print(md)
         return 1
 
+    errors: List[str] = []
+    warnings: List[str] = []
+
+    policy_doc, p_err = load_policy_doc(root)
+    errors.extend(p_err)
+    policy_env: Optional[Dict[str, Any]] = None
+    decision: Optional[PolicyDecision] = None
+    if policy_doc:
+        policy_env, pe_err = get_policy_env(policy_doc)
+        errors.extend(pe_err)
+        if policy_env:
+            decision, d_err = decide_policy_env(policy_env, env=env, runtime_target=runtime_target, workload=workload)
+            errors.extend(d_err)
+            warnings.append(
+                f"Policy decision: auth_mode={decision.auth_mode}; preflight={decision.preflight_mode}; runtime_target={runtime_target}; workload={workload or '-'}; rule_id={decision.rule_id or '-'}"
+            )
+
+    secret_ctx = new_secret_ctx(policy_doc)
+
     # Reuse compile internals by building effective map in-memory.
     values_path = root / "env" / "values" / f"{env}.yaml"
     local_values_path = root / "env" / "values" / f"{env}.local.yaml"
     values, v_err = load_values_file(values_path)
     local_values, lv_err = load_values_file(local_values_path)
     secrets_ref, s_err = load_secrets_ref(root / "env" / "secrets" / f"{env}.ref.yaml")
-
-    errors: List[str] = []
-    warnings: List[str] = []
     errors.extend(v_err)
     errors.extend(lv_err)
     errors.extend(s_err)
@@ -994,11 +1607,22 @@ def cmd_connectivity(root: Path, env: str, out: Optional[Path]) -> int:
         ref_cfg = secrets_ref.get(vdef.secret_ref)
         if not ref_cfg:
             continue
-        val, err = resolve_secret(root, env, vdef.secret_ref, ref_cfg)
+        val, err = resolve_secret_value(root, env, vdef.secret_ref, ref_cfg, ctx=secret_ctx)
         if err:
             errors.append(f"Secret unresolved for connectivity check: {name} ({err})")
             continue
         effective[name] = val
+
+    if policy_env and decision:
+        pf_err, pf_warn, _pf_evidence = run_policy_preflight(
+            root,
+            policy_env=policy_env,
+            decision=decision,
+            env_map=effective,
+            check_files=True,
+        )
+        errors.extend(pf_err)
+        warnings.extend(pf_warn)
 
     report = connectivity_report(vars_def, effective, env)
     status = "PASS" if not errors and all(c.get("status") in {"PASS", "SKIP"} for c in report.get("checks", [])) else "FAIL"
@@ -1046,29 +1670,49 @@ def main() -> int:
     p_doc = sub.add_parser("doctor", help="Diagnose local env readiness and missing inputs.")
     p_doc.add_argument("--root", default=".", help="Project root")
     p_doc.add_argument("--env", default="dev", help="Environment name (default: dev)")
+    p_doc.add_argument("--runtime-target", default="local", help="Runtime target for policy rules (default: local)")
+    p_doc.add_argument("--workload", default=None, help="Optional workload name for policy matching (e.g. api, worker)")
     p_doc.add_argument("--out", default=None, help="Write markdown report to file")
 
     p_comp = sub.add_parser("compile", help="Compile and write local env file and redacted effective context.")
     p_comp.add_argument("--root", default=".", help="Project root")
     p_comp.add_argument("--env", default="dev", help="Environment name (default: dev)")
+    p_comp.add_argument("--runtime-target", default="local", help="Runtime target for policy rules (default: local)")
+    p_comp.add_argument("--workload", default=None, help="Optional workload name for policy matching (e.g. api, worker)")
     p_comp.add_argument("--out", default=None, help="Write markdown report to file")
     p_comp.add_argument("--no-write", action="store_true", help="Do not write env file (still writes redacted context on PASS)")
+    p_comp.add_argument("--env-file", default=None, help="Write env file to a custom path (absolute or repo-relative)")
+    p_comp.add_argument("--no-context", action="store_true", help="Do not write docs/context/env/effective-<env>.json")
 
     p_conn = sub.add_parser("connectivity", help="Best-effort connectivity smoke checks (redacted).")
     p_conn.add_argument("--root", default=".", help="Project root")
     p_conn.add_argument("--env", default="dev", help="Environment name (default: dev)")
+    p_conn.add_argument("--runtime-target", default="local", help="Runtime target for policy rules (default: local)")
+    p_conn.add_argument("--workload", default=None, help="Optional workload name for policy matching (e.g. api, worker)")
     p_conn.add_argument("--out", default=None, help="Write markdown report to file")
 
     args = parser.parse_args()
     root = Path(args.root).resolve()
     out = Path(args.out).resolve() if getattr(args, "out", None) else None
 
+    runtime_target = str(getattr(args, "runtime_target", "local") or "local").strip() or "local"
+
     if args.cmd == "doctor":
-        return cmd_doctor(root, args.env, out)
+        return cmd_doctor(root, args.env, runtime_target, args.workload, out)
     if args.cmd == "compile":
-        return cmd_compile(root, args.env, out, no_write=bool(args.no_write))
+        env_file = Path(args.env_file).expanduser() if getattr(args, "env_file", None) else None
+        return cmd_compile(
+            root,
+            args.env,
+            runtime_target,
+            args.workload,
+            out,
+            no_write=bool(args.no_write),
+            env_file=env_file,
+            no_context=bool(args.no_context),
+        )
     if args.cmd == "connectivity":
-        return cmd_connectivity(root, args.env, out)
+        return cmd_connectivity(root, args.env, runtime_target, args.workload, out)
 
     print(f"Unknown command: {args.cmd}", file=sys.stderr)
     return 1

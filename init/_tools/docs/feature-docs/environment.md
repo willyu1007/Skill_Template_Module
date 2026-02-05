@@ -5,7 +5,9 @@
 - Treats `env/contract.yaml` as env var contract SSOT (no secrets in repo)
 - Scaffolds `env/values/*` and `env/secrets/*.ref.yaml` (secret refs only)
 - Writes the SSOT gate file: `docs/project/env-ssot.json`
-- Can generate non-secret artifacts: `.env.example`, `docs/env.md`, `docs/context/env/contract.json`
+- Scaffolds the policy SSOT file: `docs/project/policy.yaml` (auth/preflight + cloud injection targets)
+- Cloud injection is `envfile` provider (local/ssh transport); remote ops require `--approve-remote`
+- Can generate non-secret artifacts: `env/.env.example`, `docs/env.md`, `docs/context/env/contract.json`
 
 ## How to enable
 
@@ -43,12 +45,12 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 ## Key outputs
 
 - `docs/project/env-ssot.json`
+- `docs/project/policy.yaml`
 - `env/contract.yaml`
 - `env/values/*.yaml` (non-secret values)
 - `env/secrets/*.ref.yaml` (secret refs only; no values)
-- `env/inventory/*.yaml`
 - Generated (non-secret) artifacts when `generate` runs:
-  - `.env.example`
+  - `env/.env.example`
   - `docs/env.md`
   - `docs/context/env/contract.json`
 
@@ -56,3 +58,4 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 
 - Do NOT store secret values in `env/values/*.yaml` or `env/contract.yaml`.
 - Use `env/secrets/*.ref.yaml` to reference secrets managed outside the repo.
+- Any SSH/SCP remote command requires explicit `--approve-remote`.

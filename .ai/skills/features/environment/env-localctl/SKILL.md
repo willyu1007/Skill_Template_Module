@@ -16,6 +16,7 @@ The `env-localctl` skill:
 - resolves secrets via approved mechanisms (never via chat)
 - generates a local env file (`.env.local` or `.env.<env>.local`)
 - produces redacted LLM context (`docs/context/env/effective-<env>.json`)
+- can compile to a custom env-file path (deployment machine) and optionally skip context
 
 ## Hard precondition (SSOT mode gate)
 
@@ -86,6 +87,7 @@ Evidence files (templates available in `./templates/`):
 
 - `.env.local` (default for `dev`) or `.env.<env>.local`
 - `docs/context/env/effective-<env>.json` (redacted; safe for LLM)
+- Custom env-file path when `--env-file` is provided (e.g. `ops/deploy/env-files/<env>.env`)
 
 ## Steps
 
@@ -95,7 +97,8 @@ Evidence files (templates available in `./templates/`):
 2. Confirm env SSOT mode is `repo-env-contract` via `docs/project/env-ssot.json`.
    - If not, STOP.
 3. Confirm target env for local run (default: `dev`).
-4. Choose evidence directory.
+4. Confirm runtime target for policy rules (default: `local`; use `ecs` for deployment-machine compile).
+5. Choose evidence directory.
 
 ### Phase A — Doctor (diagnose)
 
@@ -122,6 +125,12 @@ python3 -B -S .ai/skills/features/environment/env-localctl/scripts/env_localctl.
 
 ```bash
 python3 -B -S .ai/skills/features/environment/env-localctl/scripts/env_localctl.py compile --root . --env dev --out <EVIDENCE_DIR>/02-config-compile-report.md
+```
+
+Deployment-machine compile (custom env-file, no context):
+
+```bash
+python3 -B -S .ai/skills/features/environment/env-localctl/scripts/env_localctl.py compile --root . --env staging --runtime-target ecs --workload api --env-file ops/deploy/env-files/staging.env --no-context --out <EVIDENCE_DIR>/02-config-compile-report.md
 ```
 
 ### Phase C — Connectivity smoke (optional)

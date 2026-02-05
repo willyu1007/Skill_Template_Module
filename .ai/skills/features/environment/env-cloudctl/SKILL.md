@@ -1,6 +1,6 @@
 ---
 name: env-cloudctl
-description: Plan/apply/verify cloud environment config and secret references using env contract + inventory; detect drift, rotate secrets, and decommission environments with approval gates. Use for staging/prod deployments and maintenance.
+description: Plan/apply/verify cloud environment config and secret references using env contract + policy targets; detect drift, rotate secrets, and decommission environments with approval gates. Use for staging/prod deployments and maintenance.
 ---
 
 # Cloud Environment Control (plan / apply / drift / rotate / decommission)
@@ -15,29 +15,31 @@ The `env-cloudctl` skill:
   - `env/contract.yaml`
   - `env/values/<env>.yaml`
   - `env/secrets/<env>.ref.yaml` (refs only)
-  - `env/inventory/<env>.yaml` (routing)
+  - `docs/project/policy.yaml` (routing + auth/preflight + cloud targets)
 - produces a deterministic change plan (diff)
 - applies changes only after explicit approval
 - detects drift
 - rotates secrets (backend-dependent)
 - decommissions environments (high risk)
+- supports env-file injection via `envfile` provider (local or ssh transport)
 
 ## Hard preconditions
 
 1. Env SSOT mode is `repo-env-contract`.
    - Check: `docs/project/env-ssot.json`
-2. The target env has an inventory file.
-   - Required: `env/inventory/<env>.yaml`
+2. Policy SSOT exists and includes a matching cloud target.
+   - Required: `docs/project/policy.yaml`
+   - Required: `policy.env.cloud.targets[]` must match the requested `--env` (and optional `--workload`)
 
 If either is not true, STOP.
 
-If `docs/project/env-ssot.json` or `env/contract.yaml` does not exist (first-time setup), run:
+If `docs/project/env-ssot.json`, `docs/project/policy.yaml`, or `env/contract.yaml` does not exist (first-time setup), run:
 
 ```bash
 python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py init --root .
 ```
 
-Then customize the contract and inventory before using cloud operations.
+Then customize the contract, policy targets, and secret backends before using cloud operations.
 
 ## When to use
 
@@ -60,6 +62,7 @@ Avoid when:
 - MUST NOT materialize secret values in evidence artifacts.
 - MUST do a plan/diff before any apply.
 - MUST require explicit approval before apply/rotate/decommission.
+- MUST require `--approve-remote` before any SSH/SCP remote command.
 - MUST treat **Identity/IAM changes as out of scope for automatic apply**.
   - You may generate a runbook or policy diff, but do not apply permissions changes automatically.
 
@@ -68,7 +71,7 @@ Avoid when:
 - Contract: `env/contract.yaml`
 - Values: `env/values/<env>.yaml`
 - Secret refs: `env/secrets/<env>.ref.yaml`
-- Inventory: `env/inventory/<env>.yaml`
+- Policy: `docs/project/policy.yaml`
 
 ## Outputs (evidence + context)
 
@@ -99,7 +102,7 @@ Evidence files (templates available in `./templates/`):
 ### Phase 0 — Confirm scope
 
 1. Confirm target env (must be explicit): `staging` / `prod` / other.
-2. Confirm preconditions (SSOT mode + inventory).
+2. Confirm preconditions (SSOT mode + policy cloud target).
 3. Choose evidence directory.
 
 ### Phase A — Plan (read-only)
@@ -107,7 +110,13 @@ Evidence files (templates available in `./templates/`):
 4. Produce a deterministic plan (diff):
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py plan --root . --env <env> --out <EVIDENCE_DIR>/02-apply-plan.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py plan --root . --env <env> --workload <optional> --out <EVIDENCE_DIR>/02-apply-plan.md
+```
+
+Remote read (ssh transport only):
+
+```bash
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py plan --root . --env <env> --workload <optional> --remote --approve-remote --out <EVIDENCE_DIR>/02-apply-plan.md
 ```
 
 5. Record `00-target-and-scope.md` and summarize high-risk operations.
@@ -126,15 +135,23 @@ python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.
 7. Apply the plan (requires `--approve`):
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py apply --root . --env <env> --approve --out <EVIDENCE_DIR>/03-execution-log.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py apply --root . --env <env> --workload <optional> --approve --out <EVIDENCE_DIR>/03-execution-log.md
 ```
+
+For ssh transport, add `--approve-remote`.
 
 ### Phase C — Verify
 
 8. Verify desired == deployed (read-only):
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py verify --root . --env <env> --out <EVIDENCE_DIR>/04-post-verify.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py verify --root . --env <env> --workload <optional> --out <EVIDENCE_DIR>/04-post-verify.md
+```
+
+Remote hash check (ssh transport only):
+
+```bash
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py verify --root . --env <env> --workload <optional> --remote --approve-remote --out <EVIDENCE_DIR>/04-post-verify.md
 ```
 
 ### Phase D — Drift detection
@@ -142,7 +159,13 @@ python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.
 9. Detect drift anytime:
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py drift --root . --env <env> --out <EVIDENCE_DIR>/01-drift-report.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py drift --root . --env <env> --workload <optional> --out <EVIDENCE_DIR>/01-drift-report.md
+```
+
+Remote read (ssh transport only):
+
+```bash
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py drift --root . --env <env> --workload <optional> --remote --approve-remote --out <EVIDENCE_DIR>/01-drift-report.md
 ```
 
 ### Phase E — Secret rotation (backend dependent)
@@ -150,7 +173,7 @@ python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.
 10. Rotate a secret (requires `--approve`):
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py rotate --root . --env <env> --secret <secret_ref_name> --approve --out <EVIDENCE_DIR>/03-execution-log.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py rotate --root . --env <env> --workload <optional> --secret <secret_ref_name> --approve --out <EVIDENCE_DIR>/03-execution-log.md
 ```
 
 ### Phase F — Decommission (high risk)
@@ -158,13 +181,13 @@ python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.
 11. Decommission an environment (requires `--approve`):
 
 ```bash
-python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py decommission --root . --env <env> --approve --out <EVIDENCE_DIR>/03-execution-log.md
+python3 -B -S .ai/skills/features/environment/env-cloudctl/scripts/env_cloudctl.py decommission --root . --env <env> --workload <optional> --approve --out <EVIDENCE_DIR>/03-execution-log.md
 ```
 
 ## Verification
 
 - [ ] SSOT mode is `repo-env-contract`
-- [ ] Inventory file exists for the env
+- [ ] Policy cloud target exists for the env/workload
 - [ ] Plan produced and reviewed before apply
 - [ ] Explicit approval gate respected
 - [ ] Verify passes after apply

@@ -1,6 +1,6 @@
 ---
 name: env-cloudctl
-description: Plan/apply/verify cloud environment config and secret references using env contract + inventory; detect drift, rotate secrets, and decommission environments with approval gates. Use for staging/prod deployments and maintenance.
+description: Plan/apply/verify cloud environment config and secret references using env contract + policy targets; detect drift, rotate secrets, and decommission environments with approval gates. Use for staging/prod deployments and maintenance.
 category: features/environment
 ssot_path: .ai/skills/features/environment/env-cloudctl
 ---

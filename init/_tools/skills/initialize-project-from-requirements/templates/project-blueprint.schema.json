@@ -429,6 +429,19 @@
       },
       "additionalProperties": true
     },
+    "iac": {
+      "type": "object",
+      "description": "Infrastructure as Code (IaC) selection. The iac feature is enabled when iac.tool is not \"none\".",
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": ["none", "ros", "terraform"],
+          "default": "none",
+          "description": "IaC tool to use. Set to \"none\" (or omit iac) to disable the iac feature."
+        }
+      },
+      "additionalProperties": true
+    },
     "packaging": {
       "type": "object",
       "description": "Packaging configuration (effective when packaging feature is enabled).",

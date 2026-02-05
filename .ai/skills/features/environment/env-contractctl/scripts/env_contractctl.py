@@ -109,7 +109,6 @@ def discover_envs(root: Path) -> List[str]:
     envs: set[str] = set()
     values_dir = root / "env" / "values"
     secrets_dir = root / "env" / "secrets"
-    inventory_dir = root / "env" / "inventory"
 
     if values_dir.exists():
         for p in values_dir.glob("*.yaml"):
@@ -123,29 +122,7 @@ def discover_envs(root: Path) -> List[str]:
         for p in secrets_dir.glob("*.ref.yml"):
             envs.add(p.name.replace(".ref.yml", ""))
 
-    if inventory_dir.exists():
-        for p in inventory_dir.glob("*.yaml"):
-            envs.add(p.stem)
-        for p in inventory_dir.glob("*.yml"):
-            envs.add(p.stem)
-
     return sorted(envs)
-
-
-def normalize_secrets_ref(doc: Any) -> Dict[str, Any]:
-    """Return {secret_name: {backend, ref, ...}}."""
-    if doc is None:
-        return {}
-    if isinstance(doc, dict) and "secrets" in doc and isinstance(doc["secrets"], dict):
-        return doc["secrets"]
-    if isinstance(doc, dict):
-        # Allow shorthand: top-level mapping is secrets
-        # (but reserve "version" key if present).
-        secrets = {k: v for k, v in doc.items() if k != "version"}
-        # If it looks like a proper mapping, accept.
-        if all(isinstance(k, str) for k in secrets.keys()):
-            return secrets  # type: ignore[return-value]
-    return {}
 
 
 def load_contract(root: Path) -> Tuple[Optional[Dict[str, Any]], List[ValidationMessage]]:
@@ -346,12 +323,27 @@ def load_secrets_ref_for_env(root: Path, env: str) -> Tuple[Dict[str, Any], Opti
         _add_msg(msgs, "ERROR", "SECRETS_PARSE", f"Failed to parse secrets ref file for env={env}: {e}", path)
         return {}, path, msgs
 
-    secrets = normalize_secrets_ref(doc)
-    if not isinstance(secrets, dict):
-        _add_msg(msgs, "ERROR", "SECRETS_SHAPE", f"Secrets ref file must be a mapping for env={env}", path)
+    if doc is None:
+        _add_msg(
+            msgs,
+            "ERROR",
+            "SECRETS_EMPTY",
+            f"Secrets ref file is empty for env={env}. Expected versioned format: version: 1 + top-level 'secrets' mapping.",
+            path,
+        )
         return {}, path, msgs
 
-    return secrets, path, msgs
+    if not isinstance(doc, dict) or "secrets" not in doc or not isinstance(doc.get("secrets"), dict):
+        _add_msg(
+            msgs,
+            "ERROR",
+            "SECRETS_SHAPE",
+            f"Secrets ref file must have top-level 'secrets' mapping for env={env} (versioned format).",
+            path,
+        )
+        return {}, path, msgs
+
+    return doc["secrets"], path, msgs
 
 
 def validate_coverage(
@@ -399,6 +391,90 @@ def validate_coverage(
 
         for m in vmsgs + smsgs:
             (errors if m.level == "ERROR" else warnings).append(m)
+
+        # Validate secret ref definitions (structure + backend config; refs only, no values).
+        for secret_name, cfg in secrets_ref.items():
+            if not isinstance(secret_name, str) or not secret_name.strip():
+                _add_msg(
+                    errors,
+                    "ERROR",
+                    "SECRETS_NAME",
+                    f"Invalid secret name in env/secrets/{env}.ref.yaml: {secret_name!r}",
+                    secrets_path or (root / "env" / "secrets"),
+                )
+                continue
+            if not isinstance(cfg, dict):
+                _add_msg(
+                    errors,
+                    "ERROR",
+                    "SECRETS_DEF_SHAPE",
+                    f"Secret ref '{secret_name}' must be a mapping (backend config) for env={env}",
+                    secrets_path,
+                )
+                continue
+            if "ref" in cfg:
+                _add_msg(
+                    errors,
+                    "ERROR",
+                    "SECRETS_LEGACY_REF",
+                    f"Secret ref '{secret_name}' uses legacy key 'ref' which is not supported. Remove it; use structured fields only.",
+                    secrets_path,
+                )
+            if "value" in cfg:
+                _add_msg(
+                    errors,
+                    "ERROR",
+                    "SECRETS_VALUE_FORBIDDEN",
+                    f"Secret ref '{secret_name}' contains forbidden key 'value'. Secret values must never be stored in repo files.",
+                    secrets_path,
+                )
+
+            backend = cfg.get("backend")
+            if not isinstance(backend, str) or not backend.strip():
+                _add_msg(errors, "ERROR", "SECRETS_BACKEND", f"Secret ref '{secret_name}' must specify backend for env={env}", secrets_path)
+                continue
+
+            b = backend.strip()
+            if b == "mock":
+                pass
+            elif b == "env":
+                env_var = cfg.get("env_var")
+                if not isinstance(env_var, str) or not _VAR_NAME_RE.match(env_var.strip()):
+                    _add_msg(
+                        errors,
+                        "ERROR",
+                        "SECRETS_ENV_VAR",
+                        f"Secret ref '{secret_name}' env backend requires env_var (e.g. OAUTH_CLIENT_SECRET) for env={env}",
+                        secrets_path,
+                    )
+            elif b == "file":
+                p = cfg.get("path")
+                if not isinstance(p, str) or not p.strip():
+                    _add_msg(
+                        errors,
+                        "ERROR",
+                        "SECRETS_FILE_PATH",
+                        f"Secret ref '{secret_name}' file backend requires non-empty path for env={env}",
+                        secrets_path,
+                    )
+            elif b == "bws":
+                scope = cfg.get("scope")
+                if not isinstance(scope, str) or scope.strip() not in {"project", "shared"}:
+                    _add_msg(
+                        errors,
+                        "ERROR",
+                        "SECRETS_BWS_SCOPE",
+                        f"Secret ref '{secret_name}' bws backend requires scope: project|shared for env={env}",
+                        secrets_path,
+                    )
+            else:
+                _add_msg(
+                    errors,
+                    "ERROR",
+                    "SECRETS_BACKEND_UNSUPPORTED",
+                    f"Secret ref '{secret_name}' uses unsupported backend {b!r} for env={env} (supported: mock, env, file, bws)",
+                    secrets_path,
+                )
 
         # Apply rename_from migrations (alias old key -> new key) before unknown-key validation.
         migrated_values: Dict[str, Any] = {}
@@ -876,6 +952,121 @@ def run_init(root: Path, envs: Sequence[str], force: bool = False) -> Dict[str, 
 """,
     )
 
+    # Policy SSOT (scaffold; copy-if-missing)
+    _ensure(
+        root / "docs" / "project" / "policy.yaml",
+        """version: 1
+
+policy:
+  env:
+    merge:
+      strategy: most-specific-wins
+      tie_breaker: error
+
+    defaults:
+      auth_mode: auto
+      preflight:
+        mode: warn
+
+    evidence:
+      fallback_dir: .ai/.tmp/env/fallback
+
+    preflight:
+      detect:
+        providers:
+          aws:
+            env_credential_sets:
+              - id_vars: [AWS_ACCESS_KEY_ID]
+                secret_vars: [AWS_SECRET_ACCESS_KEY]
+                token_vars: [AWS_SESSION_TOKEN]
+            credential_files:
+              paths:
+                - "~/.aws/credentials"
+                - "~/.aws/config"
+          aliyun:
+            env_credential_sets:
+              - id_vars: [ALIBABA_CLOUD_ACCESS_KEY_ID, ALICLOUD_ACCESS_KEY_ID, ALICLOUD_ACCESS_KEY]
+                secret_vars: [ALIBABA_CLOUD_ACCESS_KEY_SECRET, ALICLOUD_ACCESS_KEY_SECRET, ALICLOUD_SECRET_KEY]
+                token_vars: [ALIBABA_CLOUD_SECURITY_TOKEN, ALICLOUD_SECURITY_TOKEN]
+            credential_files:
+              paths:
+                - "~/.alibabacloud/credentials"
+          gcp:
+            env_var_presence:
+              - GOOGLE_APPLICATION_CREDENTIALS
+            credential_files:
+              paths:
+                - "~/.config/gcloud/application_default_credentials.json"
+
+    secrets:
+      backends:
+        bws:
+          projects:
+            dev: "<org>-<project>-dev"
+            staging: "<org>-<project>-staging"
+            prod: "<org>-<project>-prod"
+          keys:
+            project_prefix: "project/{env}/"
+            shared_prefix: "shared/"
+
+    cloud:
+      defaults:
+        env_file_name: "{env}.env"
+        runtime: docker-compose
+      targets: []
+
+    rules:
+      - id: ecs-default
+        match:
+          runtime_target: ecs
+        set:
+          auth_mode: role-only
+          preflight:
+            mode: fail
+
+      - id: prod-ecs
+        match:
+          env: prod
+          runtime_target: ecs
+        set:
+          auth_mode: role-only
+          preflight:
+            mode: fail
+
+      - id: staging-local
+        match:
+          env: staging
+          runtime_target: local
+        set:
+          auth_mode: role-only
+          preflight:
+            mode: fail
+          sts_bootstrap:
+            allowed: true
+            allow_ak_for_sts_only: true
+
+      - id: dev-local
+        match:
+          env: dev
+          runtime_target: local
+        set:
+          auth_mode: auto
+          preflight:
+            mode: warn
+          ak_fallback:
+            allowed: true
+            require_explicit_policy: true
+            record: true
+
+  iac:
+    cloud_scope: aliyun-only
+    evidence_dir: ops/iac/handbook
+    identity:
+      allow_ak: true
+      forbid_runtime_injection: true
+""",
+    )
+
     # Minimal contract template
     _ensure(
         root / "env" / "contract.yaml",
@@ -908,7 +1099,7 @@ PORT: 8000
 secrets: {}
 """
 
-    # Values + secrets refs + inventory
+    # Values + secrets refs
     for env in envs:
         env = str(env).strip()
         if not env:
@@ -917,17 +1108,9 @@ secrets: {}
         _ensure(root / "env" / "values" / f"{env}.yaml", values_template)
         _ensure(root / "env" / "secrets" / f"{env}.ref.yaml", secrets_template)
 
-        inv_template = f"""version: 1
-env: {env}
-provider: mockcloud
-runtime: mock
-region: local
-"""
-        _ensure(root / "env" / "inventory" / f"{env}.yaml", inv_template)
-
     warnings.append("Update env/contract.yaml to match your application configuration keys.")
     warnings.append("Do NOT place secret values in env/values/*.yaml. Use env/secrets/*.ref.yaml + a secret backend.")
-    warnings.append("Replace mockcloud inventory with your real provider/runtime before using env-cloudctl against real infrastructure.")
+    warnings.append("Update docs/project/policy.yaml to match your environments, cloud targets, and secret backend conventions before using env-cloudctl against real infrastructure.")
 
     return {
         "timestamp_utc": utc_now_iso(),

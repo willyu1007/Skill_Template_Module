@@ -1,0 +1,9 @@
+ROSTemplateFormatVersion: '2015-09-01'
+Description: IaC template (placeholder)
+
+Parameters: {}
+
+Resources: {}
+
+Outputs: {}
+

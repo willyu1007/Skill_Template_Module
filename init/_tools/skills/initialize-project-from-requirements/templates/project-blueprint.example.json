@@ -88,6 +88,9 @@
       "security"
     ]
   },
+  "iac": {
+    "tool": "terraform"
+  },
   "packaging": {
     "enabled": true,
     "containerize": true,

@@ -13,7 +13,6 @@ version: 1
 secrets:
   db_url:
     backend: mock
-    ref: "mock://dev/db_url"
 ```
 
 - Provide secret material by creating:
@@ -35,7 +34,7 @@ version: 1
 secrets:
   api_key:
     backend: env
-    ref: "env://MY_API_KEY"
+    env_var: MY_API_KEY
 ```
 
 ## Backend: file
@@ -47,7 +46,32 @@ version: 1
 secrets:
   api_key:
     backend: file
-    ref: "file:./.secrets/api_key"
+    path: ./.secrets/api_key
+```
+
+## Backend: bws (Bitwarden Secrets Manager)
+
+Use when secret values live in Bitwarden Secrets Manager, and the repo only stores **secret refs**.
+
+Prereqs:
+
+- Install `bws` CLI
+- Provide `BWS_ACCESS_TOKEN` via your shell / CI secret store (never commit it)
+- Configure `docs/project/policy.yaml`:
+  - `policy.env.secrets.backends.bws.projects.<env>`
+  - `policy.env.secrets.backends.bws.keys.project_prefix` / `shared_prefix`
+
+Secret ref example:
+
+```yaml
+version: 1
+secrets:
+  llm_api_key:
+    backend: bws
+    scope: project   # key = project/{env}/llm_api_key
+  sentry_dsn:
+    backend: bws
+    scope: shared    # key = shared/sentry_dsn
 ```
 
 ## Unsupported backend

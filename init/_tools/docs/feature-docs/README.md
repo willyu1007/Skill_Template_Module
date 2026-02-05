@@ -22,6 +22,7 @@ Feature assets are integrated under `.ai/`:
 | `deployment` | `features.deployment` (default: `true`) | `.ai/skills/features/deployment/scripts/deployctl.mjs` | [deployment.md](deployment.md) |
 | `release` | `features.release` (default: `true`) | `.ai/skills/features/release/scripts/releasectl.mjs` | [release.md](release.md) |
 | `ci` | `ci.provider` (`none` disables; default: `github`) | `.ai/skills/features/ci/scripts/cictl.mjs` | [ci.md](ci.md) |
+| `iac` | `iac.tool` (`none` disables; default: `none`) | `.ai/skills/features/iac/scripts/iacctl.mjs` | [iac.md](iac.md) |
 | `observability` | `features.observability` (default: `true`) | `.ai/skills/features/observability/scripts/obsctl.mjs` | [observability.md](observability.md) |
 
 ## How to decide (Stage B)
@@ -31,6 +32,8 @@ Feature assets are integrated under `.ai/`:
   - `db.ssot=none` disables DB materialization.
 - CI is enabled/disabled by `ci.provider`:
   - `ci.provider=none` disables CI materialization.
+- IaC is enabled/disabled by `iac.tool`:
+  - `iac.tool=none` (or omitted) disables IaC materialization.
 - Other features are enabled by default; set `features.<id>: false` to skip materialization.
 - Use the pipeline to preview effective enabled features:
 

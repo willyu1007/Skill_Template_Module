@@ -1,6 +1,17 @@
+# NOTE: env/inventory/* is removed. This is a policy.env.cloud.targets example.
 version: 1
-env: staging
-provider: mockcloud
-runtime: mock
-region: local
-notes: "Mock provider for offline tests. Replace with real provider adapter."
+policy:
+  env:
+    cloud:
+      targets:
+        - id: staging-envfile
+          match:
+            env: staging
+          set:
+            provider: envfile
+            runtime: docker-compose
+            injection:
+              transport: local
+              target: /opt/myapp/{env}.env
+              post_commands:
+                - "cd /opt/myapp && docker compose --env-file /opt/myapp/staging.env up -d"

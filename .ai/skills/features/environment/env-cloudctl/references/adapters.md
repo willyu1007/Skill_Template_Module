@@ -6,7 +6,7 @@ Multi-environment + multi-cloud becomes unmanageable if you hardcode provider co
 
 Instead:
 
-- Maintain **spec** centrally (contract/values/secret refs/inventory).
+- Maintain **spec** centrally (contract/values/secret refs/policy targets).
 - Route at runtime to provider-specific adapters.
 
 ## What an adapter must provide
@@ -18,4 +18,9 @@ Instead:
 - `rotate(secret_ref) -> rotation_log` (optional)
 - `decommission(env) -> log` (optional)
 
-The bundled scripts ship only a `mockcloud` adapter for offline tests.
+The bundled scripts ship:
+
+- `mockcloud`: offline tests/demos (stores deployed state under `.ai/mock-cloud/<env>/state.json`)
+- `envfile`: env-file injection with `local` or `ssh` transport
+  - local deployed state cache: `.ai/.tmp/env-cloud/<env>/state.json`
+  - ssh transport writes remote env-file + meta, optional pre/post commands

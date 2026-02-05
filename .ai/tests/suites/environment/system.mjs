@@ -78,6 +78,9 @@ export function run(ctx) {
   if (!fs.existsSync(path.join(rootDir, 'docs', 'project', 'env-ssot.json'))) {
     return { name, status: 'FAIL', error: 'init did not create docs/project/env-ssot.json' };
   }
+  if (!fs.existsSync(path.join(rootDir, 'docs', 'project', 'policy.yaml'))) {
+    return { name, status: 'FAIL', error: 'init did not create docs/project/policy.yaml' };
+  }
   if (!fs.existsSync(path.join(rootDir, 'env', 'contract.yaml'))) {
     return { name, status: 'FAIL', error: 'init did not create env/contract.yaml' };
   }
@@ -140,10 +143,8 @@ export function run(ctx) {
       `secrets:\n` +
       `  db_url:\n` +
       `    backend: mock\n` +
-      `    ref: "mock://dev/db_url"\n` +
       `  api_key:\n` +
-      `    backend: mock\n` +
-      `    ref: "mock://dev/api_key"\n`,
+      `    backend: mock\n`,
     'utf8'
   );
   fs.writeFileSync(
@@ -152,16 +153,31 @@ export function run(ctx) {
       `secrets:\n` +
       `  db_url:\n` +
       `    backend: mock\n` +
-      `    ref: "mock://staging/db_url"\n` +
       `  api_key:\n` +
-      `    backend: mock\n` +
-      `    ref: "mock://staging/api_key"\n`,
+      `    backend: mock\n`,
     'utf8'
   );
 
   fs.writeFileSync(
-    path.join(rootDir, 'env', 'inventory', 'staging.yaml'),
-    `version: 1\nenv: staging\nprovider: mockcloud\nruntime: mock\nregion: local\n`,
+    path.join(rootDir, 'docs', 'project', 'policy.yaml'),
+    `version: 1\n` +
+      `policy:\n` +
+      `  env:\n` +
+      `    defaults:\n` +
+      `      auth_mode: auto\n` +
+      `      preflight:\n` +
+      `        mode: warn\n` +
+      `    cloud:\n` +
+      `      defaults:\n` +
+      `        env_file_name: "{env}.env"\n` +
+      `        runtime: mock\n` +
+      `      targets:\n` +
+      `        - id: staging-mock\n` +
+      `          match:\n` +
+      `            env: staging\n` +
+      `          set:\n` +
+      `            provider: mockcloud\n` +
+      `            runtime: mock\n`,
     'utf8'
   );
 
@@ -227,11 +243,11 @@ export function run(ctx) {
     const detail = generate.error ? String(generate.error) : generate.stderr || generate.stdout;
     return { name, status: 'FAIL', error: `env-contractctl generate failed: ${detail}` };
   }
-  const envExample = path.join(rootDir, '.env.example');
+  const envExample = path.join(rootDir, 'env', '.env.example');
   if (!fs.existsSync(envExample)) {
-    return { name, status: 'FAIL', error: 'missing .env.example' };
+    return { name, status: 'FAIL', error: 'missing env/.env.example' };
   }
-  assertIncludes(readUtf8(envExample), 'DATABASE_URL', 'Expected DATABASE_URL in .env.example');
+  assertIncludes(readUtf8(envExample), 'DATABASE_URL', 'Expected DATABASE_URL in env/.env.example');
 
   const envDoc = path.join(rootDir, 'docs', 'env.md');
   if (!fs.existsSync(envDoc)) {
@@ -294,6 +310,44 @@ export function run(ctx) {
     return { name, status: 'FAIL', error: 'missing docs/context/env/effective-dev.json' };
   }
   assertNotIncludes(readUtf8(effectiveDev), 'dev-secret', 'Effective dev context leaked secret');
+
+  // 5.1) Deployment-machine compile: custom env-file + no-context
+  const deployEnvFile = path.join(rootDir, 'ops', 'deploy', 'env-files', 'staging.env');
+  const deployCompileMd = path.join(rootDir, 'compile-deploy.md');
+  const deployCompile = runCommand({
+    cmd: python.cmd,
+    args: [
+      ...python.argsPrefix,
+      '-B',
+      '-S',
+      localctl,
+      'compile',
+      '--root',
+      rootDir,
+      '--env',
+      'staging',
+      '--runtime-target',
+      'ecs',
+      '--env-file',
+      deployEnvFile,
+      '--no-context',
+      '--out',
+      deployCompileMd,
+    ],
+    evidenceDir: testDir,
+    label: `${name}.localctl.compile.deployment`,
+  });
+  if (deployCompile.error || deployCompile.code !== 0) {
+    const detail = deployCompile.error ? String(deployCompile.error) : deployCompile.stderr || deployCompile.stdout;
+    return { name, status: 'FAIL', error: `env-localctl compile (deployment) failed: ${detail}` };
+  }
+  if (!fs.existsSync(deployEnvFile)) {
+    return { name, status: 'FAIL', error: 'missing deployment env-file after compile --env-file' };
+  }
+  const effectiveStaging = path.join(rootDir, 'docs', 'context', 'env', 'effective-staging.json');
+  if (fs.existsSync(effectiveStaging)) {
+    return { name, status: 'FAIL', error: 'expected no effective-staging.json when compile --no-context is set' };
+  }
 
   const connectivityMd = path.join(rootDir, 'connectivity.md');
   const connectivity = runCommand({
