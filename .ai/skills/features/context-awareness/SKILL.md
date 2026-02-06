@@ -28,7 +28,7 @@ When enabled, the feature **materializes** these paths in the repo root:
 And it assumes these controller scripts exist (they are part of the template SSOT under `.ai/`):
 
 - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` — context artifacts + registry + environments
-- `node .ai/scripts/projectctl.mjs` — project state (`.ai/project/state.json`)
+- `node .ai/scripts/ctl-project-ctl-project-governance.mjs` — project state (`.ai/project/state.json`)
 - `node .ai/skills/_meta/skillpacksctl.mjs` — skill pack switching + wrapper sync
 
 ## Canonical entry points for LLMs
@@ -41,7 +41,7 @@ If a DB schema exists, the canonical DB contract is:
 
 - `docs/context/db/schema.json`
 
-That DB contract is produced by the DB SSOT workflow (see `dbssotctl`, and the database workflow skills).
+That DB contract is produced by the DB SSOT workflow (see `ctl-db-ssot`, and the database workflow skills).
 
 ## How to enable
 
@@ -51,9 +51,9 @@ That DB contract is produced by the DB SSOT workflow (see `dbssotctl`, and the d
 2. Initialize:
 
 ```bash
-node .ai/scripts/projectctl.mjs init
-node .ai/scripts/projectctl.mjs set context.enabled true
-node .ai/scripts/projectctl.mjs set-context-mode contract
+node .ai/scripts/ctl-project-ctl-project-governance.mjs init
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set context.enabled true
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode contract
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs init
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch
 ```
@@ -62,13 +62,13 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch
 
 ### Managing project state
 
-Use `projectctl` to maintain `.ai/project/state.json`:
+Use `ctl-project-ctl-project-governance` to maintain `.ai/project/state.json`:
 
 ```bash
-node .ai/scripts/projectctl.mjs init
-node .ai/scripts/projectctl.mjs set custom.stage <prototype|mvp|production|maintenance|archived>
-node .ai/scripts/projectctl.mjs set-context-mode <contract|snapshot>
-node .ai/scripts/projectctl.mjs verify
+node .ai/scripts/ctl-project-ctl-project-governance.mjs init
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set custom.stage <prototype|mvp|production|maintenance|archived>
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode <contract|snapshot>
+node .ai/scripts/ctl-project-ctl-project-governance.mjs verify
 ```
 
 ### Editing artifacts
@@ -157,7 +157,7 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --stric
 
 ```bash
 node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
-node .ai/scripts/projectctl.mjs verify
+node .ai/scripts/ctl-project-ctl-project-governance.mjs verify
 ```
 
 ## References

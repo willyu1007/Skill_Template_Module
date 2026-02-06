@@ -274,8 +274,8 @@ function upgradeMirrorV1ToV2(raw) {
 }
 
 function tryRunDbssotctl(repoRoot) {
-  const dbssotctl = path.join(repoRoot, '.ai', 'scripts', 'dbssotctl.mjs');
-  if (!exists(dbssotctl)) return { ran: false, ok: false, note: 'dbssotctl.mjs not found' };
+  const dbssotctl = path.join(repoRoot, '.ai', 'scripts', 'ctl-db-ssot.mjs');
+  if (!exists(dbssotctl)) return { ran: false, ok: false, note: 'ctl-db-ssot.mjs not found' };
 
   const res = spawnSync(process.execPath, [dbssotctl, 'sync-to-context'], {
     cwd: repoRoot,
@@ -303,7 +303,7 @@ function loadNormalizedSchema(repoRoot, ssotCfg) {
     return { schema, sourceKind: 'contract', sourcePath: contractPath, mirrorPath, prismaPath };
   }
 
-  // 2) Attempt to generate contract via dbssotctl
+  // 2) Attempt to generate contract via ctl-db-ssot
   const gen = tryRunDbssotctl(repoRoot);
   if (exists(contractPath)) {
     const schema = readJson(contractPath);
@@ -329,7 +329,7 @@ function loadNormalizedSchema(repoRoot, ssotCfg) {
       generation: gen,
       error: `No normalized contract found at ${ssotCfg.paths.dbContextContract}.\n` +
         `Found ${ssotCfg.paths.prismaSchema} but could not generate contract.\n` +
-        `Run: node .ai/scripts/dbssotctl.mjs sync-to-context (requires template scripts).`
+        `Run: node .ai/scripts/ctl-db-ssot.mjs sync-to-context (requires template scripts).`
     };
   }
 
@@ -2044,7 +2044,7 @@ function renderRunbookDoc({ schemaMeta, idx, objectLabel, dbops }) {
     '- Or run the underlying commands (if your process allows):',
     '  - `npx prisma db pull` (human, correct env)',
     '  - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`',
-    '  - `node .ai/scripts/dbssotctl.mjs sync-to-context`'
+    '  - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`'
   ].join('\n');
 
   return [header, meta, '', ...sections, post].join('\n');

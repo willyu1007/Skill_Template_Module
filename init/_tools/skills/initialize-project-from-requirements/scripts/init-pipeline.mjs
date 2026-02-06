@@ -1740,7 +1740,7 @@ function renderDbSsotAgentsBlock(mode) {
 ` +
       `Rules:
 - Business layer MUST NOT import Prisma (repositories return domain entities).
-- After schema changes, refresh context via \`node .ai/scripts/dbssotctl.mjs sync-to-context\`.
+- After schema changes, refresh context via \`node .ai/scripts/ctl-db-ssot.mjs sync-to-context\`.
 `
     );
   }
@@ -1761,7 +1761,7 @@ function renderDbSsotAgentsBlock(mode) {
       `Rules:
 - Human runs \`prisma db pull\` against the correct environment.
 - Mirror update: \`node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma\`.
-- Context refresh: \`node .ai/scripts/dbssotctl.mjs sync-to-context\`.
+- Context refresh: \`node .ai/scripts/ctl-db-ssot.mjs sync-to-context\`.
 `
     );
   }
@@ -2248,13 +2248,13 @@ function refreshDbContextContract(repoRoot, blueprint, apply, verifyFeatures) {
     return { op: 'skip', path: outPath, mode: 'skipped', reason: 'db.ssot=none' };
   }
 
-  const dbSsotCtl = path.join(repoRoot, '.ai', 'scripts', 'dbssotctl.mjs');
+  const dbSsotCtl = path.join(repoRoot, '.ai', 'scripts', 'ctl-db-ssot.mjs');
   if (!fs.existsSync(dbSsotCtl)) {
     return {
       op: 'skip',
       path: outPath,
       mode: apply ? 'failed' : 'dry-run',
-      reason: 'dbssotctl.mjs not found'
+      reason: 'ctl-db-ssot.mjs not found'
     };
   }
 
@@ -2374,21 +2374,21 @@ function ensureFeature(repoRoot, featureId, apply, ctlScriptName, options = {}) 
   result.actions.push(...copyRes.actions);
 
   // Mark feature enabled in project state (best-effort)
-  const projectctl = path.join(repoRoot, '.ai', 'scripts', 'projectctl.mjs');
-  if (fs.existsSync(projectctl)) {
+  const projectStatectl = path.join(repoRoot, '.ai', 'scripts', 'ctl-project-ctl-project-governance.mjs');
+  if (fs.existsSync(projectStatectl)) {
     const key = stateKey || featureId;
     const markRes = runNodeScriptWithRepoRootFallback(
       repoRoot,
-      projectctl,
+      projectStatectl,
       ['set', `features.${key}`, 'true', '--repo-root', repoRoot],
       apply
     );
     result.actions.push(markRes);
-    if (apply && markRes.mode === 'failed') {
-      result.warnings.push(`projectctl feature flag update failed for "${featureId}" (continuing).`);
-    }
+      if (apply && markRes.mode === 'failed') {
+        result.warnings.push(`ctl-project-ctl-project-governance feature flag update failed for "${featureId}" (continuing).`);
+      }
   } else {
-    result.warnings.push('projectctl.mjs not found; skipping .ai/project feature flag update.');
+    result.warnings.push('ctl-project-ctl-project-governance.mjs not found; skipping .ai/project feature flag update.');
   }
 
   // Optional: run feature controller init/verify (best-effort)
@@ -2418,13 +2418,13 @@ function ensureFeature(repoRoot, featureId, apply, ctlScriptName, options = {}) 
 }
 
 function markProjectFeature(repoRoot, featureKey, apply) {
-  const projectctl = path.join(repoRoot, '.ai', 'scripts', 'projectctl.mjs');
-  if (!fs.existsSync(projectctl)) {
-    return { op: 'skip', path: projectctl, mode: apply ? 'skipped' : 'dry-run', reason: 'projectctl.mjs not found' };
+  const projectStatectl = path.join(repoRoot, '.ai', 'scripts', 'ctl-project-ctl-project-governance.mjs');
+  if (!fs.existsSync(projectStatectl)) {
+    return { op: 'skip', path: projectStatectl, mode: apply ? 'skipped' : 'dry-run', reason: 'ctl-project-ctl-project-governance.mjs not found' };
   }
   return runNodeScriptWithRepoRootFallback(
     repoRoot,
-    projectctl,
+    projectStatectl,
     ['set', `features.${featureKey}`, 'true', '--repo-root', repoRoot],
     apply
   );
@@ -2464,7 +2464,7 @@ function ensureDatabaseFeature(repoRoot, blueprint, apply, options = {}) {
   const markRes = markProjectFeature(repoRoot, 'database', apply);
   result.actions.push(markRes);
   if (apply && markRes.mode === 'failed') {
-    result.warnings.push('projectctl feature flag update failed for "database" (continuing).');
+    result.warnings.push('ctl-project-ctl-project-governance feature flag update failed for "database" (continuing).');
   }
 
   if (mode === 'database') {
@@ -2525,7 +2525,7 @@ function ensureUiFeature(repoRoot, blueprint, apply, options = {}) {
   const markRes = markProjectFeature(repoRoot, 'ui', apply);
   result.actions.push(markRes);
   if (apply && markRes.mode === 'failed') {
-    result.warnings.push('projectctl feature flag update failed for "ui" (continuing).');
+    result.warnings.push('ctl-project-ctl-project-governance feature flag update failed for "ui" (continuing).');
   }
 
   const script = path.join(repoRoot, '.ai', 'skills', 'features', 'ui', 'ui-system-bootstrap', 'scripts', 'ui_specctl.py');
@@ -2569,7 +2569,7 @@ function ensureEnvironmentFeature(repoRoot, blueprint, apply, options = {}) {
   const markRes = markProjectFeature(repoRoot, 'environment', apply);
   result.actions.push(markRes);
   if (apply && markRes.mode === 'failed') {
-    result.warnings.push('projectctl feature flag update failed for "environment" (continuing).');
+    result.warnings.push('ctl-project-ctl-project-governance feature flag update failed for "environment" (continuing).');
   }
 
   const script = path.join(repoRoot, '.ai', 'skills', 'features', 'environment', 'env-contractctl', 'scripts', 'env_contractctl.py');
@@ -2618,7 +2618,7 @@ function ensureIacFeature(repoRoot, blueprint, apply, options = {}) {
   const markRes = markProjectFeature(repoRoot, 'iac', apply);
   result.actions.push(markRes);
   if (apply && markRes.mode === 'failed') {
-    result.warnings.push('projectctl feature flag update failed for "iac" (continuing).');
+    result.warnings.push('ctl-project-ctl-project-governance feature flag update failed for "iac" (continuing).');
   }
 
   const templatesRoot = findFeatureTemplatesDir(repoRoot, 'iac');
@@ -2685,7 +2685,7 @@ function ensureCiFeature(repoRoot, blueprint, apply, options = {}) {
   const markRes = markProjectFeature(repoRoot, 'ci', apply);
   result.actions.push(markRes);
   if (apply && markRes.mode === 'failed') {
-    result.warnings.push('projectctl feature flag update failed for "ci" (continuing).');
+    result.warnings.push('ctl-project-ctl-project-governance feature flag update failed for "ci" (continuing).');
   }
 
   const provider = ciProvider(blueprint);
@@ -2694,7 +2694,7 @@ function ensureCiFeature(repoRoot, blueprint, apply, options = {}) {
     return result;
   }
 
-  const cictl = path.join(repoRoot, '.ai', 'skills', 'features', 'ci', 'scripts', 'cictl.mjs');
+  const cictl = path.join(repoRoot, '.ai', 'skills', 'features', 'ci', 'scripts', 'ctl-ci.mjs');
   if (!fs.existsSync(cictl)) {
     result.errors.push(`CI control script not found: ${path.relative(repoRoot, cictl)}`);
     return result;
@@ -2755,7 +2755,7 @@ function ensureContextAwarenessFeature(repoRoot, blueprint, apply, options = {})
   result.actions.push(...copyRes.actions);
 
   const contextctl = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'contextctl.mjs');
-  const projectctl = path.join(repoRoot, '.ai', 'scripts', 'projectctl.mjs');
+  const projectStatectl = path.join(repoRoot, '.ai', 'scripts', 'ctl-project-ctl-project-governance.mjs');
 
   if (!fs.existsSync(contextctl)) {
     result.errors.push('contextctl.mjs not found under .ai/skills/features/context-awareness/scripts/.');
@@ -2763,30 +2763,30 @@ function ensureContextAwarenessFeature(repoRoot, blueprint, apply, options = {})
   }
 
   // Ensure project state exists and mark flags
-  if (fs.existsSync(projectctl)) {
-    const initRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['init', '--repo-root', repoRoot], apply);
+  if (fs.existsSync(projectStatectl)) {
+    const initRes = runNodeScriptWithRepoRootFallback(repoRoot, projectStatectl, ['init', '--repo-root', repoRoot], apply);
     result.actions.push(initRes);
-    if (apply && initRes.mode === 'failed') result.warnings.push('projectctl init failed (continuing).');
+    if (apply && initRes.mode === 'failed') result.warnings.push('ctl-project-ctl-project-governance init failed (continuing).');
 
     const featureFlagRes = runNodeScriptWithRepoRootFallback(
       repoRoot,
-      projectctl,
+      projectStatectl,
       ['set', 'features.contextAwareness', 'true', '--repo-root', repoRoot],
       apply
     );
     result.actions.push(featureFlagRes);
-    if (apply && featureFlagRes.mode === 'failed') result.warnings.push('projectctl set features.contextAwareness failed (continuing).');
+    if (apply && featureFlagRes.mode === 'failed') result.warnings.push('ctl-project-ctl-project-governance set features.contextAwareness failed (continuing).');
 
-    const enabledRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set', 'context.enabled', 'true', '--repo-root', repoRoot], apply);
+    const enabledRes = runNodeScriptWithRepoRootFallback(repoRoot, projectStatectl, ['set', 'context.enabled', 'true', '--repo-root', repoRoot], apply);
     result.actions.push(enabledRes);
-    if (apply && enabledRes.mode === 'failed') result.warnings.push('projectctl set context.enabled failed (continuing).');
+    if (apply && enabledRes.mode === 'failed') result.warnings.push('ctl-project-ctl-project-governance set context.enabled failed (continuing).');
 
     const mode = getContextMode(blueprint);
-    const modeRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctl, ['set-context-mode', mode, '--repo-root', repoRoot], apply);
+    const modeRes = runNodeScriptWithRepoRootFallback(repoRoot, projectStatectl, ['set-context-mode', mode, '--repo-root', repoRoot], apply);
     result.actions.push(modeRes);
-    if (apply && modeRes.mode === 'failed') result.warnings.push('projectctl set-context-mode failed (continuing).');
+    if (apply && modeRes.mode === 'failed') result.warnings.push('ctl-project-ctl-project-governance set-context-mode failed (continuing).');
   } else {
-    result.warnings.push('projectctl.mjs not found; skipping project state initialization.');
+    result.warnings.push('ctl-project-ctl-project-governance.mjs not found; skipping project state initialization.');
   }
 
   // Initialize docs/context skeleton and registry (idempotent)
@@ -3913,11 +3913,25 @@ if (command === 'validate') {
     const verifyFailures = [];
 
     // Ensure project state exists (records enabled features for LLMs and tooling)
-    const projectctlPath = path.join(repoRoot, '.ai', 'scripts', 'projectctl.mjs');
-    if (fs.existsSync(projectctlPath)) {
-      const initRes = runNodeScriptWithRepoRootFallback(repoRoot, projectctlPath, ['init', '--repo-root', repoRoot], true);
+    const projectStatectlPath = path.join(repoRoot, '.ai', 'scripts', 'ctl-project-ctl-project-governance.mjs');
+    if (fs.existsSync(projectStatectlPath)) {
+      const initRes = runNodeScriptWithRepoRootFallback(repoRoot, projectStatectlPath, ['init', '--repo-root', repoRoot], true);
       if (initRes.mode === 'failed') {
-        console.warn('[warn] projectctl init failed; feature flags may not be recorded.');
+        console.warn('[warn] ctl-project-ctl-project-governance init failed; feature flags may not be recorded.');
+      }
+    }
+
+    // Ensure project governance hub exists (project-level progress tracking)
+    const projectGovctlPath = path.join(repoRoot, '.ai', 'scripts', 'ctl-project-state.mjs');
+    if (fs.existsSync(projectGovctlPath)) {
+      const initRes = runNodeScriptWithRepoRootFallback(
+        repoRoot,
+        projectGovctlPath,
+        ['init', '--project', 'main', '--repo-root', repoRoot],
+        true
+      );
+      if (initRes.mode === 'failed') {
+        console.warn('[warn] project governance init failed; project hub may be missing.');
       }
     }
 

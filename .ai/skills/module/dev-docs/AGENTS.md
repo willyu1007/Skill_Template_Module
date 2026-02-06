@@ -47,11 +47,10 @@ Before context switch / handoff / wrap-up:
 
 | Artifact | Skill | Focus |
 |----------|-------|-------|
-| `roadmap.md` | `.ai/skills/workflows/planning/plan-maker` | Macro-level: milestones, phases, impact scope, risks |
+| `roadmap.md` | `.ai/skills/workflows/planning/plan-maker` | Macro-level: phases, impact scope, risks |
 | `01-plan.md` | `create-dev-docs-plan` | Implementation-level: specific steps, file changes, status tracking |
 
 Typical workflow:
 1. For tasks requiring strategic alignment first -> use `plan-maker` to create `roadmap.md`
 2. For implementation tracking -> use `create-dev-docs-plan` to create the bundle (00-05)
 3. Both artifacts coexist in the same dev-docs directory
-

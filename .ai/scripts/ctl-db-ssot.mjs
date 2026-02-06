@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dbssotctl.mjs
+ * ctl-db-ssot.mjs
  *
  * SSOT-aware database schema context generator.
  *
@@ -59,7 +59,7 @@ function withoutUpdatedAt(obj) {
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/scripts/dbssotctl.mjs <command> [options]
+  node .ai/scripts/ctl-db-ssot.mjs <command> [options]
 
 Commands:
   help
@@ -193,7 +193,7 @@ function buildContractFromPrisma({ repoRoot, mode }) {
         database: { kind: 'relational', dialect: 'generic', name: '', schemas: [] },
         enums: [],
         tables: [],
-        notes: `Missing prisma schema at ${toPosix(path.relative(repoRoot, prismaPath))}. Create it, then re-run dbssotctl.`
+        notes: `Missing prisma schema at ${toPosix(path.relative(repoRoot, prismaPath))}. Create it, then re-run ctl-db-ssot.`
       }),
       warnings: [`Missing Prisma schema: ${toPosix(path.relative(repoRoot, prismaPath))}`]
     };
@@ -226,7 +226,7 @@ function buildContractFromDbMirror({ repoRoot, mode }) {
         database: { kind: 'relational', dialect: 'generic', name: '', schemas: [] },
         enums: [],
         tables: [],
-        notes: `Missing DB mirror at ${toPosix(path.relative(repoRoot, mirrorPath))}. Initialize db-mirror and import schema, then re-run dbssotctl.`
+        notes: `Missing DB mirror at ${toPosix(path.relative(repoRoot, mirrorPath))}. Initialize db-mirror and import schema, then re-run ctl-db-ssot.`
       }),
       warnings: [`Missing DB mirror: ${toPosix(path.relative(repoRoot, mirrorPath))}`]
     };

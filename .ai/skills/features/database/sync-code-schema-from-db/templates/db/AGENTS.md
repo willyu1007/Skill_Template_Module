@@ -15,7 +15,7 @@ Typical end-to-end flow:
 2. Import Prisma schema into the mirror:
    - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`
 3. Sync the mirror into LLM context (docs/context):
-   - `node .ai/scripts/dbssotctl.mjs sync-to-context`
+   - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 ## Directory structure
 
@@ -30,7 +30,7 @@ Typical end-to-end flow:
 - Read and reference the mirror (`db/schema/tables.json`).
 - Draft desired-state changes in `db/handbook/`.
 - Generate placeholder migration SQL files for humans (optional).
-- Keep `docs/context/db/schema.json` updated by running `dbssotctl` (best effort).
+- Keep `docs/context/db/schema.json` updated by running `node .ai/scripts/ctl-db-ssot.mjs sync-to-context` (best effort).
 
 ## Forbidden AI actions
 

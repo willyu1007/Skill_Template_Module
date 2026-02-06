@@ -1,5 +1,5 @@
 # GitLab CI delivery template (opt-in)
-# Installed via: `node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider gitlab`
+# Installed via: `node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab`
 #
 # Intent:
 # - Add a manual "delivery plan" job that produces a plan artifact (no deploy).
@@ -57,4 +57,3 @@ delivery-plan:
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
     - when: never
-

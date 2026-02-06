@@ -43,7 +43,8 @@ init/                         # Project bootstrap kit (Stage A/B/C)
 - `node .ai/scripts/modules/flowctl.mjs` — flow SSOT lint + derived indexes/graphs
 - `node .ai/scripts/modules/integrationctl.mjs` — integration scenarios validate/compile/run
 - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` — context registries + derived view
-- `node .ai/scripts/projectctl.mjs` — project state (context mode, stage)
+- `node .ai/scripts/ctl-project-ctl-project-governance.mjs` — project state (context mode, stage)
+- `node .ai/scripts/ctl-project-state.mjs` — project governance (progress hub: init/lint/sync/query/map)
 - `node .ai/skills/_meta/skillpacksctl.mjs` — skill packs + wrapper sync
 
 ## Key rules (SSOT + wrappers)

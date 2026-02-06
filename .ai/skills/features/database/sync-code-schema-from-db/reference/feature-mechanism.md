@@ -5,7 +5,7 @@
 - This feature is intended for projects where the **real database is the SSOT** (`db.ssot=database`).
 - The repository holds **structured mirrors** under `db/` so the LLM can understand the schema without DB access.
 - `db/schema/tables.json` is a **generated snapshot** (normalized-db-schema-v2). Do NOT hand-edit it.
-- The canonical LLM context contract is `docs/context/db/schema.json` and is generated via `dbssotctl`.
+- The canonical LLM context contract is `docs/context/db/schema.json` and is generated via `ctl-db-ssot`.
 
 ## What the feature writes (blast radius)
 
@@ -58,7 +58,7 @@ node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs ver
 If the context-awareness feature is enabled, sync the mirror into `docs/context/`:
 
 ```bash
-node .ai/scripts/dbssotctl.mjs sync-to-context
+node .ai/scripts/ctl-db-ssot.mjs sync-to-context
 ```
 
 The command updates `docs/context/db/schema.json` and (best effort) runs `contextctl touch`.
@@ -83,7 +83,7 @@ When working with the feature, AI SHOULD:
 1. Read `db/schema/tables.json` for **current state**.
 2. Write proposals in `db/handbook/` (desired state, risk notes, rollout plan).
 3. Ask humans to apply DDL/migrations.
-4. After DB changes: re-run `prisma db pull`, `dbctl import-prisma`, and `dbssotctl sync-to-context`.
+4. After DB changes: re-run `prisma db pull`, `dbctl import-prisma`, and `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`.
 
 AI MUST NOT:
 

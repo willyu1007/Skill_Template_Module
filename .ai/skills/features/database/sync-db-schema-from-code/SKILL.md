@@ -141,7 +141,7 @@ Record evidence in `04-post-verify.md`.
 
 13. Refresh LLM DB context contract:
 
-- `node .ai/scripts/dbssotctl.mjs sync-to-context`
+- `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 (If context-awareness is enabled, the command also runs `contextctl touch` best-effort.)
 
@@ -163,7 +163,7 @@ node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
 - [ ] Apply step executed with logs
 - [ ] Post-verify evidence captured
 - [ ] Domain/repository mapping updated (no Prisma types in business layer)
-- [ ] `docs/context/db/schema.json` refreshed via `dbssotctl`
+- [ ] `docs/context/db/schema.json` refreshed via `ctl-db-ssot`
 - [ ] Module DB slices refreshed (module-first repos): `dbssotctl-module sync-slices`
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite database`
 

@@ -35,10 +35,10 @@ Stage C always:
 2) Initializes project state (best-effort):
 
 ```bash
-node .ai/scripts/projectctl.mjs init --repo-root .
-node .ai/scripts/projectctl.mjs set features.contextAwareness true --repo-root .
-node .ai/scripts/projectctl.mjs set context.enabled true --repo-root .
-node .ai/scripts/projectctl.mjs set-context-mode <contract|snapshot> --repo-root .
+node .ai/scripts/ctl-project-ctl-project-governance.mjs init --repo-root .
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set features.contextAwareness true --repo-root .
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set context.enabled true --repo-root .
+node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode <contract|snapshot> --repo-root .
 ```
 
 3) Initializes context artifacts (idempotent):

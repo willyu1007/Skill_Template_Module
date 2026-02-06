@@ -2,7 +2,7 @@
 # - Runs repo verification suites (no package manager required)
 # - Installs python3 (required by some suites)
 #
-# - Optional: run `node .ai/skills/features/ci/scripts/cictl.mjs init` to create `ci/config.json` metadata
+# - Optional: run `node .ai/skills/features/ci/scripts/ctl-ci.mjs init` to create `ci/config.json` metadata
 #
 # NOTE: If you need project-specific test suites (api/web/perf/mobile), add jobs and map them to deterministic commands.
 
@@ -18,8 +18,7 @@ repo-verification:
     - node --version
     - python3 --version
   script:
-    - node .ai/scripts/lint-skills.mjs --strict
-    - node .ai/scripts/lint-docs.mjs
+    - node .githooks/ci-verify.mjs
     - node .ai/tests/run.mjs --suite environment
     - node .ai/tests/run.mjs --suite iac
     - node .ai/tests/run.mjs --suite database

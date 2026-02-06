@@ -103,7 +103,7 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
    - Temporary: `.ai/.tmp/dev-docs/<task_slug>/`
 3. For module/integration scope, propose the full path and wait for explicit user confirmation before creating files.
 4. Draft the roadmap using `./templates/roadmap.md`.
-   - Keep it macro-level: phases, milestones, deliverables, verification, risks, rollback.
+   - Keep it macro-level: phases, deliverables, verification, risks, rollback.
    - Always include the "Project structure change preview" section from the template (may be empty).
    - Only include specific file paths/APIs when you have evidence; otherwise add a discovery step.
    - Include an "Optional detailed documentation layout (convention)" section that declares the expected dev-docs layout without creating those files.
@@ -130,7 +130,7 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 - [ ] Ambiguities are resolved or recorded as explicit open questions/assumptions
 - [ ] (If alignment mode) Requirements document saved alongside the roadmap at the chosen scope
 - [ ] (If alignment mode) User confirmed requirements understanding before roadmap creation
-- [ ] Roadmap includes milestones/phases and per-step deliverables
+- [ ] Roadmap includes phases and per-step deliverables
 - [ ] Roadmap includes "Project structure change preview" section (may be empty)
 - [ ] Roadmap defines verification/acceptance criteria and a rollback strategy
 - [ ] Roadmap is saved at the chosen scope under `dev-docs/active/<task_slug>/roadmap.md` (or `.ai/.tmp/dev-docs/<task_slug>/roadmap.md` for temporary scope)
@@ -149,7 +149,7 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 - If user confirms dev-docs bundle creation, MUST trigger `create-dev-docs-plan`
 - SHOULD keep the roadmap macro-level; deep design details belong in separate documentation artifacts
 - SHOULD NOT include secrets (credentials, tokens, private keys) in the roadmap
-- PRODUCES macro-level roadmaps: milestones, phases, scope, impact, risks, rollback strategy
+- PRODUCES macro-level roadmaps: phases, scope, impact, risks, rollback strategy
 - PRODUCES requirements documents (when alignment mode is active)
 
 ## Included assets
@@ -161,4 +161,3 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
   - `./reference/detailed-docs-convention.md` (optional file layout convention)
 - Example:
   - `./examples/sample-roadmap.md`
-

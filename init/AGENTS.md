@@ -120,7 +120,8 @@ If Stage C `apply` fails with an `EPERM` error while writing `.codex/skills/` or
 Context awareness is **mandatory** in the template repository. Stage C `apply` will always:
 - copy templates from `.ai/skills/features/context-awareness/templates/` into the repo (copy-if-missing; non-destructive)
 - run `.ai/skills/features/context-awareness/scripts/contextctl.mjs init`
-- run `.ai/scripts/projectctl.mjs init` and `set-context-mode` (if projectctl exists)
+- run `.ai/scripts/ctl-project-ctl-project-governance.mjs init` and `set-context-mode` (if ctl-project-ctl-project-governance exists)
+- initialize the project governance hub: `node .ai/scripts/ctl-project-state.mjs init --project main` (if ctl-project-state exists)
 
 `features.contextAwareness` MUST NOT be set to `false` (the field may be omitted or kept as `true`).
 `context.*` is configuration only (mode/env list).

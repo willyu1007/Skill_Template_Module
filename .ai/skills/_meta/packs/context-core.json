@@ -7,8 +7,8 @@
   ],
   "dependencies": [],
   "scripts": {
-    "init": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs init && node .ai/scripts/projectctl.mjs init",
-    "verify": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict && node .ai/scripts/projectctl.mjs verify"
+    "init": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs init && node .ai/scripts/ctl-project-ctl-project-governance.mjs init",
+    "verify": "node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict && node .ai/scripts/ctl-project-ctl-project-governance.mjs verify"
   },
   "metadata": {
     "author": "context-awareness-addon",

@@ -16,4 +16,4 @@ Pack switching:
 Project state:
 
 - AI/LLM MUST treat `.ai/project/state.json` as the project "stage/state" SSOT.
-- AI/LLM MUST use: `node .ai/scripts/projectctl.mjs` to change it.
+- AI/LLM MUST use: `node .ai/scripts/ctl-project-ctl-project-governance.mjs` to change it.

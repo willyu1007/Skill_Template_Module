@@ -23,7 +23,8 @@ Read `init/AGENTS.md` for project initialization instructions.
 
 | Area | Script |
 |---|---|
-| Project state | `node .ai/scripts/projectctl.mjs` |
+| Project state (context awareness) | `node .ai/scripts/ctl-project-ctl-project-governance.mjs` |
+| Project governance (progress hub) | `node .ai/scripts/ctl-project-state.mjs` |
 | Module instances | `node .ai/scripts/modules/modulectl.mjs` |
 | Flow SSOT + derived indexes/graphs | `node .ai/scripts/modules/flowctl.mjs` |
 | Integration scenarios | `node .ai/scripts/modules/integrationctl.mjs` |

@@ -7,7 +7,7 @@
 - **The business layer must not import Prisma** (no Prisma types, no client usage).
 - Repositories are the boundary: they adapt **Prisma ↔ persistence ↔ domain**.
 - `docs/context/db/schema.json` is the **LLM-readable contract** and is **generated**.
-  - Update via: `node .ai/scripts/dbssotctl.mjs sync-to-context`
+  - Update via: `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 - Two opposing SSOT modes are mutually exclusive:
   - `repo-prisma` (this doc)
   - `database` (see the DB SSOT docs)
@@ -93,7 +93,7 @@ Yes, with strict rules.
    - dev: `npx prisma migrate dev`
    - staging/prod: `npx prisma migrate deploy`
 6. Refresh LLM contract:
-   - `node .ai/scripts/dbssotctl.mjs sync-to-context`
+   - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 ### 4.2 When the requirement changes only business logic
 
@@ -136,4 +136,4 @@ Key: Prisma stays under `infrastructure/`.
 - [ ] Migration generated and reviewed
 - [ ] Repository mapping updated
 - [ ] Business layer is Prisma-free
-- [ ] `docs/context/db/schema.json` refreshed via `dbssotctl`
+- [ ] `docs/context/db/schema.json` refreshed via `ctl-db-ssot`

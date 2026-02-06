@@ -104,7 +104,7 @@ Record output in `02-import-prisma-log.md`.
 
 8. Regenerate `docs/context/db/schema.json`:
 
-- `node .ai/scripts/dbssotctl.mjs sync-to-context`
+- `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 Record output in `03-context-refresh-log.md`.
 
@@ -130,7 +130,7 @@ node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
 - [ ] SSOT mode is `database`
 - [ ] Human ran `prisma db pull` against the correct environment
 - [ ] `dbctl import-prisma` updated `db/schema/tables.json`
-- [ ] `dbssotctl sync-to-context` updated `docs/context/db/schema.json`
+- [ ] `node .ai/scripts/ctl-db-ssot.mjs sync-to-context` updated `docs/context/db/schema.json`
 - [ ] Module DB slices refreshed (module-first repos): `dbssotctl-module sync-slices`
 - [ ] Domain/repository mapping updated (no Prisma types in business layer)
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite database`

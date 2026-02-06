@@ -153,7 +153,7 @@ Even though `create-dev-docs-plan` is docs-only, the workflow is designed to mak
 
 | Artifact | Skill | Focus |
 |----------|-------|-------|
-| `roadmap.md` | `plan-maker` | Macro-level: milestones, phases, impact scope, acceptance criteria, risks, rollback strategy |
+| `roadmap.md` | `plan-maker` | Macro-level: phases, impact scope, acceptance criteria, risks, rollback strategy |
 | `01-plan.md` | create-dev-docs-plan | Implementation-level: specific steps, file changes, current status tracking |
 
 Typical workflow:

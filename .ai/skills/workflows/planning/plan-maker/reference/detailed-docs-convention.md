@@ -40,7 +40,7 @@ Use the following mapping to avoid duplicating information:
 
 - `roadmap.md` (macro roadmap) → source for:
   - `00-overview.md`: goal, non-goals, scope, impact
-  - `01-plan.md`: milestones, phases, step sequencing, DoD
+  - `01-plan.md`: phases, step sequencing, DoD
   - `02-architecture.md`: high-level architecture direction and interfaces (details added during execution)
   - `03-implementation-notes.md`: decisions, deviations, trade-offs, runbooks, links to PRs/commits
   - `04-verification.md`: verification strategy, commands, expected outcomes, evidence

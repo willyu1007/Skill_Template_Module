@@ -23,7 +23,7 @@ This skill **does not** change the database or schema SSOT. It only validates an
 ### Phase 0 — Contract readiness (mandatory)
 1. Confirm `docs/context/db/schema.json` exists and reflects the latest DB SSOT.
 2. If DB SSOT changed, refresh the contract first:
-   - `node .ai/scripts/dbssotctl.mjs sync-to-context --repo-root .`
+   - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context --repo-root .`
 3. If the contract is missing or refresh fails, STOP and resolve DB SSOT issues first.
 
 ### Phase 1 — Declare module boundaries

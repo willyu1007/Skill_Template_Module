@@ -36,7 +36,7 @@ All artifacts MUST be registered in `docs/context/registry.json`.
 The generator is SSOT-aware:
 
 - Project DB SSOT configuration: `docs/project/db-ssot.json`
-- Generator script: `node .ai/scripts/dbssotctl.mjs sync-to-context`
+- Generator script: `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 The generator chooses the source based on SSOT mode:
 
@@ -44,7 +44,7 @@ The generator chooses the source based on SSOT mode:
 - `database`: reads `db/schema/tables.json` (mirror of real DB) and emits the contract.
 - `none`: DB is disabled; init does not generate the DB contract.
 
-After generation, `dbssotctl` runs `contextctl touch` (best effort) to keep checksums consistent.
+After generation, `ctl-db-ssot` runs `contextctl touch` (best effort) to keep checksums consistent.
 
 ## How to update context (script-only)
 

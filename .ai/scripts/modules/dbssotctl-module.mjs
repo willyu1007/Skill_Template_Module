@@ -6,7 +6,7 @@
  *
  * Reads:
  * - modules/<module_id>/MANIFEST.yaml (db.owns / db.uses declarations)
- * - docs/context/db/schema.json (DB contract; produced by dbssotctl)
+ * - docs/context/db/schema.json (DB contract; produced by ctl-db-ssot)
  *
  * Does NOT change DB SSOT; only validates module slices and can export/sync
  * per-module slices for LLM context.

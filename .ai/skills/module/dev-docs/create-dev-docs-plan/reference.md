@@ -53,10 +53,10 @@ modules/integration/dev-docs/active/<task-slug>/
 
 | Artifact | Skill | Focus |
 |----------|-------|-------|
-| `roadmap.md` | plan-maker | Macro-level: milestones, phases, impact scope, acceptance criteria, risks, rollback strategy |
+| `roadmap.md` | plan-maker | Macro-level: phases, impact scope, acceptance criteria, risks, rollback strategy |
 | `01-plan.md` | create-dev-docs-plan | Implementation-level: specific steps, file changes, checklist |
 
-Use plan-maker first when the task needs strategic alignment (milestones, risk assessment, rollback strategy). Then use create-dev-docs-plan for the implementation bundle.
+Use plan-maker first when the task needs strategic alignment (phases, risk assessment, rollback strategy). Then use create-dev-docs-plan for the implementation bundle.
 
 ## File semantics (avoid ambiguity)
 
@@ -85,4 +85,3 @@ Use descriptive, kebab-case slugs:
 3. Update: keep `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, and `05-pitfalls.md` current.
 4. Handoff: use update-dev-docs-for-handoff before interruption.
 5. Archive: move the task folder to `modules/<module_id>/dev-docs/archive/` (or `modules/integration/dev-docs/archive/`) when complete.
-

@@ -41,14 +41,14 @@ This section is a non-binding, early hypothesis to align expected project-struct
 - New file(s) (optional):
   - `shared/feature-flags/checkout-flags.ts` — checkout-related flag keys and helpers
 
-## Milestones
-1. **Milestone 1**: Flag scaffolding exists
+## Phases
+1. **Phase 1**: Flag scaffolding exists
    - Deliverable: flag created + client wiring + default OFF behavior
    - Acceptance criteria: no behavior change when flag is OFF; builds/tests green
-2. **Milestone 2**: New checkout behind flag
+2. **Phase 2**: New checkout behind flag
    - Deliverable: routing + UI + API switches are flag-controlled
    - Acceptance criteria: can enable flag for a test cohort; smoke tests pass
-3. **Milestone 3**: Rollout controls and monitoring
+3. **Phase 3**: Rollout controls and monitoring
    - Deliverable: ramp plan + dashboards/alerts
    - Acceptance criteria: clear rollback procedure; monitoring confirms stability
 

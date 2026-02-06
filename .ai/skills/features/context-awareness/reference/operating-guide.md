@@ -30,7 +30,7 @@
 Minimum:
 
 - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
-- `node .ai/scripts/projectctl.mjs verify`
+- `node .ai/scripts/ctl-project-ctl-project-governance.mjs verify`
 
 Optional (if you use generated mode):
 

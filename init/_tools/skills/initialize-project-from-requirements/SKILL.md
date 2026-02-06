@@ -261,7 +261,7 @@ This template ships:
 Initialization does **not** auto-delete these. If the user explicitly does not need the corresponding feature packs, you MAY remove the related paths (after confirmation), for example:
 
 - DB mirror tooling: `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs`, `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs`
-- CI tooling: `.ai/skills/features/ci/scripts/cictl.mjs`
+- CI tooling: `.ai/skills/features/ci/scripts/ctl-ci.mjs`
 - Deployment tooling: `.ai/skills/features/deployment/scripts/deployctl.mjs`, `.ai/skills/features/deployment/scripts/rollback.mjs`
 - Packaging tooling: `.ai/skills/features/packaging/scripts/packctl.mjs`
 - Release tooling: `.ai/skills/features/release/scripts/releasectl.mjs`
@@ -358,7 +358,7 @@ Configuration only:
 
 - `.ai/skills/features/context-awareness/scripts/contextctl.mjs`
   - `init`: initializes the `docs/context/` scaffold (idempotent)
-- `.ai/scripts/projectctl.mjs`
+- `.ai/scripts/ctl-project-ctl-project-governance.mjs`
   - `init`: initializes `.ai/project/state.json` (idempotent)
   - `set-context-mode <contract|snapshot>`: sets the context mode
 - `.ai/skills/_meta/skillpacksctl.mjs`

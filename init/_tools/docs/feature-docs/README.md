@@ -8,7 +8,7 @@ Feature assets are integrated under `.ai/`:
 - Control scripts:
   - Repo-level Node controllers: `.ai/scripts/*ctl.mjs` (and other repo controllers like `sync-skills.mjs`)
   - Feature-local tools: `.ai/skills/features/**/scripts/*` (Node `.mjs` and/or Python `.py`)
-- Feature flags/state: `.ai/project/state.json` (via `.ai/scripts/projectctl.mjs`)
+- Feature flags/state: `.ai/project/state.json` (via `.ai/scripts/ctl-project-ctl-project-governance.mjs`)
 
 ## Available features
 
@@ -21,7 +21,7 @@ Feature assets are integrated under `.ai/`:
 | `packaging` | `features.packaging` (default: `true`) | `.ai/skills/features/packaging/scripts/packctl.mjs` | [packaging.md](packaging.md) |
 | `deployment` | `features.deployment` (default: `true`) | `.ai/skills/features/deployment/scripts/deployctl.mjs` | [deployment.md](deployment.md) |
 | `release` | `features.release` (default: `true`) | `.ai/skills/features/release/scripts/releasectl.mjs` | [release.md](release.md) |
-| `ci` | `ci.provider` (`none` disables; default: `github`) | `.ai/skills/features/ci/scripts/cictl.mjs` | [ci.md](ci.md) |
+| `ci` | `ci.provider` (`none` disables; default: `github`) | `.ai/skills/features/ci/scripts/ctl-ci.mjs` | [ci.md](ci.md) |
 | `iac` | `iac.tool` (`none` disables; default: `none`) | `.ai/skills/features/iac/scripts/iacctl.mjs` | [iac.md](iac.md) |
 | `observability` | `features.observability` (default: `true`) | `.ai/skills/features/observability/scripts/obsctl.mjs` | [observability.md](observability.md) |
 

@@ -33,7 +33,7 @@ Provider skills (for workflow customization and troubleshooting):
 
 Controller script (feature-local):
 
-- `node .ai/skills/features/ci/scripts/cictl.mjs`
+- `node .ai/skills/features/ci/scripts/ctl-ci.mjs`
 
 ## How to enable
 
@@ -42,8 +42,8 @@ Controller script (feature-local):
 Run:
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs init --provider github --repo-root .
-node .ai/skills/features/ci/scripts/cictl.mjs init --provider gitlab --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider github --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider gitlab --repo-root .
 ```
 
 ## Delivery explicit enable (opt-in)
@@ -51,8 +51,8 @@ node .ai/skills/features/ci/scripts/cictl.mjs init --provider gitlab --repo-root
 Delivery is enabled explicitly (method A) via:
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider github --repo-root .
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider gitlab --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider github --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab --repo-root .
 ```
 
 ## Boundaries
@@ -64,13 +64,13 @@ node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider gitlab --r
 ## Verification
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs --help
+node .ai/skills/features/ci/scripts/ctl-ci.mjs --help
 
 # Dry-run install (no writes)
-node .ai/skills/features/ci/scripts/cictl.mjs init --provider github --repo-root . --dry-run
-node .ai/skills/features/ci/scripts/cictl.mjs init --provider gitlab --repo-root . --dry-run
+node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider github --repo-root . --dry-run
+node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider gitlab --repo-root . --dry-run
 
 # Dry-run delivery opt-in (no writes)
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider github --repo-root . --dry-run
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider gitlab --repo-root . --dry-run
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider github --repo-root . --dry-run
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab --repo-root . --dry-run
 ```

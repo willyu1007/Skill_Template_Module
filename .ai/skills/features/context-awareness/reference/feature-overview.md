@@ -22,7 +22,7 @@ This feature provides a **stable, verifiable context contract** so an LLM can wo
 - `docs/context/db/schema.json` is a generated contract.
 - Do NOT hand-edit it.
 - Update it via the SSOT-aware generator:
-  - `node .ai/scripts/dbssotctl.mjs sync-to-context`
+  - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 (Then run `contextctl touch` if your workflow does not already do so.)
 

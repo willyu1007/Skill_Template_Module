@@ -1,5 +1,9 @@
 # 00 Overview
 
+## Status
+- State: planned
+- Next step: <!-- one concrete next action -->
+
 ## Goal
 <!-- One sentence -->
 

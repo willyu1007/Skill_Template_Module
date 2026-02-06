@@ -4,7 +4,7 @@
 
 - Installs a practical CI baseline for **GitHub Actions** or **GitLab CI**
 - Stage C installs **CI only** (no delivery workflow by default)
-- Delivery is **explicit opt-in** (enabled via `cictl add-delivery`)
+- Delivery is **explicit opt-in** (enabled via `ctl-ci add-delivery`)
 - CI enablement is controlled by `ci.provider` (default: `github`; set to `none` to disable)
 
 ## How to enable
@@ -30,7 +30,7 @@ When enabled, Stage C:
 1) Runs the CI controller:
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs init --provider <github|gitlab> --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider <github|gitlab> --repo-root .
 ```
 
 2) Materializes (copy-if-missing):
@@ -41,7 +41,7 @@ node .ai/skills/features/ci/scripts/cictl.mjs init --provider <github|gitlab> --
 3) Optional verification (when Stage C is run with `--verify-features`):
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs verify --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs verify --repo-root .
 ```
 
 When `ci.provider=none`, Stage C skips CI entirely:
@@ -57,11 +57,11 @@ Stage C does **not** install delivery workflows.
 Enable delivery explicitly (method A):
 
 ```bash
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider github --repo-root .
-node .ai/skills/features/ci/scripts/cictl.mjs add-delivery --provider gitlab --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider github --repo-root .
+node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab --repo-root .
 ```
 
 ## Acceptance
 
-- `node .ai/skills/features/ci/scripts/cictl.mjs --help` documents `init`, `add-delivery`, and `verify`
+- `node .ai/skills/features/ci/scripts/ctl-ci.mjs --help` documents `init`, `add-delivery`, and `verify`
 - Stage C installs exactly one CI provider workflow based on `ci.provider`

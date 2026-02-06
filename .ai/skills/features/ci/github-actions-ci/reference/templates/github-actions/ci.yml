@@ -2,7 +2,7 @@
 # - Runs repo verification suites (no package manager required)
 # - Uploads test evidence on failure
 #
-# - Optional: run `node .ai/skills/features/ci/scripts/cictl.mjs init` to create `ci/config.json` metadata
+# - Optional: run `node .ai/skills/features/ci/scripts/ctl-ci.mjs init` to create `ci/config.json` metadata
 #
 # NOTE: If you need project-specific test suites (api/web/perf/mobile), add jobs and map them to deterministic commands.
 
@@ -38,11 +38,8 @@ jobs:
           node --version
           python3 --version
 
-      - name: Lint skills (strict)
-        run: node .ai/scripts/lint-skills.mjs --strict
-
-      - name: Lint docs
-        run: node .ai/scripts/lint-docs.mjs
+      - name: Repo checks (shared)
+        run: node .githooks/ci-verify.mjs
 
       - name: Run tests
         run: |

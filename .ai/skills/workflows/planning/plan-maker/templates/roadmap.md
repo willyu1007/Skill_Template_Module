@@ -44,11 +44,11 @@ Rules:
 - New file(s) (optional):
   - (none)
 
-## Milestones
-1. **Milestone 1**: <name>
+## Phases
+1. **Phase 1**: <name>
    - Deliverable: <what exists when done>
    - Acceptance criteria: <how to know it is done>
-2. **Milestone 2**: <name>
+2. **Phase 2**: <name>
    - Deliverable: <...>
    - Acceptance criteria: <...>
 
@@ -127,13 +127,13 @@ The roadmap document can be used as the macro-level input for the other files. T
 
 Suggested mapping:
 - The roadmap's **Goal/Non-goals/Scope** → `00-overview.md`
-- The roadmap's **Milestones/Phases** → `01-plan.md`
+- The roadmap's **Phases** → `01-plan.md`
 - The roadmap's **Architecture direction (high level)** → `02-architecture.md`
 - Decisions/deviations during execution → `03-implementation-notes.md`
 - The roadmap's **Verification** → `04-verification.md`
 
 ## To-dos
 - [ ] Confirm open questions
-- [ ] Confirm milestone ordering and DoD
+- [ ] Confirm phase ordering and DoD
 - [ ] Confirm verification/acceptance criteria
 - [ ] Confirm rollout/rollback strategy

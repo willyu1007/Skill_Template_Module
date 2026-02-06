@@ -3,7 +3,7 @@
 Add a step in your CI pipeline that runs:
 
 - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
-- `node .ai/scripts/projectctl.mjs verify`
+- `node .ai/scripts/ctl-project-ctl-project-governance.mjs verify`
 
 This enforces that:
 - `docs/context/registry.json` matches the current artifacts (checksums)

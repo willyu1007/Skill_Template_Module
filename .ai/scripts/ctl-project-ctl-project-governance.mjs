@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 /**
- * projectctl.mjs
+ * ctl-project-ctl-project-governance.mjs
  *
  * Project state and configuration management for the Context Awareness feature.
+ *
+ * Project state file:
+ * - `.ai/project/state.json`
  *
  * Commands:
  *   init              Initialize project state (idempotent)
@@ -24,7 +27,7 @@ import path from 'node:path';
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/scripts/projectctl.mjs <command> [options]
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs <command> [options]
 
 Commands:
   help
@@ -57,11 +60,11 @@ Commands:
     Verify project state consistency.
 
 Examples:
-  node .ai/scripts/projectctl.mjs init
-  node .ai/scripts/projectctl.mjs set-context-mode contract
-  node .ai/scripts/projectctl.mjs status
-  node .ai/scripts/projectctl.mjs get context.mode
-  node .ai/scripts/projectctl.mjs set custom.project.version 1.0.0
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs init
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode contract
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs status
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs get context.mode
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs set custom.project.version 1.0.0
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -399,7 +402,7 @@ function cmdVerify(repoRoot) {
   
   // Check state file exists
   if (!fs.existsSync(statePath)) {
-    errors.push('Project state file does not exist. Run: projectctl init');
+    errors.push('Project state file does not exist. Run: node .ai/scripts/ctl-project-ctl-project-governance.mjs init');
   } else {
     const state = loadState(repoRoot);
 

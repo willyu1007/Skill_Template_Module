@@ -6,7 +6,7 @@
 - The feature also provides **environment configuration management** under `docs/context/config/` and `config/environments/`.
 - The feature provides **project-level scripts** that MUST be used to change the context:
   - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` (context artifacts + registry + environments)
-  - `node .ai/scripts/projectctl.mjs` (project state/config)
+  - `node .ai/scripts/ctl-project-ctl-project-governance.mjs` (project state/config)
   - `node .ai/skills/_meta/skillpacksctl.mjs` (skills pack switching + wrapper sync)
 - The goal is to make an LLM "context-aware" without relying on ad-hoc folder scans:
   - The LLM reads `docs/context/INDEX.md` and `docs/context/registry.json` as the entry point.
@@ -22,7 +22,7 @@ New files/directories (created if missing):
 - `.ai/skills/features/context-awareness/**` (documentation for this feature)
 - `config/environments/**` (environment config templates)
 - `.ai/skills/features/context-awareness/scripts/contextctl.mjs`
-- `.ai/scripts/projectctl.mjs`
+- `.ai/scripts/ctl-project-ctl-project-governance.mjs`
 - `.ai/skills/_meta/skillpacksctl.mjs` (pack controller)
 - `.ai/project/{state.json,state.schema.json}`
 - `.ai/skills/_meta/packs/context-core.json` (pack definition)
@@ -36,9 +36,9 @@ New files/directories (created if missing):
 2. Initialize (idempotent):
 
    ```bash
-   node .ai/scripts/projectctl.mjs init
-   node .ai/scripts/projectctl.mjs set-context-mode contract
-   node .ai/scripts/projectctl.mjs set context.enabled true
+   node .ai/scripts/ctl-project-ctl-project-governance.mjs init
+   node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode contract
+   node .ai/scripts/ctl-project-ctl-project-governance.mjs set context.enabled true
    node .ai/skills/features/context-awareness/scripts/contextctl.mjs init
    node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch
    ```
@@ -113,7 +113,7 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs list
   ```
 - Project state is valid:
   ```bash
-  node .ai/scripts/projectctl.mjs verify
+  node .ai/scripts/ctl-project-ctl-project-governance.mjs verify
   ```
 - Skills wrappers are synced (if you enabled packs):
   ```bash
@@ -128,7 +128,7 @@ Delete these paths (if you want a clean uninstall):
 - `.ai/skills/features/context-awareness/`
 - `config/environments/`
 - `.ai/skills/features/context-awareness/scripts/contextctl.mjs`
-- `.ai/scripts/projectctl.mjs`
+- `.ai/scripts/ctl-project-ctl-project-governance.mjs`
 - `.ai/skills/_meta/skillpacksctl.mjs`
 - `.ai/project/`
 - `.ai/skills/_meta/packs/context-core.json`

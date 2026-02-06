@@ -19,7 +19,7 @@ This feature provides a **repo-local mirror** of the database schema so an LLM c
 2. Import the Prisma schema into the mirror:
    - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`
 3. Sync into LLM context:
-   - `node .ai/scripts/dbssotctl.mjs sync-to-context`
+   - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
 ## AI/LLM guidelines
 
