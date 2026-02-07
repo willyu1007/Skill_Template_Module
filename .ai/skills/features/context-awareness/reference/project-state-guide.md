@@ -17,4 +17,4 @@ A small state file is useful as a stable input for:
 
 ## Verification
 
-- `node .ai/scripts/ctl-project-ctl-project-governance.mjs verify`
+- `node .ai/scripts/ctl-project-state.mjs verify`

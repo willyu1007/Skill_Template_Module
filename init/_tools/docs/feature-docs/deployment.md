@@ -39,13 +39,13 @@ When enabled, Stage C:
 2) Runs the controller:
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs init --repo-root .
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init --repo-root .
 ```
 
 3) Optional verification (when Stage C is run with `--verify-features`):
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs verify --repo-root .
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs verify --repo-root .
 ```
 
 ## Key outputs
@@ -56,5 +56,5 @@ node .ai/skills/features/deployment/scripts/deployctl.mjs verify --repo-root .
 
 ```bash
 # List deployment targets/environments (controller-defined)
-node .ai/skills/features/deployment/scripts/deployctl.mjs list
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs list
 ```

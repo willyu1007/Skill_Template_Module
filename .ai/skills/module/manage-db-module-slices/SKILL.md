@@ -45,17 +45,17 @@ Rules:
 
 ### Phase 2 — Preflight validation (mandatory)
 1. Run strict validation:
-   - `node .ai/scripts/modules/dbssotctl-module.mjs verify`
-   - Optional: `node .ai/scripts/modules/dbssotctl-module.mjs verify --strict`
+   - `node .ai/scripts/modules/ctl-db-ssot-module.mjs verify`
+   - Optional: `node .ai/scripts/modules/ctl-db-ssot-module.mjs verify --strict`
 2. Check ownership conflicts:
-   - `node .ai/scripts/modules/dbssotctl-module.mjs conflicts`
+   - `node .ai/scripts/modules/ctl-db-ssot-module.mjs conflicts`
 3. If any errors or conflicts are reported, STOP and resolve:
    - Fix invalid table/column references.
    - Resolve ownership conflicts (one owner per table).
 
 ### Phase 3 — Preview slice (recommended)
 1. Export a preview slice for review:
-   - `node .ai/scripts/modules/dbssotctl-module.mjs export-slice --module-id <module_id>`
+   - `node .ai/scripts/modules/ctl-db-ssot-module.mjs export-slice --module-id <module_id>`
 2. Ask for confirmation before writing slices, especially if updating multiple modules.
 
 
@@ -73,9 +73,9 @@ Type "approve slices" to proceed.
 
 ### Phase 4 — Sync module slices (writes)
 1. Generate slices for all modules (requires explicit approval):
-   - `node .ai/scripts/modules/dbssotctl-module.mjs sync-slices`
+   - `node .ai/scripts/modules/ctl-db-ssot-module.mjs sync-slices`
 2. Or target a single module:
-   - `node .ai/scripts/modules/dbssotctl-module.mjs sync-slices --module-id <module_id>`
+   - `node .ai/scripts/modules/ctl-db-ssot-module.mjs sync-slices --module-id <module_id>`
 3. To avoid registry updates, add `--no-registry`.
 
 ## Verification

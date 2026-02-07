@@ -2,9 +2,9 @@
 #
 # This file is the single source of truth for module metadata.
 # After editing, run:
-#   node .ai/scripts/modules/modulectl.mjs registry-build
-#   node .ai/scripts/modules/flowctl.mjs update-from-manifests
-#   node .ai/scripts/modules/flowctl.mjs lint
+#   node .ai/scripts/modules/ctl-module.mjs registry-build
+#   node .ai/scripts/modules/ctl-flow.mjs update-from-manifests
+#   node .ai/scripts/modules/ctl-flow.mjs lint
 
 module_id: example-api
 module_type: http_api

@@ -33,9 +33,9 @@ This feature provides **version and changelog management** infrastructure for co
 
 When working with releases, AI should:
 
-1. **Check** status: `releasectl status`
-2. **Prepare** release: `releasectl prepare --version x.y.z`
-3. **Generate** changelog: `releasectl changelog`
+1. **Check** status: `ctl-release status`
+2. **Prepare** release: `ctl-release prepare --version x.y.z`
+3. **Generate** changelog: `ctl-release changelog`
 4. **Document** in `handbook/`
 5. **Request human** to approve and tag
 
@@ -45,17 +45,17 @@ Never directly create git tags or modify version files.
 
 ```bash
 # Initialize
-node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
+node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy semantic
 
 # Check status
-node .ai/skills/features/release/scripts/releasectl.mjs status
+node .ai/skills/features/release/scripts/ctl-release.mjs status
 
 # Prepare release
-node .ai/skills/features/release/scripts/releasectl.mjs prepare --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version 1.2.0
 
 # Generate changelog
-node .ai/skills/features/release/scripts/releasectl.mjs changelog
+node .ai/skills/features/release/scripts/ctl-release.mjs changelog
 
 # Create tag (requires human approval)
-node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs tag --version 1.2.0
 ```

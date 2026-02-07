@@ -9,8 +9,8 @@
   3) Update `04-verification.md` with results
 
 ## `01-plan.md` update (sketch)
-- [x] Milestone 1: ...
-- [ ] Milestone 2: ... (blocked)
+- [x] Phase 1: ...
+- [ ] Phase 2: ... (blocked)
 
 ## `04-verification.md` update (sketch)
 - [x] Typecheck/build

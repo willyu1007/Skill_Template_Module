@@ -60,14 +60,14 @@ Type "approve scenarios" to apply the change.
 2. Validate and compile:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs validate
-node .ai/scripts/modules/integrationctl.mjs compile
+node .ai/scripts/modules/ctl-integration.mjs validate
+node .ai/scripts/modules/ctl-integration.mjs compile
 ```
 
 3. Optional strict mode (treat warnings as errors):
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs validate
+node .ai/scripts/modules/ctl-integration.mjs validate
 ```
 
 ### Phase 3 — Optional execution
@@ -75,7 +75,7 @@ node .ai/scripts/modules/integrationctl.mjs validate
 Execution is environment-specific. If base URLs are configured, you can run:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs run --execute
+node .ai/scripts/modules/ctl-integration.mjs run --execute
 ```
 
 If base URLs are not configured, HTTP steps will be marked as SKIPPED.
@@ -85,13 +85,13 @@ If base URLs are not configured, HTTP steps will be marked as SKIPPED.
 1. Validate scenarios (fast, no execution):
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs validate
+node .ai/scripts/modules/ctl-integration.mjs validate
 ```
 
 2. Compile scenarios into resolved plans:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs compile
+node .ai/scripts/modules/ctl-integration.mjs compile
 ```
 
 3. (Optional) Execute HTTP steps:
@@ -105,7 +105,7 @@ node .ai/scripts/modules/integrationctl.mjs compile
 Then run:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs run --execute
+node .ai/scripts/modules/ctl-integration.mjs run --execute
 ```
 
 ## Notes
@@ -123,7 +123,7 @@ Copy and adapt these to your integration testing needs.
 
 ## Verification
 
-- Run `node .ai/scripts/modules/integrationctl.mjs validate` and `node .ai/scripts/modules/integrationctl.mjs compile`.
+- Run `node .ai/scripts/modules/ctl-integration.mjs validate` and `node .ai/scripts/modules/ctl-integration.mjs compile`.
 
 ## Boundaries
 

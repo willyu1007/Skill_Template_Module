@@ -39,11 +39,11 @@ Avoid the skill when:
 - `roadmap.md` (always) at exactly one scope:
   - Module-scoped: `modules/<module_id>/dev-docs/active/<task_slug>/roadmap.md`
   - Integration-scoped: `modules/integration/dev-docs/active/<task_slug>/roadmap.md`
-  - Temporary (default fallback): `.ai/.tmp/dev-docs/<task_slug>/roadmap.md`
+  - Temporary (confirmation-failure fallback): `.ai/.tmp/dev-docs/<task_slug>/roadmap.md`
 - `requirement.md` (optional, when requirements alignment mode is active) at the same scope:
   - Module-scoped: `modules/<module_id>/dev-docs/active/<task_slug>/requirement.md`
   - Integration-scoped: `modules/integration/dev-docs/active/<task_slug>/requirement.md`
-  - Temporary (default fallback): `.ai/.tmp/dev-docs/<task_slug>/requirement.md`
+  - Temporary (confirmation-failure fallback): `.ai/.tmp/dev-docs/<task_slug>/requirement.md`
 
 ### Scope resolution
 

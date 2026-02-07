@@ -2,7 +2,7 @@
  * index.mjs
  * Context-awareness test suite
  */
-import * as contextctlSmoke from './contextctl-smoke.mjs';
+import * as contextctlSmoke from './ctl-context-smoke.mjs';
 
 const TESTS = [contextctlSmoke];
 

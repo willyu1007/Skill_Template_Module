@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * iacctl.mjs
+ * ctl-iac.mjs
  *
  * IaC feature management (ROS or Terraform) + Context-Awareness integration.
  *
@@ -22,7 +22,7 @@ import childProcess from 'node:child_process';
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/features/iac/scripts/iacctl.mjs <command> [options]
+  node .ai/skills/features/iac/scripts/ctl-iac.mjs <command> [options]
 
 Commands:
   help
@@ -39,8 +39,8 @@ Commands:
     Verify IaC feature invariants and context artifacts.
 
 Examples:
-  node .ai/skills/features/iac/scripts/iacctl.mjs init --tool terraform --repo-root .
-  node .ai/skills/features/iac/scripts/iacctl.mjs verify --repo-root .
+  node .ai/skills/features/iac/scripts/ctl-iac.mjs init --tool terraform --repo-root .
+  node .ai/skills/features/iac/scripts/ctl-iac.mjs verify --repo-root .
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -189,14 +189,14 @@ function upsertProjectArtifact({ repoRoot, artifactId, type, relPath, mode, tags
 }
 
 function runContextBuild(repoRoot) {
-  const contextctl = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'contextctl.mjs');
-  if (!fs.existsSync(contextctl)) return { ok: false, reason: 'contextctl not found (context-awareness not installed?)' };
+  const ctlContext = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'ctl-context.mjs');
+  if (!fs.existsSync(ctlContext)) return { ok: false, reason: 'ctl-context not found (context-awareness not installed?)' };
 
-  const res = childProcess.spawnSync('node', [contextctl, 'build', '--no-refresh', '--repo-root', repoRoot], {
+  const res = childProcess.spawnSync('node', [ctlContext, 'build', '--no-refresh', '--repo-root', repoRoot], {
     stdio: 'inherit',
     cwd: repoRoot,
   });
-  if (res.status !== 0) return { ok: false, reason: `contextctl build failed (exit=${res.status})` };
+  if (res.status !== 0) return { ok: false, reason: `ctl-context build failed (exit=${res.status})` };
   return { ok: true };
 }
 
@@ -290,7 +290,7 @@ function cmdVerify(repoRoot) {
   }
 
   const registryPath = getProjectRegistryPath(repoRoot);
-  if (!fs.existsSync(registryPath)) die(`[error] missing project registry: ${path.relative(repoRoot, registryPath)} (run contextctl init)`);
+  if (!fs.existsSync(registryPath)) die(`[error] missing project registry: ${path.relative(repoRoot, registryPath)} (run ctl-context init)`);
 
   const reg = readJsonOrNull(registryPath);
   const artifacts = Array.isArray(reg && reg.artifacts) ? reg.artifacts : [];
@@ -302,7 +302,7 @@ function cmdVerify(repoRoot) {
 
   const checksum = computeChecksumSha256(overviewPath);
   if (entry.checksumSha256 && entry.checksumSha256 !== checksum) {
-    die('[error] registry checksum mismatch for iac.overview (run: contextctl touch/build or re-run iacctl init --force)');
+    die('[error] registry checksum mismatch for iac.overview (run: ctl-context touch/build or re-run ctl-iac init --force)');
   }
 
   console.log('[ok] IaC verify PASS');

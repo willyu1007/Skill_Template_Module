@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dbctl.mjs
+ * ctl-db.mjs
  *
  * DB schema and mirror management for the sync-code-schema-from-db feature.
  *
@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs <command> [options]
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs <command> [options]
 
 Commands:
   init
@@ -57,11 +57,11 @@ Commands:
     Show current db status.
 
 Examples:
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs generate-migration --name add_users
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs verify
-  node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs status
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs init
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs generate-migration --name add_users
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs verify
+  node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs status
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -408,11 +408,11 @@ This directory contains the database schema mirror when the real database is the
 ## Commands
 
 \`\`\`bash
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs generate-migration --name <name>
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs verify
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs status
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs init
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs generate-migration --name <name>
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs verify
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs status
 \`\`\`
 
 ## Structure
@@ -558,13 +558,13 @@ function cmdVerify(repoRoot, strict) {
   // Check db directory
   const dbDir = getDbDir(repoRoot);
   if (!fs.existsSync(dbDir)) {
-    errors.push('db/ directory not found. Run: dbctl init');
+    errors.push('db/ directory not found. Run: ctl-db init');
   }
 
   // Check tables.json
   const tablesPath = getTablesJsonPath(repoRoot);
   if (!fs.existsSync(tablesPath)) {
-    errors.push('db/schema/tables.json not found. Run: dbctl init');
+    errors.push('db/schema/tables.json not found. Run: ctl-db init');
   } else {
     const schema = loadTablesJson(repoRoot);
     if (!schema) {

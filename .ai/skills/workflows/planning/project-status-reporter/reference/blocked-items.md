@@ -5,7 +5,7 @@ Use when user asks about blockers, obstacles, or what's stuck.
 ## Data Source
 
 ```bash
-node .ai/scripts/ctl-project-state.mjs query --project <project> --status blocked --json
+node .ai/scripts/ctl-project-governance.mjs query --project <project> --status blocked --json
 ```
 
 ## Output Template

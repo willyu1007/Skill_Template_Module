@@ -1,6 +1,6 @@
 ---
 name: release
-description: Enable and operate the Release feature (release checklists + changelog conventions + releasectl) for consistent versioning.
+description: Enable and operate the Release feature (release checklists + changelog conventions + ctl-release) for consistent versioning.
 ---
 
 # Release Feature
@@ -19,7 +19,7 @@ When enabled, this feature materializes:
 
 Controller script (provided by the template SSOT):
 
-- `node .ai/skills/features/release/scripts/releasectl.mjs` — manage release configuration and checklists
+- `node .ai/skills/features/release/scripts/ctl-release.mjs` — manage release configuration and checklists
 
 ## How to enable
 
@@ -31,8 +31,8 @@ Controller script (provided by the template SSOT):
 2. Initialize:
 
 ```bash
-node .ai/skills/features/release/scripts/releasectl.mjs init
-node .ai/skills/features/release/scripts/releasectl.mjs verify
+node .ai/skills/features/release/scripts/ctl-release.mjs init
+node .ai/skills/features/release/scripts/ctl-release.mjs verify
 ```
 
 ## Operating rules
@@ -47,7 +47,7 @@ In module-first repos (or monorepos), decide explicitly whether versioning is re
 ## Verification
 
 ```bash
-node .ai/skills/features/release/scripts/releasectl.mjs verify
+node .ai/skills/features/release/scripts/ctl-release.mjs verify
 ```
 
 ## Boundaries

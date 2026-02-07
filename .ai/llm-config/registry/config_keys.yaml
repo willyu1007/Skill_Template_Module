@@ -1,7 +1,7 @@
 # LLM configuration keys registry (template)
 #
 # This file is an allow-list of LLM-related configuration keys / environment variables.
-# It is enforced by: `node .ai/scripts/check-llm-config-keys.mjs`.
+# It is enforced by: `node .ai/skills/workflows/llm/llm-engineering/scripts/check-llm-config-keys.mjs`.
 
 version: 1
 

@@ -20,7 +20,7 @@ This feature provides **multi-environment deployment** infrastructure supporting
 Services must be registered before deployment:
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id api --artifact api:v1.0.0
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id api --artifact api:v1.0.0
 ```
 
 ### Environment Configuration
@@ -36,7 +36,7 @@ Environments are configured in `ops/deploy/environments/`:
 AI generates deployment plans, but humans execute:
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs plan --service api --env staging
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs plan --service api --env staging
 ```
 
 ## Kubernetes Support
@@ -59,8 +59,8 @@ Place YAML files in `ops/deploy/k8s/manifests/`
 
 When working with deployments, AI should:
 
-1. **Register** services via `deployctl add-service`
-2. **Plan** deployments via `deployctl plan`
+1. **Register** services via `ctl-deploy add-service`
+2. **Plan** deployments via `ctl-deploy plan`
 3. **Document** decisions in `handbook/`
 4. **Never** execute deployments directly
 
@@ -70,14 +70,14 @@ Humans execute and approve all deployments.
 
 ```bash
 # Initialize
-node .ai/skills/features/deployment/scripts/deployctl.mjs init --model k8s
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init --model k8s
 
 # Add service
-node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id api --artifact api:v1.0.0
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id api --artifact api:v1.0.0
 
 # Plan deployment
-node .ai/skills/features/deployment/scripts/deployctl.mjs plan --service api --env staging
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs plan --service api --env staging
 
 # Check status
-node .ai/skills/features/deployment/scripts/deployctl.mjs status --env staging
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs status --env staging
 ```

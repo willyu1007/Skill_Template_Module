@@ -16,5 +16,5 @@
   },
   "enums": [],
   "tables": [],
-  "notes": "DB mirror skeleton. Populate via: node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma"
+  "notes": "DB mirror skeleton. Populate via: node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma"
 }

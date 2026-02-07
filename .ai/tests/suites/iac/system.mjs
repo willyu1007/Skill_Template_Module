@@ -1,6 +1,6 @@
 /**
  * system.mjs
- * IaC feature system test (templates + iacctl)
+ * IaC feature system test (templates + ctl-iac)
  */
 import fs from 'fs';
 import path from 'path';
@@ -35,26 +35,26 @@ export function run(ctx) {
   const rootDir = path.join(testDir, 'fixture');
   ensureDir(rootDir);
 
-  const srcContextctl = path.join(
+  const srcCtlContext = path.join(
     ctx.repoRoot,
     '.ai',
     'skills',
     'features',
     'context-awareness',
     'scripts',
-    'contextctl.mjs'
+    'ctl-context.mjs'
   );
-  const srcIacctl = path.join(ctx.repoRoot, '.ai', 'skills', 'features', 'iac', 'scripts', 'iacctl.mjs');
+  const srcCtlIac = path.join(ctx.repoRoot, '.ai', 'skills', 'features', 'iac', 'scripts', 'ctl-iac.mjs');
   const srcTfTemplates = path.join(ctx.repoRoot, '.ai', 'skills', 'features', 'iac', 'templates', 'terraform');
   const srcRosTemplates = path.join(ctx.repoRoot, '.ai', 'skills', 'features', 'iac', 'templates', 'ros');
 
   // Minimal feature scripts inside the fixture root (simulates a real initialized repo)
-  const fixtureContextctl = path.join(rootDir, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'contextctl.mjs');
-  const fixtureIacctl = path.join(rootDir, '.ai', 'skills', 'features', 'iac', 'scripts', 'iacctl.mjs');
-  ensureDir(path.dirname(fixtureContextctl));
-  ensureDir(path.dirname(fixtureIacctl));
-  fs.copyFileSync(srcContextctl, fixtureContextctl);
-  fs.copyFileSync(srcIacctl, fixtureIacctl);
+  const fixtureCtlContext = path.join(rootDir, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'ctl-context.mjs');
+  const fixtureCtlIac = path.join(rootDir, '.ai', 'skills', 'features', 'iac', 'scripts', 'ctl-iac.mjs');
+  ensureDir(path.dirname(fixtureCtlContext));
+  ensureDir(path.dirname(fixtureCtlIac));
+  fs.copyFileSync(srcCtlContext, fixtureCtlContext);
+  fs.copyFileSync(srcCtlIac, fixtureCtlIac);
 
   // Materialize terraform templates
   copyDirRecursive(path.join(srcTfTemplates, 'ops'), path.join(rootDir, 'ops'));
@@ -62,14 +62,14 @@ export function run(ctx) {
   // Init (writes docs/context/iac/overview.json + registry entry)
   const init = runCommand({
     cmd: 'node',
-    args: [fixtureIacctl, 'init', '--tool', 'terraform', '--repo-root', rootDir],
+    args: [fixtureCtlIac, 'init', '--tool', 'terraform', '--repo-root', rootDir],
     cwd: rootDir,
     evidenceDir: testDir,
-    label: `${name}.iacctl.init`,
+    label: `${name}.ctl-iac.init`,
   });
   if (init.error || init.code !== 0) {
     const detail = init.error ? String(init.error) : init.stderr || init.stdout;
-    return { name, status: 'FAIL', error: `iacctl init failed: ${detail}` };
+    return { name, status: 'FAIL', error: `ctl-iac init failed: ${detail}` };
   }
 
   const overviewPath = path.join(rootDir, 'docs', 'context', 'iac', 'overview.json');
@@ -92,28 +92,28 @@ export function run(ctx) {
   // Verify happy path
   const verify = runCommand({
     cmd: 'node',
-    args: [fixtureIacctl, 'verify', '--repo-root', rootDir],
+    args: [fixtureCtlIac, 'verify', '--repo-root', rootDir],
     cwd: rootDir,
     evidenceDir: testDir,
-    label: `${name}.iacctl.verify`,
+    label: `${name}.ctl-iac.verify`,
   });
   if (verify.error || verify.code !== 0) {
     const detail = verify.error ? String(verify.error) : verify.stderr || verify.stdout;
-    return { name, status: 'FAIL', error: `iacctl verify failed: ${detail}` };
+    return { name, status: 'FAIL', error: `ctl-iac verify failed: ${detail}` };
   }
-  assertIncludes(verify.stdout + verify.stderr, 'PASS', 'Expected PASS from iacctl verify');
+  assertIncludes(verify.stdout + verify.stderr, 'PASS', 'Expected PASS from ctl-iac verify');
 
   // Dual SSOT must fail
   copyDirRecursive(path.join(srcRosTemplates, 'ops'), path.join(rootDir, 'ops'));
   const verifyDual = runCommand({
     cmd: 'node',
-    args: [fixtureIacctl, 'verify', '--repo-root', rootDir],
+    args: [fixtureCtlIac, 'verify', '--repo-root', rootDir],
     cwd: rootDir,
     evidenceDir: testDir,
-    label: `${name}.iacctl.verify_dual`,
+    label: `${name}.ctl-iac.verify_dual`,
   });
   if (verifyDual.code === 0) {
-    return { name, status: 'FAIL', error: 'expected iacctl verify to fail under dual SSOT, but it passed' };
+    return { name, status: 'FAIL', error: 'expected ctl-iac verify to fail under dual SSOT, but it passed' };
   }
   assertIncludes(verifyDual.stderr + verifyDual.stdout, 'dual SSOT', 'Expected dual SSOT error');
 

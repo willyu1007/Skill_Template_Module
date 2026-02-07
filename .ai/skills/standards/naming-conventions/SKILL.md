@@ -137,7 +137,7 @@ All IDs in the modular system (`modules/`, `.system/modular/`) follow **strict k
 - Easy conversion to environment variable names (`user-api` → `USER_API`)
 - Avoids cross-platform filesystem issues
 
-**Validation**: The toolchain (`modulectl`, `flowctl`, `integrationctl`) enforces these rules and provides clear error messages when IDs don't conform.
+**Validation**: The toolchain (`ctl-module`, `ctl-flow`, `ctl-integration`) enforces these rules and provides clear error messages when IDs don't conform.
 
 ## Skill Naming (MUST)
 

@@ -29,8 +29,8 @@ function main() {
 
   run('node', ['.ai/scripts/lint-skills.mjs', '--strict']);
   run('node', ['.ai/scripts/lint-docs.mjs']);
-  run('node', ['.ai/scripts/ctl-project-ctl-project-governance.mjs', 'verify']);
-  run('node', ['.ai/scripts/ctl-project-state.mjs', 'lint', '--check', '--project', project]);
+  run('node', ['.ai/scripts/ctl-project-state.mjs', 'verify']);
+  run('node', ['.ai/scripts/ctl-project-governance.mjs', 'lint', '--check', '--project', project]);
 }
 
 main();

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * deployctl.mjs
+ * ctl-deploy.mjs
  *
  * Deployment configuration + planning controller for the Deployment feature.
  *
@@ -35,7 +35,7 @@ const VALID_SERVICE_KINDS = new Set(['http_service', 'workload', 'client']);
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/features/deployment/scripts/deployctl.mjs <command> [options]
+  node .ai/skills/features/deployment/scripts/ctl-deploy.mjs <command> [options]
 
 Commands:
   help
@@ -98,10 +98,10 @@ Commands:
     Verify deployment configuration.
 
 Examples:
-  node .ai/skills/features/deployment/scripts/deployctl.mjs init --model k8s --k8s-tool helm
-  node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3
-  node .ai/skills/features/deployment/scripts/deployctl.mjs list
-  node .ai/skills/features/deployment/scripts/deployctl.mjs plan --service api --env staging
+  node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init --model k8s --k8s-tool helm
+  node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3
+  node .ai/skills/features/deployment/scripts/ctl-deploy.mjs list
+  node .ai/skills/features/deployment/scripts/ctl-deploy.mjs plan --service api --env staging
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -324,12 +324,12 @@ function cmdInit(repoRoot, dryRun, model, k8sTool) {
 ## Commands
 
 \`\`\`bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs init --model k8s --k8s-tool helm
-node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3
-node .ai/skills/features/deployment/scripts/deployctl.mjs list
-node .ai/skills/features/deployment/scripts/deployctl.mjs plan --service api --env staging
-node .ai/skills/features/deployment/scripts/deployctl.mjs status --env staging
-node .ai/skills/features/deployment/scripts/deployctl.mjs verify
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init --model k8s --k8s-tool helm
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs list
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs plan --service api --env staging
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs status --env staging
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs verify
 \`\`\`
 
 ## Notes
@@ -408,7 +408,7 @@ function cmdListServices(repoRoot, format) {
   console.log(`Services (${config.services.length}):\n`);
   if (config.services.length === 0) {
     console.log('  (no services registered)');
-    console.log('  Run: node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3');
+    console.log('  Run: node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id api --artifact ghcr.io/acme/api:v1.2.3');
     return;
   }
 
@@ -452,10 +452,10 @@ function cmdPlan(repoRoot, serviceId, envId, tagOverride) {
 
   const config = loadConfig(repoRoot);
   const env = config.environments.find((e) => e.id === envId);
-  if (!env) die(`[error] Environment "${envId}" not found. Run: deployctl list-envs`);
+  if (!env) die(`[error] Environment "${envId}" not found. Run: ctl-deploy list-envs`);
 
   const svc = config.services.find((s) => s.id === serviceId);
-  if (!svc) die(`[error] Service "${serviceId}" not found. Run: deployctl list`);
+  if (!svc) die(`[error] Service "${serviceId}" not found. Run: ctl-deploy list`);
 
   const { repository, tag } = parseArtifactRef(svc.artifact);
   const finalTag = tagOverride ? String(tagOverride) : tag;
@@ -581,12 +581,12 @@ function cmdVerify(repoRoot) {
 
   const deployDir = getDeployDir(repoRoot);
   if (!fs.existsSync(deployDir)) {
-    errors.push('ops/deploy/ not found. Run: deployctl init');
+    errors.push('ops/deploy/ not found. Run: ctl-deploy init');
   }
 
   const configPath = getConfigPath(repoRoot);
   if (!fs.existsSync(configPath)) {
-    errors.push('ops/deploy/config.json not found. Run: deployctl init');
+    errors.push('ops/deploy/config.json not found. Run: ctl-deploy init');
   }
 
   const config = loadConfig(repoRoot);

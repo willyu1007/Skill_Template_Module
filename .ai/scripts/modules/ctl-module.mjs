@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * modulectl.mjs
+ * ctl-module.mjs
  *
  * Module instance management + derived registry build.
  *
@@ -38,7 +38,7 @@ import {
 
 const usageText = `
 Usage:
-  node .ai/scripts/modules/modulectl.mjs <command> [options]
+  node .ai/scripts/modules/ctl-module.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -73,9 +73,9 @@ ID Naming Convention:
   Examples: user-api, billing-service, auth-module
 
 Examples:
-  node .ai/scripts/modules/modulectl.mjs init --module-id billing-api --apply
-  node .ai/scripts/modules/modulectl.mjs registry-build
-  node .ai/scripts/modules/modulectl.mjs verify --strict
+  node .ai/scripts/modules/ctl-module.mjs init --module-id billing-api --apply
+  node .ai/scripts/modules/ctl-module.mjs registry-build
+  node .ai/scripts/modules/ctl-module.mjs verify --strict
 `;
 
 const usage = createUsage(usageText);
@@ -99,9 +99,9 @@ purpose: Module agent instructions for ${moduleId}
 - Keep changes local to this module unless explicitly cross-cutting.
 - For multi-step/multi-file work: create/resume \`dev-docs/active/<task_slug>/\` and keep dev docs synced (see \`dev-docs/AGENTS.md\`).
 - If you change this module's manifest, run:
-  - node .ai/scripts/modules/modulectl.mjs registry-build
-  - node .ai/scripts/modules/flowctl.mjs update-from-manifests
-  - node .ai/scripts/modules/flowctl.mjs lint
+  - node .ai/scripts/modules/ctl-module.mjs registry-build
+  - node .ai/scripts/modules/ctl-flow.mjs update-from-manifests
+  - node .ai/scripts/modules/ctl-flow.mjs lint
 
 ## Key files
 
@@ -288,17 +288,17 @@ For integration-related work, prefer writing in modules/integration/dev-docs/.
   // Rebuild project context registry (derived)
   const ctx = spawnSync(
     'node',
-    ['.ai/skills/features/context-awareness/scripts/contextctl.mjs', 'build', '--repo-root', repoRoot],
+    ['.ai/skills/features/context-awareness/scripts/ctl-context.mjs', 'build', '--repo-root', repoRoot],
     { cwd: repoRoot, stdio: 'inherit' }
   );
   if (ctx.status !== 0) {
-    console.error('[warn] contextctl build failed (module created, but project context registry not updated).');
+    console.error('[warn] ctl-context build failed (module created, but project context registry not updated).');
   }
 
   // Update flow implementation index (derived)
-  const flow = spawnSync('node', ['.ai/scripts/modules/flowctl.mjs', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
+  const flow = spawnSync('node', ['.ai/scripts/modules/ctl-flow.mjs', 'update-from-manifests'], { cwd: repoRoot, stdio: 'inherit' });
   if (flow.status !== 0) {
-    console.error('[warn] flowctl update-from-manifests failed (module created, but flow implementation index not updated).');
+    console.error('[warn] ctl-flow update-from-manifests failed (module created, but flow implementation index not updated).');
   }
 }
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Centralized smoke tests for feature-pack `*ctl.mjs` scripts. Validates init -> verify workflows.
+Centralized smoke tests for feature-pack `ctl-*.mjs` scripts. Validates init -> verify workflows.
 
 ## Quick Reference
 
@@ -11,9 +11,9 @@ Centralized smoke tests for feature-pack `*ctl.mjs` scripts. Validates init -> v
 | `ui` | `ui_gate.py`, `image_style_probe.py` | governance gate, style intake |
 | `environment` | `env_contractctl.py`, `env_localctl.py`, `env_cloudctl.py` | contract -> local -> cloud |
 | `database` | `db_connect_check.py`, `db_schema_snapshot.py` | connect -> snapshot |
-| `context-awareness` | `contextctl.mjs` | init -> add-artifact -> touch -> verify |
-| `deployment` | `deployctl.mjs` | init -> add-service -> plan -> verify |
-| `modular-system` | `modular.mjs`, `modulectl.mjs`, `flowctl.mjs` | ID validation, participates_in |
+| `context-awareness` | `ctl-context.mjs` | init -> add-artifact -> touch -> verify |
+| `deployment` | `ctl-deploy.mjs` | init -> add-service -> plan -> verify |
+| `modular-system` | `modular.mjs`, `ctl-module.mjs`, `ctl-flow.mjs` | ID validation, participates_in |
 
 ## Commands
 

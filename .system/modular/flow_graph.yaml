@@ -12,8 +12,8 @@
 # Prefer deprecating over renaming to maintain backward compatibility.
 #
 # After editing, run:
-#   node .ai/scripts/modules/flowctl.mjs lint
-#   node .ai/scripts/modules/flowctl.mjs graph
+#   node .ai/scripts/modules/ctl-flow.mjs lint
+#   node .ai/scripts/modules/ctl-flow.mjs graph
 #
 # For examples, see:
 #   .ai/skills/module/maintain-flow-graph/examples/

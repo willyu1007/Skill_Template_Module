@@ -6,24 +6,24 @@ Feature assets are integrated under `.ai/`:
 
 - Templates: usually `.ai/skills/features/<feature-id>/templates/` (some features source templates from nested skills; for database: `.ai/skills/features/database/sync-code-schema-from-db/templates/`)
 - Control scripts:
-  - Repo-level Node controllers: `.ai/scripts/*ctl.mjs` (and other repo controllers like `sync-skills.mjs`)
+  - Repo-level Node controllers: `.ai/scripts/ctl-*.mjs` (and other repo controllers like `sync-skills.mjs`)
   - Feature-local tools: `.ai/skills/features/**/scripts/*` (Node `.mjs` and/or Python `.py`)
-- Feature flags/state: `.ai/project/state.json` (via `.ai/scripts/ctl-project-ctl-project-governance.mjs`)
+- Feature flags/state: `.ai/project/state.json` (via `.ai/scripts/ctl-project-state.mjs`)
 
 ## Available features
 
 | Feature ID | Blueprint control | Control script | Documentation |
 |------------|------------------|----------------|---------------|
-| `context-awareness` | **mandatory** (cannot be disabled) | `.ai/skills/features/context-awareness/scripts/contextctl.mjs` | [context-awareness.md](context-awareness.md) |
-| `database` | `db.ssot` (`none` disables) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`) | [database.md](database.md) |
+| `context-awareness` | **mandatory** (cannot be disabled) | `.ai/skills/features/context-awareness/scripts/ctl-context.mjs` | [context-awareness.md](context-awareness.md) |
+| `database` | `db.ssot` (`none` disables) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs` (when `db.ssot=database`) | [database.md](database.md) |
 | `ui` | `features.ui` (default: `true`) | `.ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` | [ui.md](ui.md) |
 | `environment` | `features.environment` (default: `true`) | `.ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` | [environment.md](environment.md) |
-| `packaging` | `features.packaging` (default: `true`) | `.ai/skills/features/packaging/scripts/packctl.mjs` | [packaging.md](packaging.md) |
-| `deployment` | `features.deployment` (default: `true`) | `.ai/skills/features/deployment/scripts/deployctl.mjs` | [deployment.md](deployment.md) |
-| `release` | `features.release` (default: `true`) | `.ai/skills/features/release/scripts/releasectl.mjs` | [release.md](release.md) |
+| `packaging` | `features.packaging` (default: `true`) | `.ai/skills/features/packaging/scripts/ctl-pack.mjs` | [packaging.md](packaging.md) |
+| `deployment` | `features.deployment` (default: `true`) | `.ai/skills/features/deployment/scripts/ctl-deploy.mjs` | [deployment.md](deployment.md) |
+| `release` | `features.release` (default: `true`) | `.ai/skills/features/release/scripts/ctl-release.mjs` | [release.md](release.md) |
 | `ci` | `ci.provider` (`none` disables; default: `github`) | `.ai/skills/features/ci/scripts/ctl-ci.mjs` | [ci.md](ci.md) |
-| `iac` | `iac.tool` (`none` disables; default: `none`) | `.ai/skills/features/iac/scripts/iacctl.mjs` | [iac.md](iac.md) |
-| `observability` | `features.observability` (default: `true`) | `.ai/skills/features/observability/scripts/obsctl.mjs` | [observability.md](observability.md) |
+| `iac` | `iac.tool` (`none` disables; default: `none`) | `.ai/skills/features/iac/scripts/ctl-iac.mjs` | [iac.md](iac.md) |
+| `observability` | `features.observability` (default: `true`) | `.ai/skills/features/observability/scripts/ctl-obs.mjs` | [observability.md](observability.md) |
 
 ## How to decide (Stage B)
 

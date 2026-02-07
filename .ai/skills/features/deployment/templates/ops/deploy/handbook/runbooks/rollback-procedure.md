@@ -3,7 +3,7 @@
 ## Quick Steps
 
 1. Identify the issue
-2. Check deployment history: `node .ai/skills/features/deployment/scripts/deployctl.mjs history --service <id>`
+2. Check deployment history: `node .ai/skills/features/deployment/scripts/ctl-deploy.mjs history --service <id>`
 3. Execute rollback (see below)
 
 ## Detailed Procedure

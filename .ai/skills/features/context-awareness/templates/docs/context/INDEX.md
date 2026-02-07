@@ -6,8 +6,8 @@
 - The canonical index of all context artifacts is `docs/context/registry.json`.
 - When `docs/context/` exists, AI/LLM SHOULD prefer these artifacts over ad-hoc repository scanning.
 - Any change to context artifacts MUST be accompanied by an updated registry checksum:
-  - Run `node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch`
-  - Verify with `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+  - Run `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs touch`
+  - Verify with `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`
 
 ## What lives here
 
@@ -44,22 +44,22 @@ The generator chooses the source based on SSOT mode:
 - `database`: reads `db/schema/tables.json` (mirror of real DB) and emits the contract.
 - `none`: DB is disabled; init does not generate the DB contract.
 
-After generation, `ctl-db-ssot` runs `contextctl touch` (best effort) to keep checksums consistent.
+After generation, `ctl-db-ssot` runs `ctl-context touch` (best effort) to keep checksums consistent.
 
 ## How to update context (script-only)
 
-Use `node .ai/skills/features/context-awareness/scripts/contextctl.mjs`:
+Use `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs`:
 
 - Initialize (idempotent):
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs init`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs init`
 - Register a new artifact:
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact --id <id> --type <type> --path <repo-relative-path>`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs add-artifact --id <id> --type <type> --path <repo-relative-path>`
 - Update checksums after edits:
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs touch`
 - Verify consistency (for CI):
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`
 
 ## Verification
 
 - Registry and artifacts are consistent:
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`

@@ -3,7 +3,7 @@
 ## Conclusions (read first)
 
 - Observability contracts are defined in `docs/context/observability/`.
-- Use `obsctl.mjs` to manage metrics, logs, and traces definitions.
+- Use `ctl-obs.mjs` to manage metrics, logs, and traces definitions.
 - AI proposes instrumentation; humans implement.
 
 ## Contract Files
@@ -17,7 +17,7 @@
 ## AI Workflow
 
 1. **Review** existing metrics/logs/traces contracts
-2. **Propose** new observability points via `obsctl`
+2. **Propose** new observability points via `ctl-obs`
 3. **Generate** instrumentation hints
 4. **Document** in `handbook/`
 

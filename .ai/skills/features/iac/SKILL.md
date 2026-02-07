@@ -25,7 +25,7 @@ When enabled (via blueprint `iac.tool`):
 
 Controller script:
 
-- `node .ai/skills/features/iac/scripts/iacctl.mjs`
+- `node .ai/skills/features/iac/scripts/ctl-iac.mjs`
 
 ## How to enable (Init Stage B/C)
 
@@ -49,7 +49,7 @@ When omitted or `none`, IaC feature is **not** enabled.
 ## Verification
 
 ```bash
-node .ai/skills/features/iac/scripts/iacctl.mjs verify --repo-root .
+node .ai/skills/features/iac/scripts/ctl-iac.mjs verify --repo-root .
 ```
 
 ## Boundaries

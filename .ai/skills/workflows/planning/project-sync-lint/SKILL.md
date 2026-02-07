@@ -15,33 +15,33 @@ This skill is **repo governance oriented**. It should not implement product code
 
 ## Commands
 All commands are implemented by:
-- `node .ai/scripts/ctl-project-state.mjs`
+- `node .ai/scripts/ctl-project-governance.mjs`
 
 ### Init
 Create `.ai/project/<project>/` files from templates (idempotent).
 
 ```bash
-node .ai/scripts/ctl-project-state.mjs init --project main
+node .ai/scripts/ctl-project-governance.mjs init --project main
 ```
 
 ### Lint (check-only)
 Scan all configured or discovered `dev-docs` roots and validate the repo against the contract.
 
 ```bash
-node .ai/scripts/ctl-project-state.mjs lint --check --project main
+node .ai/scripts/ctl-project-governance.mjs lint --check --project main
 ```
 
 ### Sync (dry-run or apply)
 Generate missing task identity meta, upsert registry tasks, and regenerate derived views.
 
 ```bash
-node .ai/scripts/ctl-project-state.mjs sync --dry-run --project main
-node .ai/scripts/ctl-project-state.mjs sync --apply --project main
+node .ai/scripts/ctl-project-governance.mjs sync --dry-run --project main
+node .ai/scripts/ctl-project-governance.mjs sync --apply --project main
 ```
 
 Optional: append sync-detected events to the hub changelog (append-only; apply-mode only):
 ```bash
-node .ai/scripts/ctl-project-state.mjs sync --apply --project main --changelog
+node .ai/scripts/ctl-project-governance.mjs sync --apply --project main --changelog
 ```
 
 ## Contract highlights (read the full contract)
@@ -52,9 +52,9 @@ node .ai/scripts/ctl-project-state.mjs sync --apply --project main --changelog
 
 ## Verification
 - Lint (check-only):
-  - `node .ai/scripts/ctl-project-state.mjs lint --check --project main`
+  - `node .ai/scripts/ctl-project-governance.mjs lint --check --project main`
 - Sync preview (no writes):
-  - `node .ai/scripts/ctl-project-state.mjs sync --dry-run --project main --init-if-missing`
+  - `node .ai/scripts/ctl-project-governance.mjs sync --dry-run --project main --init-if-missing`
 - If you changed SSOT skills:
   - `node .ai/scripts/lint-skills.mjs --strict`
   - `node .ai/scripts/sync-skills.mjs --scope current --providers both --mode reset --yes`

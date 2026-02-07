@@ -12,7 +12,7 @@
 - Output language for init entry docs is stored in `init/_work/.init-state.json` (`outputLanguage`).
 - Pack selection is explicit: declared in blueprint -> materialized to sync manifest -> synced to wrappers.
 - Stage transitions require explicit approval (`approve`), not manual state edits.
-- When `skillpacksctl.mjs` is available, pack enabling uses skillpacksctl; otherwise falls back to sync manifest.
+- When `ctl-skillpacks.mjs` is available, pack enabling uses ctl-skillpacks; otherwise falls back to sync manifest.
 - Optional **features** are materialized from templates under `.ai/skills/features/.../templates/`.
 
 ---
@@ -55,8 +55,8 @@ node init/_tools/skills/initialize-project-from-requirements/scripts/init-pipeli
 2. Optional docs check (`--require-stage-a`)
 3. Scaffold directories/files (write-if-missing)
 4. Generate configs (`scaffold-configs.mjs`)
-5. Materialize features (copy templates + run `*ctl.mjs init`)
-6. Enable packs (skillpacksctl or sync manifest)
+5. Materialize features (copy templates + run `ctl-*.mjs init`)
+6. Enable packs (ctl-skillpacks or sync manifest)
 7. Sync provider wrappers
 
 Notes:

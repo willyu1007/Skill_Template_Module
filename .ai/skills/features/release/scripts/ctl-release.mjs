@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * releasectl.mjs
+ * ctl-release.mjs
  *
  * Release management for the Release feature.
  *
@@ -30,7 +30,7 @@ const VALID_STRATEGIES = new Set(['semantic', 'calendar', 'manual']);
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/features/release/scripts/releasectl.mjs <command> [options]
+  node .ai/skills/features/release/scripts/ctl-release.mjs <command> [options]
 
 Commands:
   help
@@ -68,11 +68,11 @@ Commands:
     Verify release configuration.
 
 Examples:
-  node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
-  node .ai/skills/features/release/scripts/releasectl.mjs status
-  node .ai/skills/features/release/scripts/releasectl.mjs prepare --version 1.2.0
-  node .ai/skills/features/release/scripts/releasectl.mjs changelog --from v1.1.0 --to HEAD
-  node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.2.0
+  node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy semantic
+  node .ai/skills/features/release/scripts/ctl-release.mjs status
+  node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version 1.2.0
+  node .ai/skills/features/release/scripts/ctl-release.mjs changelog --from v1.1.0 --to HEAD
+  node .ai/skills/features/release/scripts/ctl-release.mjs tag --version 1.2.0
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -263,11 +263,11 @@ function cmdInit(repoRoot, dryRun, strategy) {
 ## Commands
 
 \`\`\`bash
-node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
-node .ai/skills/features/release/scripts/releasectl.mjs status
-node .ai/skills/features/release/scripts/releasectl.mjs prepare --version 1.0.0
-node .ai/skills/features/release/scripts/releasectl.mjs changelog --from v0.9.0 --to HEAD
-node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.0.0
+node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy semantic
+node .ai/skills/features/release/scripts/ctl-release.mjs status
+node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version 1.0.0
+node .ai/skills/features/release/scripts/ctl-release.mjs changelog --from v0.9.0 --to HEAD
+node .ai/skills/features/release/scripts/ctl-release.mjs tag --version 1.0.0
 \`\`\`
 
 ## Safety
@@ -361,7 +361,7 @@ function cmdPrepare(repoRoot, version) {
   console.log('\nNext steps (human-executed):');
   console.log('  1. Update release/CHANGELOG.md (or release/changelog-template.md) with release notes');
   console.log('  2. Run tests and verify artifacts');
-  console.log(`  3. Tag when ready: node .ai/skills/features/release/scripts/releasectl.mjs tag --version ${v}`);
+  console.log(`  3. Tag when ready: node .ai/skills/features/release/scripts/ctl-release.mjs tag --version ${v}`);
 }
 
 function cmdChangelog(repoRoot, from, to) {
@@ -416,12 +416,12 @@ function cmdVerify(repoRoot) {
 
   const releaseDir = getReleaseDir(repoRoot);
   if (!fs.existsSync(releaseDir)) {
-    errors.push('release/ not found. Run: releasectl init');
+    errors.push('release/ not found. Run: ctl-release init');
   }
 
   const configPath = getConfigPath(repoRoot);
   if (!fs.existsSync(configPath)) {
-    errors.push('release/config.json not found. Run: releasectl init');
+    errors.push('release/config.json not found. Run: ctl-release init');
   }
 
   const config = loadConfig(repoRoot);

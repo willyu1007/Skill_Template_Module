@@ -38,9 +38,9 @@ Example API module demonstrating the module-first template structure.
 
 - Keep changes local to module unless cross-cutting
 - After manifest changes, run:
-  - `node .ai/scripts/modules/modulectl.mjs registry-build`
-  - `node .ai/scripts/modules/flowctl.mjs update-from-manifests`
-  - `node .ai/scripts/modules/flowctl.mjs lint`
+  - `node .ai/scripts/modules/ctl-module.mjs registry-build`
+  - `node .ai/scripts/modules/ctl-flow.mjs update-from-manifests`
+  - `node .ai/scripts/modules/ctl-flow.mjs lint`
 - Use dev-docs for multi-step tasks (see `dev-docs/AGENTS.md`)
 
 ## Description
@@ -70,7 +70,7 @@ Registry: `interact/registry.json`
 Add artifact example:
 
 ```bash
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs add-artifact \
   --artifact-id openapi \
   --type openapi \
   --path modules/example-api/interact/openapi.yaml \
@@ -82,7 +82,7 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
 Scenarios: `modules/integration/scenarios.yaml`
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs validate
-node .ai/scripts/modules/integrationctl.mjs compile
-node .ai/scripts/modules/integrationctl.mjs run --execute
+node .ai/scripts/modules/ctl-integration.mjs validate
+node .ai/scripts/modules/ctl-integration.mjs compile
+node .ai/scripts/modules/ctl-integration.mjs run --execute
 ```

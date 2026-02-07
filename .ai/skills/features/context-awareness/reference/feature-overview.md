@@ -14,8 +14,8 @@ This feature provides a **stable, verifiable context contract** so an LLM can wo
 - `docs/context/` is the **only** supported entry point for "project context artifacts".
 - `docs/context/registry.json` is the canonical index for all context artifacts.
 - Any edits to registered artifacts MUST be followed by:
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs touch`
-  - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs touch`
+  - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`
 
 ### Database schema contract (special rule)
 
@@ -24,7 +24,7 @@ This feature provides a **stable, verifiable context contract** so an LLM can wo
 - Update it via the SSOT-aware generator:
   - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
-(Then run `contextctl touch` if your workflow does not already do so.)
+(Then run `ctl-context touch` if your workflow does not already do so.)
 
 ## Recommended enforcement
 
@@ -33,4 +33,4 @@ This feature provides a **stable, verifiable context contract** so an LLM can wo
 
 ## Verification
 
-- `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+- `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`

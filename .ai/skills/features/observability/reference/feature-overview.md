@@ -28,7 +28,7 @@ These contracts are **backend-agnostic** - they define what to measure, not how 
 When working with observability, AI should:
 
 1. **Review** existing contracts before proposing instrumentation
-2. **Use** `obsctl` to add new metrics/log fields
+2. **Use** `ctl-obs` to add new metrics/log fields
 3. **Follow** naming conventions
 4. **Avoid** high-cardinality labels
 5. **Never** log sensitive data
@@ -37,19 +37,19 @@ When working with observability, AI should:
 
 ```bash
 # Initialize
-node .ai/skills/features/observability/scripts/obsctl.mjs init
+node .ai/skills/features/observability/scripts/ctl-obs.mjs init
 
 # Add metric
-node .ai/skills/features/observability/scripts/obsctl.mjs add-metric --name api_latency --type histogram --unit seconds
+node .ai/skills/features/observability/scripts/ctl-obs.mjs add-metric --name api_latency --type histogram --unit seconds
 
 # Add log field
-node .ai/skills/features/observability/scripts/obsctl.mjs add-log-field --name correlation_id --type string
+node .ai/skills/features/observability/scripts/ctl-obs.mjs add-log-field --name correlation_id --type string
 
 # Generate instrumentation hints
-node .ai/skills/features/observability/scripts/obsctl.mjs generate-instrumentation --lang typescript
+node .ai/skills/features/observability/scripts/ctl-obs.mjs generate-instrumentation --lang typescript
 
 # Verify
-node .ai/skills/features/observability/scripts/obsctl.mjs verify
+node .ai/skills/features/observability/scripts/ctl-obs.mjs verify
 ```
 
 ## Metric Naming Conventions

@@ -2,7 +2,7 @@
  * index.mjs
  * Deployment test suite
  */
-import * as deployctlSmoke from './deployctl-smoke.mjs';
+import * as deployctlSmoke from './ctl-deploy-smoke.mjs';
 
 const TESTS = [deployctlSmoke];
 

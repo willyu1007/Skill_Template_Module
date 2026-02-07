@@ -29,8 +29,8 @@ Do not use this skill for requests that ask to create/update tasks, change mappi
    - Otherwise default to `main`.
 3. Read the corresponding reference document and use its **Data Source** command(s).
 4. Optional (recommended for accuracy when hub exists): run
-   - `node .ai/scripts/ctl-project-state.mjs lint --check --project <project>`
-   - If lint reports errors, include a remediation command (`node .ai/scripts/ctl-project-state.mjs sync --apply --project <project>`) in the output but do not execute the write.
+   - `node .ai/scripts/ctl-project-governance.mjs lint --check --project <project>`
+   - If lint reports errors, include a remediation command (`node .ai/scripts/ctl-project-governance.mjs sync --apply --project <project>`) in the output but do not execute the write.
 5. Generate output using the reference template.
 
 ## Verification
@@ -39,7 +39,7 @@ Do not use this skill for requests that ask to create/update tasks, change mappi
 - Do not guess task details; read `00-overview.md` if needed
 
 ## Boundaries
-- MUST NOT modify files (no `ctl-project-state sync --apply`, no editing `dev-docs/**` / `.ai/project/**`)
+- MUST NOT modify files (no `ctl-project-governance sync --apply`, no editing `dev-docs/**` / `.ai/project/**`)
 - MUST NOT invent task details or blocker reasons
 - MAY suggest repair commands when lint indicates drift
 

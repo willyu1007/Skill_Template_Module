@@ -3,7 +3,7 @@
  * docker-build.mjs - Docker Build Helper
  *
  * Helper script for building Docker images.
- * Called by packctl.mjs build command.
+ * Called by ctl-pack.mjs build command.
  */
 
 import { spawn } from 'node:child_process';

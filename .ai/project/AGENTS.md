@@ -6,29 +6,29 @@ Entry point for AI agents working with **project-level** progress governance in 
 
 1) Initialize the project hub (idempotent; creates `.ai/project/main/` from templates):
 ```bash
-node .ai/scripts/ctl-project-state.mjs init --project main
+node .ai/scripts/ctl-project-governance.mjs init --project main
 ```
 
 2) Query tasks (LLM-friendly JSON lines; works even if hub is missing):
 ```bash
-node .ai/scripts/ctl-project-state.mjs query --project main --text "keyword"
-node .ai/scripts/ctl-project-state.mjs query --project main --status in-progress
-node .ai/scripts/ctl-project-state.mjs query --project main --id T-001
+node .ai/scripts/ctl-project-governance.mjs query --project main --text "keyword"
+node .ai/scripts/ctl-project-governance.mjs query --project main --status in-progress
+node .ai/scripts/ctl-project-governance.mjs query --project main --id T-001
 ```
 
 3) Run lint (CI-friendly; warnings do not fail the job):
 ```bash
-node .ai/scripts/ctl-project-state.mjs lint --check --project main
+node .ai/scripts/ctl-project-governance.mjs lint --check --project main
 ```
 
 4) Sync/fix drift (manual):
 ```bash
-node .ai/scripts/ctl-project-state.mjs sync --apply --project main
+node .ai/scripts/ctl-project-governance.mjs sync --apply --project main
 ```
 
 Optional: append sync-detected events to changelog (append-only):
 ```bash
-node .ai/scripts/ctl-project-state.mjs sync --apply --project main --changelog
+node .ai/scripts/ctl-project-governance.mjs sync --apply --project main --changelog
 ```
 
 5) (Optional) Install Git hooks for automatic sync on commit:
@@ -37,7 +37,7 @@ node .githooks/install.mjs
 ```
 
 Installed hooks:
-- `pre-commit`: auto-runs `ctl-project-state sync` when `dev-docs/` files are staged
+- `pre-commit`: auto-runs `ctl-project-governance sync` when `dev-docs/` files are staged
 - `commit-msg`: validates conventional commit format
 
 To check status or uninstall:

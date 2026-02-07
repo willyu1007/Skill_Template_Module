@@ -261,10 +261,10 @@ function buildContractNone({ repoRoot }) {
 }
 
 function runContextTouch(repoRoot) {
-  const contextctl = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'contextctl.mjs');
-  if (!exists(contextctl)) return { ran: false, reason: 'contextctl.mjs not found' };
+  const ctlContext = path.join(repoRoot, '.ai', 'skills', 'features', 'context-awareness', 'scripts', 'ctl-context.mjs');
+  if (!exists(ctlContext)) return { ran: false, reason: 'ctl-context.mjs not found' };
 
-  const res = spawnSync('node', [contextctl, 'touch', '--repo-root', repoRoot], {
+  const res = spawnSync('node', [ctlContext, 'touch', '--repo-root', repoRoot], {
     cwd: repoRoot,
     stdio: 'inherit'
   });
@@ -372,9 +372,9 @@ function cmdSyncToContext(repoRoot, outPath, format) {
     for (const w of built.warnings) console.warn(`[warn] ${w}`);
   }
   if (touchRes.ran) {
-    console.log(`  - contextctl touch: ${touchRes.ok ? 'ok' : `failed (exit ${touchRes.exitCode})`}`);
+    console.log(`  - ctl-context touch: ${touchRes.ok ? 'ok' : `failed (exit ${touchRes.exitCode})`}`);
   } else {
-    console.log(`  - contextctl touch: skipped (${touchRes.reason})`);
+    console.log(`  - ctl-context touch: skipped (${touchRes.reason})`);
   }
 }
 

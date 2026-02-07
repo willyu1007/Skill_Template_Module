@@ -13,7 +13,7 @@ Typical end-to-end flow:
 
 1. Human runs `prisma db pull` against the target DB (updates `prisma/schema.prisma`).
 2. Import Prisma schema into the mirror:
-   - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`
+   - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma`
 3. Sync the mirror into LLM context (docs/context):
    - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
@@ -36,5 +36,5 @@ Typical end-to-end flow:
 
 - Direct database connections.
 - Executing arbitrary SQL.
-- Editing `db/schema/tables.json` manually (use `dbctl import-prisma`).
+- Editing `db/schema/tables.json` manually (use `ctl-db import-prisma`).
 - Storing credentials anywhere in the repo.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * skillpacksctl.mjs
+ * ctl-skillpacks.mjs
  *
  * Skill packs controller (packs state + `.ai/skills/_meta/*` + wrapper sync).
  * This is the "scheme A" controller for pack-based skill management.
@@ -25,7 +25,7 @@ import { spawn } from 'node:child_process';
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/_meta/skillpacksctl.mjs <command> [options]
+  node .ai/skills/_meta/ctl-skillpacks.mjs <command> [options]
 
 Commands:
   help
@@ -61,11 +61,11 @@ Commands:
     Synchronize provider wrappers.
 
 Examples:
-  node .ai/skills/_meta/skillpacksctl.mjs status
-  node .ai/skills/_meta/skillpacksctl.mjs enable-pack backend --providers both
-  node .ai/skills/_meta/skillpacksctl.mjs disable-pack frontend
-  node .ai/skills/_meta/skillpacksctl.mjs list-packs
-  node .ai/skills/_meta/skillpacksctl.mjs sync --providers both
+  node .ai/skills/_meta/ctl-skillpacks.mjs status
+  node .ai/skills/_meta/ctl-skillpacks.mjs enable-pack backend --providers both
+  node .ai/skills/_meta/ctl-skillpacks.mjs disable-pack frontend
+  node .ai/skills/_meta/ctl-skillpacks.mjs list-packs
+  node .ai/skills/_meta/ctl-skillpacks.mjs sync --providers both
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -309,7 +309,7 @@ async function cmdEnablePack(repoRoot, packId, providers, noSync, syncMode, yes)
 
   const packInfo = getPackInfo(repoRoot, packId);
   if (!packInfo) {
-    die(`[error] Pack "${packId}" not found. Run: node .ai/skills/_meta/skillpacksctl.mjs list-packs`);
+    die(`[error] Pack "${packId}" not found. Run: node .ai/skills/_meta/ctl-skillpacks.mjs list-packs`);
   }
 
   const manifest = loadManifest(repoRoot);
@@ -348,7 +348,7 @@ async function cmdDisablePack(repoRoot, packId, providers, noSync, syncMode, yes
 
   const packInfo = getPackInfo(repoRoot, packId);
   if (!packInfo) {
-    die(`[error] Pack "${packId}" not found. Run: node .ai/skills/_meta/skillpacksctl.mjs list-packs`);
+    die(`[error] Pack "${packId}" not found. Run: node .ai/skills/_meta/ctl-skillpacks.mjs list-packs`);
   }
 
   const manifest = loadManifest(repoRoot);

@@ -79,20 +79,20 @@ Derived (generated; do not edit by hand):
 Recommended (script-driven):
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs init --module-id billing-api --apply
+node .ai/scripts/modules/ctl-module.mjs init --module-id billing-api --apply
 ```
 
 Optional parameters:
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs init \
+node .ai/scripts/modules/ctl-module.mjs init \
   --module-id billing-api \
   --module-type service \
   --description "Billing API" \
   --apply
 ```
 
-`modulectl init` will:
+`ctl-module init` will:
 
 - create the module skeleton under `modules/<module_id>/`
 - rebuild the derived instance registry (`.system/modular/instance_registry.yaml`)
@@ -139,13 +139,13 @@ flows:
 Validate the flow graph:
 
 ```bash
-node .ai/scripts/modules/flowctl.mjs lint
+node .ai/scripts/modules/ctl-flow.mjs lint
 ```
 
 Generate relationship graphs (Mermaid):
 
 ```bash
-node .ai/scripts/modules/flowctl.mjs graph
+node .ai/scripts/modules/ctl-flow.mjs graph
 ```
 
 ---
@@ -178,9 +178,9 @@ interfaces:
 Rebuild derived indexes after changing manifests:
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs registry-build
-node .ai/scripts/modules/flowctl.mjs update-from-manifests
-node .ai/scripts/modules/flowctl.mjs lint --strict
+node .ai/scripts/modules/ctl-module.mjs registry-build
+node .ai/scripts/modules/ctl-flow.mjs update-from-manifests
+node .ai/scripts/modules/ctl-flow.mjs lint --strict
 ```
 
 If a node has multiple implementations, define a binding in `.system/modular/flow_bindings.yaml` and prefer `use_binding` in scenarios (instead of hardcoding `endpoint_id` everywhere).
@@ -202,7 +202,7 @@ Context is maintained bottom-up:
 Register a module-local artifact (example: OpenAPI):
 
 ```bash
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs add-artifact \
   --module-id billing-api \
   --artifact-id openapi \
   --type openapi \
@@ -213,8 +213,8 @@ node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact \
 Rebuild and verify:
 
 ```bash
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict
 ```
 
 ---
@@ -229,7 +229,7 @@ Integration assets live under `modules/integration/` as a **cross-module workspa
 Create a scenario stub:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs new-scenario \
+node .ai/scripts/modules/ctl-integration.mjs new-scenario \
   --id billing-happy-path \
   --flow-id billing-flow \
   --nodes create-invoice,send-invoice,process-payment
@@ -238,8 +238,8 @@ node .ai/scripts/modules/integrationctl.mjs new-scenario \
 Validate and compile:
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs validate --strict
-node .ai/scripts/modules/integrationctl.mjs compile
+node .ai/scripts/modules/ctl-integration.mjs validate --strict
+node .ai/scripts/modules/ctl-integration.mjs compile
 ```
 
 Optional: execute HTTP steps (when runtime endpoints are configured)
@@ -252,7 +252,7 @@ Optional: execute HTTP steps (when runtime endpoints are configured)
 Run (dry-run by default; add `--execute` to actually call):
 
 ```bash
-node .ai/scripts/modules/integrationctl.mjs run --execute
+node .ai/scripts/modules/ctl-integration.mjs run --execute
 ```
 
 Scenario steps can include `expect` checks (evaluated during execution) to close the loop:
@@ -264,7 +264,7 @@ Scenario steps can include `expect` checks (evaluated during execution) to close
 Troubleshooting:
 
 - If steps are `SKIPPED` with `missing_base_url`, configure `.system/modular/runtime_endpoints.yaml` or `MODULE_BASE_URL_<MODULE_ID_ENV>`.
-- If steps fail with `unresolved_endpoint`, rebuild derived registries: `modulectl registry-build` + `flowctl update-from-manifests`.
+- If steps fail with `unresolved_endpoint`, rebuild derived registries: `ctl-module registry-build` + `ctl-flow update-from-manifests`.
 
 ---
 
@@ -273,14 +273,14 @@ Troubleshooting:
 After changing flows/manifests/scenarios/context:
 
 ```bash
-node .ai/scripts/modules/modulectl.mjs registry-build
-node .ai/scripts/modules/flowctl.mjs update-from-manifests
-node .ai/scripts/modules/flowctl.mjs lint --strict
-node .ai/scripts/modules/flowctl.mjs graph
-node .ai/scripts/modules/integrationctl.mjs validate --strict
-node .ai/scripts/modules/integrationctl.mjs compile
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
+node .ai/scripts/modules/ctl-module.mjs registry-build
+node .ai/scripts/modules/ctl-flow.mjs update-from-manifests
+node .ai/scripts/modules/ctl-flow.mjs lint --strict
+node .ai/scripts/modules/ctl-flow.mjs graph
+node .ai/scripts/modules/ctl-integration.mjs validate --strict
+node .ai/scripts/modules/ctl-integration.mjs compile
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict
 ```
 
 ---
@@ -297,9 +297,9 @@ If you're using an AI assistant integrated with the repo, you can ask the assist
 Example prompts you can give the assistant:
 
 - "Use `initialize-module-instance` to create `billing-api` with an HTTP interface for `billing-flow.create-invoice`, then rebuild registries."
-- "Use `maintain-flow-graph` to add `billing-flow` (nodes + edges) and run `flowctl lint --strict`."
+- "Use `maintain-flow-graph` to add `billing-flow` (nodes + edges) and run `ctl-flow lint --strict`."
 - "Use `manage-integration-scenarios` to scaffold a scenario for `billing-flow` and compile it. Prefer `use_binding` if needed."
-- "Register `modules/billing-api/interact/openapi.yaml` via `contextctl add-artifact`, then rebuild `docs/context/registry.json`."
+- "Register `modules/billing-api/interact/openapi.yaml` via `ctl-context add-artifact`, then rebuild `docs/context/registry.json`."
 
 ---
 

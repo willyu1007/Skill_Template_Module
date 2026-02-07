@@ -24,7 +24,7 @@ When enabled, the feature materializes:
 
 Controller script (provided by the template SSOT):
 
-- `node .ai/skills/features/observability/scripts/obsctl.mjs` — manage and verify observability contracts
+- `node .ai/skills/features/observability/scripts/ctl-obs.mjs` — manage and verify observability contracts
 
 ## Dependency
 
@@ -42,14 +42,14 @@ Controller script (provided by the template SSOT):
 3. Initialize:
 
 ```bash
-node .ai/skills/features/observability/scripts/obsctl.mjs init
-node .ai/skills/features/observability/scripts/obsctl.mjs verify
+node .ai/skills/features/observability/scripts/ctl-obs.mjs init
+node .ai/skills/features/observability/scripts/ctl-obs.mjs verify
 ```
 
 ## Verification
 
 ```bash
-node .ai/skills/features/observability/scripts/obsctl.mjs verify
+node .ai/skills/features/observability/scripts/ctl-obs.mjs verify
 ```
 
 ## Module-first integration (recommended)
@@ -57,9 +57,9 @@ node .ai/skills/features/observability/scripts/obsctl.mjs verify
 If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` observability declarations, keep per-module slices in sync after contract changes:
 
 ```bash
-node .ai/scripts/modules/obsctl-module.mjs verify --strict
-node .ai/scripts/modules/obsctl-module.mjs conflicts
-node .ai/scripts/modules/obsctl-module.mjs sync-slices
+node .ai/scripts/modules/ctl-obs-module.mjs verify --strict
+node .ai/scripts/modules/ctl-obs-module.mjs conflicts
+node .ai/scripts/modules/ctl-obs-module.mjs sync-slices
 ```
 
 ## Boundaries

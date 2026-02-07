@@ -10,7 +10,7 @@ Store packaging decisions and plans under `ops/packaging/handbook/` (design note
 - Registry conventions and access assumptions (NO secrets)
 
 ## What does NOT belong here
-- Executable automation (use `ops/packaging/scripts/` and `.ai/skills/features/packaging/scripts/packctl.mjs`)
+- Executable automation (use `ops/packaging/scripts/` and `.ai/skills/features/packaging/scripts/ctl-pack.mjs`)
 - Credentials, tokens, or private keys
 
 ## Verification

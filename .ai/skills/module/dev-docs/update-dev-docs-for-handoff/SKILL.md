@@ -14,7 +14,7 @@ Update a task’s dev-docs to be handoff-ready.
 Use this skill proactively when:
 - you are about to hand off work to another person/agent
 - you are about to switch context and may not return soon
-- you have completed a meaningful milestone and want the work to be resumable
+- you have completed a meaningful checkpoint and want the work to be resumable
 
 ## Inputs
 

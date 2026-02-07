@@ -26,9 +26,9 @@ The manage-observability-module-slices workflow **does not** change `docs/contex
    - `docs/context/observability/metrics-registry.json`
    - `docs/context/observability/logs-schema.json`
 2. If contracts are missing, STOP and initialize observability first, then resume this skill:
-   - `node .ai/skills/features/observability/scripts/obsctl.mjs init`
+   - `node .ai/skills/features/observability/scripts/ctl-obs.mjs init`
 3. If new metrics or log fields are needed, STOP and update contracts via the repo-level observability workflow (then resume):
-   - Switch to the `obsctl` workflow under `.ai/skills/features/observability/`
+   - Switch to the `ctl-obs` workflow under `.ai/skills/features/observability/`
    - After contracts are updated, return and continue with Phase 1.
 
 ### Phase 1 — Declare module boundaries
@@ -60,17 +60,17 @@ Rules:
 
 ### Phase 2 — Preflight validation (mandatory)
 1. Run validation:
-   - `node .ai/scripts/modules/obsctl-module.mjs verify`
-   - Optional: `node .ai/scripts/modules/obsctl-module.mjs verify --strict`
+   - `node .ai/scripts/modules/ctl-obs-module.mjs verify`
+   - Optional: `node .ai/scripts/modules/ctl-obs-module.mjs verify --strict`
 2. Check ownership conflicts:
-   - `node .ai/scripts/modules/obsctl-module.mjs conflicts`
+   - `node .ai/scripts/modules/ctl-obs-module.mjs conflicts`
 3. If any errors or conflicts are reported, STOP and resolve:
    - Fix missing or invalid metric/log-field references.
    - Resolve ownership conflicts (one owner per metric/field).
 
 ### Phase 3 — Preview slice (recommended)
 1. Export a preview slice for review:
-   - `node .ai/scripts/modules/obsctl-module.mjs export-slice --module-id <module_id>`
+   - `node .ai/scripts/modules/ctl-obs-module.mjs export-slice --module-id <module_id>`
 2. Ask for confirmation before writing slices, especially if updating multiple modules.
 
 
@@ -88,22 +88,22 @@ Type "approve slices" to proceed.
 
 ### Phase 4 — Sync module slices (writes)
 1. Generate slices for all modules (requires explicit approval):
-   - `node .ai/scripts/modules/obsctl-module.mjs sync-slices`
+   - `node .ai/scripts/modules/ctl-obs-module.mjs sync-slices`
 2. Or target a single module:
-   - `node .ai/scripts/modules/obsctl-module.mjs sync-slices --module-id <module_id>`
+   - `node .ai/scripts/modules/ctl-obs-module.mjs sync-slices --module-id <module_id>`
 3. To avoid registry updates, add `--no-registry`.
 
 ### Phase 5 — Aggregate context (recommended)
 1. After syncing slices, rebuild the derived context registry:
-   - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs build`
-   - `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
+   - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build`
+   - `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`
 
 ## Verification
 - [ ] `verify` passes with no errors
 - [ ] `conflicts` reports no ownership collisions
 - [ ] `modules/<module_id>/interact/observability-slice.json` exists and matches declared owns/uses/requires
 - [ ] Module registry updated with `observability-slice` artifact (unless `--no-registry`)
-- [ ] `contextctl build` completed successfully (if applicable)
+- [ ] `ctl-context build` completed successfully (if applicable)
 
 ## Boundaries
 - MUST NOT modify observability contracts (`docs/context/observability/*`) in the manage-observability-module-slices workflow.

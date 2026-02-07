@@ -6,7 +6,7 @@ This directory provides a **project-level** view of curated context artifacts.
 
 - `docs/context/registry.json` is a **DERIVED artifact**.
   - Do not edit it by hand.
-  - Regenerate it with: `node .ai/skills/features/context-awareness/scripts/contextctl.mjs build`
+  - Regenerate it with: `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build`
 
 ## Sources of truth
 
@@ -26,5 +26,5 @@ Project context is aggregated bottom-up from:
 
 ## Rules
 
-- Prefer script-driven updates (contextctl) over manual edits.
+- Prefer script-driven updates (ctl-context) over manual edits.
 - Never store secrets in context artifacts.

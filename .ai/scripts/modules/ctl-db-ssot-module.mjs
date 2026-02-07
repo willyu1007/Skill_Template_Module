@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dbssotctl-module.mjs
+ * ctl-db-ssot-module.mjs
  *
  * Module-level DB slice validation + conflict detection.
  *
@@ -27,7 +27,7 @@ import { createSliceController } from '../lib/slice-controller.mjs';
 
 const usageText = `
 Usage:
-  node .ai/scripts/modules/dbssotctl-module.mjs <command> [options]
+  node .ai/scripts/modules/ctl-db-ssot-module.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -204,7 +204,7 @@ const controller = createSliceController({
   name: 'DB',
   sliceFilename: 'db-slice.json',
   tags: ['db', 'slice'],
-  cmdLabel: 'dbssotctl-module sync-slices',
+  cmdLabel: 'ctl-db-ssot-module sync-slices',
   usesLabel: 'Uses',
 
   loadContract(repoRoot, opts) {

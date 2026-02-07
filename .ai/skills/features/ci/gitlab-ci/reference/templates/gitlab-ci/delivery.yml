@@ -23,29 +23,29 @@ delivery-plan:
 
         echo "## Packaging"
         if [ -f docs/packaging/registry.json ]; then
-          node .ai/skills/features/packaging/scripts/packctl.mjs status --repo-root .
+          node .ai/skills/features/packaging/scripts/ctl-pack.mjs status --repo-root .
         else
-          echo "[skip] docs/packaging/registry.json not found (enable Packaging feature to use packctl)."
+          echo "[skip] docs/packaging/registry.json not found (enable Packaging feature to use ctl-pack)."
         fi
         echo ""
 
         echo "## Release"
         if [ -f release/config.json ]; then
-          node .ai/skills/features/release/scripts/releasectl.mjs status --repo-root .
+          node .ai/skills/features/release/scripts/ctl-release.mjs status --repo-root .
         else
-          echo "[skip] release/config.json not found (enable Release feature to use releasectl)."
+          echo "[skip] release/config.json not found (enable Release feature to use ctl-release)."
         fi
         echo ""
 
         echo "## Deploy plan"
         if [ -f ops/deploy/config.json ]; then
-          node .ai/skills/features/deployment/scripts/deployctl.mjs plan \
+          node .ai/skills/features/deployment/scripts/ctl-deploy.mjs plan \
             --service "${DELIVERY_SERVICE}" \
             --env "${DELIVERY_ENV}" \
             --tag "${DELIVERY_TAG}" \
             --repo-root .
         else
-          echo "[skip] ops/deploy/config.json not found (enable Deployment feature to use deployctl)."
+          echo "[skip] ops/deploy/config.json not found (enable Deployment feature to use ctl-deploy)."
         fi
       } > artifacts/delivery/plan.md
   artifacts:

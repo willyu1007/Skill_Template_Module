@@ -257,24 +257,24 @@ Feature assets are integrated under `.ai/`:
 
 - Feature skills + templates: `.ai/skills/features/...`
 - Feature controllers: `.ai/skills/features/**/scripts/*` (Node/Python)
-- Cross-cutting controllers: `.ai/scripts/*` (e.g., `ctl-project-ctl-project-governance.mjs`, `ctl-project-state.mjs`, `ctl-db-ssot.mjs`)
+- Cross-cutting controllers: `.ai/scripts/*` (e.g., `ctl-project-state.mjs`, `ctl-project-governance.mjs`, `ctl-db-ssot.mjs`)
 - Project state (feature flags): `.ai/project/state.json`
 
-Stage C `apply` materializes a feature by copying templates into the repo (when the feature has templates) and running the corresponding control scripts (typically under `.ai/skills/features/**/scripts/`, plus cross-cutting `.ai/scripts/ctl-project-ctl-project-governance.mjs` for feature state).
+Stage C `apply` materializes a feature by copying templates into the repo (when the feature has templates) and running the corresponding control scripts (typically under `.ai/skills/features/**/scripts/`, plus cross-cutting `.ai/scripts/ctl-project-state.mjs` for feature state).
 
 Note (Windows): `python3` may not exist on PATH. Use `python` instead. (Stage C `apply` will try `python3` then `python`.)
 
 | Feature | Blueprint control | Materializes | Control script(s) |
 |---------|------------------|--------------|----------------|
-| Context awareness | **mandatory** (cannot be disabled) | `docs/context/**`, `config/environments/**` | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
-| Database | `db.ssot` (`none` disables) | `db/**` (when `db.ssot=database`), `prisma/**` (when `db.ssot=repo-prisma`) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (when `db.ssot=database`); `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs` (human interface) |
+| Context awareness | **mandatory** (cannot be disabled) | `docs/context/**`, `config/environments/**` | `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs` |
+| Database | `db.ssot` (`none` disables) | `db/**` (when `db.ssot=database`), `prisma/**` (when `db.ssot=repo-prisma`) | `.ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs` (when `db.ssot=database`); `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs` (human interface) |
 | UI | `features.ui` (default: `true`) | `ui/**`, `docs/context/ui/**` | `python3 .ai/skills/features/ui/ui-system-bootstrap/scripts/ui_specctl.py` |
 | Environment | `features.environment` (default: `true`) | `env/**` (+ generated non-secret docs when `--verify-features`) | `python3 .ai/skills/features/environment/env-contractctl/scripts/env_contractctl.py` |
-| Packaging | `features.packaging` (default: `true`) | `ops/packaging/**`, `docs/packaging/**` | `node .ai/skills/features/packaging/scripts/packctl.mjs` |
-| Deployment | `features.deployment` (default: `true`) | `ops/deploy/**` | `node .ai/skills/features/deployment/scripts/deployctl.mjs` |
+| Packaging | `features.packaging` (default: `true`) | `ops/packaging/**`, `docs/packaging/**` | `node .ai/skills/features/packaging/scripts/ctl-pack.mjs` |
+| Deployment | `features.deployment` (default: `true`) | `ops/deploy/**` | `node .ai/skills/features/deployment/scripts/ctl-deploy.mjs` |
 | CI | `ci.provider` (`none` disables; default: `github`) | `.github/workflows/ci.yml` (GitHub) or `.gitlab-ci.yml` (GitLab), `ci/**` | `node .ai/skills/features/ci/scripts/ctl-ci.mjs` |
-| Observability | `features.observability` (default: `true`) | `docs/context/observability/**`, `observability/**` | `node .ai/skills/features/observability/scripts/obsctl.mjs` |
-| Release | `features.release` (default: `true`) | `release/**`, `.releaserc.json.template` | `node .ai/skills/features/release/scripts/releasectl.mjs` |
+| Observability | `features.observability` (default: `true`) | `docs/context/observability/**`, `observability/**` | `node .ai/skills/features/observability/scripts/ctl-obs.mjs` |
+| Release | `features.release` (default: `true`) | `release/**`, `.releaserc.json.template` | `node .ai/skills/features/release/scripts/ctl-release.mjs` |
 
 </details>
 

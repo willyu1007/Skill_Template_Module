@@ -2,12 +2,12 @@
 
 Add a step in your CI pipeline that runs:
 
-- `node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict`
-- `node .ai/scripts/ctl-project-ctl-project-governance.mjs verify`
+- `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict`
+- `node .ai/scripts/ctl-project-state.mjs verify`
 
 This enforces that:
 - `docs/context/registry.json` matches the current artifacts (checksums)
 - the project state file is schema-valid
 
 If you also want to enforce skills wrapper sync, add:
-- `node .ai/skills/_meta/skillpacksctl.mjs sync --providers both`
+- `node .ai/skills/_meta/ctl-skillpacks.mjs sync --providers both`

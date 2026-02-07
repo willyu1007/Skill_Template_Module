@@ -38,7 +38,7 @@
 
 4. Import the Prisma schema into the repo mirror:
 
-- `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`
+- `node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma`
 
 5. Refresh LLM context contract:
 
@@ -62,6 +62,6 @@ Repositories remain the boundary and must return domain entities.
 
 - [ ] `docs/project/db-ssot.json` mode is `database`
 - [ ] `prisma db pull` ran against the intended environment
-- [ ] `dbctl import-prisma` updated `db/schema/tables.json`
+- [ ] `ctl-db import-prisma` updated `db/schema/tables.json`
 - [ ] `node .ai/scripts/ctl-db-ssot.mjs sync-to-context` updated `docs/context/db/schema.json`
 - [ ] Business layer remains Prisma-free

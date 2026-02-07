@@ -143,16 +143,16 @@ Record evidence in `04-post-verify.md`.
 
 - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`
 
-(If context-awareness is enabled, the command also runs `contextctl touch` best-effort.)
+(If context-awareness is enabled, the command also runs `ctl-context touch` best-effort.)
 
 ### Phase E — Module slices (module-first repos; recommended)
 
 If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` DB declarations (`db.owns` / `db.uses`), refresh module DB slices after the DB contract is updated:
 
 ```bash
-node .ai/scripts/modules/dbssotctl-module.mjs verify --strict
-node .ai/scripts/modules/dbssotctl-module.mjs conflicts
-node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
+node .ai/scripts/modules/ctl-db-ssot-module.mjs verify --strict
+node .ai/scripts/modules/ctl-db-ssot-module.mjs conflicts
+node .ai/scripts/modules/ctl-db-ssot-module.mjs sync-slices
 ```
 
 ## Verification
@@ -164,7 +164,7 @@ node .ai/scripts/modules/dbssotctl-module.mjs sync-slices
 - [ ] Post-verify evidence captured
 - [ ] Domain/repository mapping updated (no Prisma types in business layer)
 - [ ] `docs/context/db/schema.json` refreshed via `ctl-db-ssot`
-- [ ] Module DB slices refreshed (module-first repos): `dbssotctl-module sync-slices`
+- [ ] Module DB slices refreshed (module-first repos): `ctl-db-ssot-module sync-slices`
 - [ ] Central test suite passes: `node .ai/tests/run.mjs --suite database`
 
 ## Boundaries

@@ -33,6 +33,9 @@ Before editing code (when dev docs applies):
 During execution (MUST):
 - Keep dev-docs files current: `01-plan.md`, `03-implementation-notes.md`, `04-verification.md`, `05-pitfalls.md`
 
+After creating a new task bundle (non-temporary scope):
+- Run `node .ai/scripts/ctl-project-governance.mjs sync --apply --project main` to register the task in the project hub
+
 Before context switch / handoff / wrap-up:
 - Run `update-dev-docs-for-handoff/SKILL.md`
 

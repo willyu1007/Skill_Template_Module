@@ -2,8 +2,8 @@
 #
 # Copy this into `.system/modular/flow_graph.yaml` as a starting point.
 # After editing, run:
-#   node .ai/scripts/modules/flowctl.mjs lint
-#   node .ai/scripts/modules/flowctl.mjs graph
+#   node .ai/scripts/modules/ctl-flow.mjs lint
+#   node .ai/scripts/modules/ctl-flow.mjs graph
 
 flows:
   - id: user-management

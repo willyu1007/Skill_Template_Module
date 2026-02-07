@@ -114,7 +114,7 @@ Stage C `apply` materializes enabled features by copying templates into the repo
 - Root `README.md` may be generated from the blueprint when `scripts/templates/README.template.md` is present
 - Skills selection (SSOT):
   - `.ai/skills/_meta/sync-manifest.json` (flat schema: `version/includePrefixes/includeSkills/excludeSkills`)
-  - If `.ai/skills/_meta/skillpacksctl.mjs` exists, pack toggles must be done via skillpacksctl
+  - If `.ai/skills/_meta/ctl-skillpacks.mjs` exists, pack toggles must be done via ctl-skillpacks
 - Provider wrappers generated/updated:
   - `node .ai/scripts/sync-skills.mjs` (supports `--providers`)
 
@@ -260,12 +260,12 @@ This template ships:
 
 Initialization does **not** auto-delete these. If the user explicitly does not need the corresponding feature packs, you MAY remove the related paths (after confirmation), for example:
 
-- DB mirror tooling: `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs`, `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs`
+- DB mirror tooling: `.ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs`, `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs`
 - CI tooling: `.ai/skills/features/ci/scripts/ctl-ci.mjs`
-- Deployment tooling: `.ai/skills/features/deployment/scripts/deployctl.mjs`, `.ai/skills/features/deployment/scripts/rollback.mjs`
-- Packaging tooling: `.ai/skills/features/packaging/scripts/packctl.mjs`
-- Release tooling: `.ai/skills/features/release/scripts/releasectl.mjs`
-- Observability tooling: `.ai/skills/features/observability/scripts/obsctl.mjs`
+- Deployment tooling: `.ai/skills/features/deployment/scripts/ctl-deploy.mjs`, `.ai/skills/features/deployment/scripts/rollback.mjs`
+- Packaging tooling: `.ai/skills/features/packaging/scripts/ctl-pack.mjs`
+- Release tooling: `.ai/skills/features/release/scripts/ctl-release.mjs`
+- Observability tooling: `.ai/skills/features/observability/scripts/ctl-obs.mjs`
 - Feature-pack test suites: `.ai/tests/suites/database/`, `.ai/tests/suites/environment/`, `.ai/tests/suites/ui/`
 
 After pruning, re-run wrapper sync:
@@ -356,12 +356,12 @@ Configuration only:
 
 ### Key scripts
 
-- `.ai/skills/features/context-awareness/scripts/contextctl.mjs`
+- `.ai/skills/features/context-awareness/scripts/ctl-context.mjs`
   - `init`: initializes the `docs/context/` scaffold (idempotent)
-- `.ai/scripts/ctl-project-ctl-project-governance.mjs`
+- `.ai/scripts/ctl-project-state.mjs`
   - `init`: initializes `.ai/project/state.json` (idempotent)
   - `set-context-mode <contract|snapshot>`: sets the context mode
-- `.ai/skills/_meta/skillpacksctl.mjs`
+- `.ai/skills/_meta/ctl-skillpacks.mjs`
   - `enable-pack <packId> --no-sync`: enables a pack (writes manifest)
 
 For full details, see `.ai/skills/features/context-awareness/`.

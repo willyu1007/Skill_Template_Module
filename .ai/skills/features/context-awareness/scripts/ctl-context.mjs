@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * contextctl.mjs
+ * ctl-context.mjs
  *
  * Project context registry management for a module-first repository.
  *
@@ -40,7 +40,7 @@ import crypto from 'node:crypto';
 function usage(exitCode = 0) {
   const msg = `
 Usage:
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs <command> [options]
+  node .ai/skills/features/context-awareness/scripts/ctl-context.mjs <command> [options]
 
 Commands:
   help
@@ -107,10 +107,10 @@ Commands:
     Verify environment configuration.
 
 Examples:
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs init
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs add-artifact --module-id billing.api --artifact-id openapi --type openapi --path modules/billing.api/interact/openapi.yaml
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs build
-  node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --strict
+  node .ai/skills/features/context-awareness/scripts/ctl-context.mjs init
+  node .ai/skills/features/context-awareness/scripts/ctl-context.mjs add-artifact --module-id billing.api --artifact-id openapi --type openapi --path modules/billing.api/interact/openapi.yaml
+  node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build
+  node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --strict
 `;
   console.log(msg.trim());
   process.exit(exitCode);
@@ -515,7 +515,7 @@ This directory provides a **project-level** view of curated context artifacts.
 
 - \`docs/context/registry.json\` is a **DERIVED artifact**.
   - Do not edit it by hand.
-  - Regenerate it with: \`node .ai/skills/features/context-awareness/scripts/contextctl.mjs build\`
+  - Regenerate it with: \`node .ai/skills/features/context-awareness/scripts/ctl-context.mjs build\`
 
 ## Sources of truth
 
@@ -528,7 +528,7 @@ Project context is aggregated bottom-up from:
 
 ## Rules
 
-- Prefer script-driven updates (contextctl) over manual edits.
+- Prefer script-driven updates (ctl-context) over manual edits.
 - Never store secrets in context artifacts.
 `;
 
@@ -631,7 +631,7 @@ function cmdAddArtifact(repoRoot, opts) {
 
   const registryPath = registryPathForModule(repoRoot, moduleId);
   if (!fs.existsSync(registryPath)) {
-    die(`[error] registry not found: ${registryPath} (run modulectl init or contextctl init)`);
+    die(`[error] registry not found: ${registryPath} (run ctl-module init or ctl-context init)`);
   }
 
   const reg = readJson(registryPath);
@@ -751,7 +751,7 @@ function cmdList(repoRoot, opts, format) {
 
   if (derived) {
     const outPath = getDerivedRegistryPath(repoRoot);
-    if (!fs.existsSync(outPath)) die(`[error] derived registry not found: ${path.relative(repoRoot, outPath)} (run: contextctl build)`);
+    if (!fs.existsSync(outPath)) die(`[error] derived registry not found: ${path.relative(repoRoot, outPath)} (run: ctl-context build)`);
     const reg = readJson(outPath);
     if (format === 'json') {
       console.log(JSON.stringify(reg, null, 2));
@@ -826,9 +826,9 @@ function cmdVerify(repoRoot, strict) {
   // Feature-level verification: env registry and INDEX.md
   if (isContextAwarenessEnabled(repoRoot)) {
     const envRegistryPath = getEnvRegistryPath(repoRoot);
-    if (!fs.existsSync(envRegistryPath)) warnings.push('environment-registry.json does not exist (run: contextctl init).');
+    if (!fs.existsSync(envRegistryPath)) warnings.push('environment-registry.json does not exist (run: ctl-context init).');
     const indexPath = path.join(getContextDir(repoRoot), 'INDEX.md');
-    if (!fs.existsSync(indexPath)) warnings.push('INDEX.md does not exist (run: contextctl init).');
+    if (!fs.existsSync(indexPath)) warnings.push('INDEX.md does not exist (run: ctl-context init).');
   }
 
   if (warnings.length > 0) {
@@ -850,7 +850,7 @@ function cmdAddEnv(repoRoot, id, description) {
   if (!id) die('[error] --id is required');
 
   const envRegistry = loadEnvRegistry(repoRoot);
-  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: ctl-context init');
   
   // Check if environment already exists
   const existing = envRegistry.environments.find(e => e.id === id);
@@ -880,7 +880,7 @@ function cmdAddEnv(repoRoot, id, description) {
 
 function cmdListEnvs(repoRoot, format) {
   const envRegistry = loadEnvRegistry(repoRoot);
-  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: ctl-context init');
 
   if (format === 'json') {
     console.log(JSON.stringify(envRegistry, null, 2));
@@ -900,7 +900,7 @@ function cmdListEnvs(repoRoot, format) {
 
 function cmdVerifyConfig(repoRoot, envId) {
   const envRegistry = loadEnvRegistry(repoRoot);
-  if (!envRegistry) die('[error] environment-registry.json not found. Run: contextctl init');
+  if (!envRegistry) die('[error] environment-registry.json not found. Run: ctl-context init');
   const errors = [];
   const warnings = [];
 

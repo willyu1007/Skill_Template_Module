@@ -18,7 +18,7 @@ New files/directories (created if missing):
   - `db/config/` (environment metadata; no secrets)
   - `db/samples/` (sample/seed data)
   - `db/handbook/` (DB change proposals, rollout plans)
-- `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs` (mirror controller)
+- `.ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs` (mirror controller)
 - `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs` (optional migration tracking)
 
 ## Install
@@ -31,7 +31,7 @@ New files/directories (created if missing):
 2. Initialize the mirror skeleton (idempotent):
 
    ```bash
-   node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init
+   node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs init
    ```
 
 
@@ -41,16 +41,16 @@ New files/directories (created if missing):
 
 ```bash
 # Initialize db mirror structure
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs init
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs init
 
 # Import prisma/schema.prisma into the mirror
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma
 
 # List tables in the mirror
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs list-tables
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs list-tables
 
 # Verify mirror file is parseable
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs verify --strict
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs verify --strict
 ```
 
 ### Context awareness bridge (recommended)
@@ -61,7 +61,7 @@ If the context-awareness feature is enabled, sync the mirror into `docs/context/
 node .ai/scripts/ctl-db-ssot.mjs sync-to-context
 ```
 
-The command updates `docs/context/db/schema.json` and (best effort) runs `contextctl touch`.
+The command updates `docs/context/db/schema.json` and (best effort) runs `ctl-context touch`.
 
 ### Migration tracking (optional)
 
@@ -69,7 +69,7 @@ This feature may be used to track DB changes executed by humans:
 
 ```bash
 # Create an empty SQL file for humans to fill/apply
-node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs generate-migration --name add-user-roles
+node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs generate-migration --name add-user-roles
 
 # Track applied migrations per environment (manual bookkeeping)
 node .ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs list
@@ -83,7 +83,7 @@ When working with the feature, AI SHOULD:
 1. Read `db/schema/tables.json` for **current state**.
 2. Write proposals in `db/handbook/` (desired state, risk notes, rollout plan).
 3. Ask humans to apply DDL/migrations.
-4. After DB changes: re-run `prisma db pull`, `dbctl import-prisma`, and `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`.
+4. After DB changes: re-run `prisma db pull`, `ctl-db import-prisma`, and `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`.
 
 AI MUST NOT:
 
@@ -97,5 +97,5 @@ AI MUST NOT:
 Delete these paths:
 
 - `db/`
-- `.ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs`
+- `.ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs`
 - `.ai/skills/features/database/sync-code-schema-from-db/scripts/migrate.mjs`

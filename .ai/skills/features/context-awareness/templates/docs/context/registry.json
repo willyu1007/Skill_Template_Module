@@ -15,7 +15,7 @@
       "lastUpdated": "2025-12-25T14:14:14Z",
       "source": {
         "kind": "manual",
-        "notes": "Edit the contract file; then run contextctl touch."
+        "notes": "Edit the contract file; then run ctl-context touch."
       }
     },
     {
@@ -32,7 +32,7 @@
       "lastUpdated": "2025-12-25T14:14:14Z",
       "source": {
         "kind": "manual",
-        "notes": "Replace with real processes or add more .bpmn files; then run contextctl touch."
+        "notes": "Replace with real processes or add more .bpmn files; then run ctl-context touch."
       }
     }
   ]

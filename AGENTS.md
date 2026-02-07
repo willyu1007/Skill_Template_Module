@@ -23,12 +23,12 @@ Read `init/AGENTS.md` for project initialization instructions.
 
 | Area | Script |
 |---|---|
-| Project state (context awareness) | `node .ai/scripts/ctl-project-ctl-project-governance.mjs` |
-| Project governance (progress hub) | `node .ai/scripts/ctl-project-state.mjs` |
-| Module instances | `node .ai/scripts/modules/modulectl.mjs` |
-| Flow SSOT + derived indexes/graphs | `node .ai/scripts/modules/flowctl.mjs` |
-| Integration scenarios | `node .ai/scripts/modules/integrationctl.mjs` |
-| Context registries | `node .ai/skills/features/context-awareness/scripts/contextctl.mjs` |
+| Project state (context awareness) | `node .ai/scripts/ctl-project-state.mjs` |
+| Project governance (progress hub) | `node .ai/scripts/ctl-project-governance.mjs` |
+| Module instances | `node .ai/scripts/modules/ctl-module.mjs` |
+| Flow SSOT + derived indexes/graphs | `node .ai/scripts/modules/ctl-flow.mjs` |
+| Integration scenarios | `node .ai/scripts/modules/ctl-integration.mjs` |
+| Context registries | `node .ai/skills/features/context-awareness/scripts/ctl-context.mjs` |
 
 ## Coding Standards (RECOMMEND)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * integrationctl.mjs
+ * ctl-integration.mjs
  *
  * Integration scenario validation + compilation + optional execution.
  *
@@ -42,7 +42,7 @@ import {
 
 const usageText = `
 Usage:
-  node .ai/scripts/modules/integrationctl.mjs <command> [options]
+  node .ai/scripts/modules/ctl-integration.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)

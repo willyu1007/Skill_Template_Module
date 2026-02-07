@@ -1,6 +1,6 @@
 # Project registry (template)
 #
-# This file is created by: `node .ai/scripts/ctl-project-state.mjs init --project <slug>`
+# This file is created by: `node .ai/scripts/ctl-project-governance.mjs init --project <slug>`
 # It is the semantic SSOT for Milestones/Features/Requirements/Tasks.
 #
 # IMPORTANT:
@@ -14,7 +14,7 @@ project:
   slug: {{project_slug}}
   name: {{project_name}}
   # Module-first repo note:
-  # - If empty, ctl-project-state auto-discovers `**/dev-docs` roots containing `active/` or `archive/`.
+  # - If empty, ctl-project-governance auto-discovers `**/dev-docs` roots containing `active/` or `archive/`.
   # - You may pin explicit roots after module IDs are stable.
   task_doc_roots: []
 

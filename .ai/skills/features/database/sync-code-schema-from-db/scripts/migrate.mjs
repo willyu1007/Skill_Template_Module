@@ -213,7 +213,7 @@ function cmdList(repoRoot, format) {
 
   if (migrations.length === 0) {
     console.log('  (no migrations found)');
-    console.log('  Run: node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs generate-migration --name <name>');
+    console.log('  Run: node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs generate-migration --name <name>');
     return;
   }
 

@@ -79,7 +79,7 @@ Actual rollback execution requires human intervention.
   const config = loadConfig(repoRoot);
   if (!config) {
     console.error('Error: Deployment config not found.');
-    console.error('Run: node .ai/skills/features/deployment/scripts/deployctl.mjs init');
+    console.error('Run: node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init');
     return 1;
   }
 
@@ -90,7 +90,7 @@ Actual rollback execution requires human intervention.
     if (services.length > 0) {
       console.error(`Known services: ${services.map(s => s.id).join(', ')}`);
     } else {
-      console.error('No services are registered yet. Run: node .ai/skills/features/deployment/scripts/deployctl.mjs add-service --id <id> --artifact <ref>');
+      console.error('No services are registered yet. Run: node .ai/skills/features/deployment/scripts/ctl-deploy.mjs add-service --id <id> --artifact <ref>');
     }
     return 1;
   }

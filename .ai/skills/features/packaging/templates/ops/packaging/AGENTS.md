@@ -3,7 +3,7 @@
 ## Conclusions (read first)
 
 - `ops/packaging/` contains all containerization artifacts.
-- Use `packctl.mjs` to manage packaging configuration.
+- Use `ctl-pack.mjs` to manage packaging configuration.
 - AI proposes changes; humans execute builds.
 
 ## Directory Structure
@@ -17,7 +17,7 @@
 
 ## AI Workflow
 
-1. **Register** targets: `node .ai/skills/features/packaging/scripts/packctl.mjs add-service --id <id> --module <path>`
+1. **Register** targets: `node .ai/skills/features/packaging/scripts/ctl-pack.mjs add-service --id <id> --module <path>`
 2. **Customize** Dockerfile if needed (copy from template)
 3. **Document** decisions in `handbook/`
 4. **Request human** to build and push

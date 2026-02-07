@@ -35,22 +35,22 @@ Stage C always:
 2) Initializes project state (best-effort):
 
 ```bash
-node .ai/scripts/ctl-project-ctl-project-governance.mjs init --repo-root .
-node .ai/scripts/ctl-project-ctl-project-governance.mjs set features.contextAwareness true --repo-root .
-node .ai/scripts/ctl-project-ctl-project-governance.mjs set context.enabled true --repo-root .
-node .ai/scripts/ctl-project-ctl-project-governance.mjs set-context-mode <contract|snapshot> --repo-root .
+node .ai/scripts/ctl-project-state.mjs init --repo-root .
+node .ai/scripts/ctl-project-state.mjs set features.contextAwareness true --repo-root .
+node .ai/scripts/ctl-project-state.mjs set context.enabled true --repo-root .
+node .ai/scripts/ctl-project-state.mjs set-context-mode <contract|snapshot> --repo-root .
 ```
 
 3) Initializes context artifacts (idempotent):
 
 ```bash
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs init --repo-root .
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs init --repo-root .
 ```
 
 4) Optional verification (when Stage C is run with `--verify-features`):
 
 ```bash
-node .ai/skills/features/context-awareness/scripts/contextctl.mjs verify --repo-root .
+node .ai/skills/features/context-awareness/scripts/ctl-context.mjs verify --repo-root .
 ```
 
 ## Key outputs

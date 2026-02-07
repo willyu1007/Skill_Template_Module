@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dbdocctl.mjs
+ * ctl-db-doc.mjs
  *
  * Human-friendly DB structure query + interactive change drafting on top of
  * the unified normalized DB schema contract (v2).
@@ -919,7 +919,7 @@ function renderColumnCrossTableDoc({ schemaMeta, columnName, matches }) {
 
   const table = mdTable(['Table', 'Column', 'DB Name', 'Type', 'Nullable', 'Default'], rows);
 
-  const guidance = `## Next steps\n\n- To see a full table view, run:\n  - \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <Table>\`\n`;
+  const guidance = `## Next steps\n\n- To see a full table view, run:\n  - \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <Table>\`\n`;
 
   return [header, metaLines, '', '## Matches', '', table, '', guidance].filter(Boolean).join('\n');
 }
@@ -936,7 +936,7 @@ function renderSearchDoc({ schemaMeta, term, candidates }) {
   const rows = (candidates || []).map((c) => [c.kind, c.name, String(c.score), c.count ? String(c.count) : '']);
   const table = mdTable(['Kind', 'Name', 'Score', 'Count'], rows);
 
-  const guidance = `## How to proceed\n\n- If you meant a table: run \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <TableName>\`\n- If you meant a column: run \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <ColumnName>\`\n- If ambiguous, pick one of the results above and re-run \`query\`.\n`;
+  const guidance = `## How to proceed\n\n- If you meant a table: run \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <TableName>\`\n- If you meant a column: run \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <ColumnName>\`\n- If ambiguous, pick one of the results above and re-run \`query\`.\n`;
 
   return [header, metaLines, '', '## Candidates', '', table, '', guidance].filter(Boolean).join('\n');
 }
@@ -990,11 +990,11 @@ function renderConceptDoc({ schemaMeta, idx, cluster }) {
     '## Next steps',
     '',
     '- To view a specific table in full detail:',
-    '  - `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <Table>`',
+    '  - `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <Table>`',
     '- To view a relationship graph:',
-    `  - \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query "${cluster.term}" --view graph\``,
+    `  - \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query "${cluster.term}" --view graph\``,
     '- To draft a change for this concept cluster:',
-    `  - \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify "${cluster.term}" --scope concept\``
+    `  - \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify "${cluster.term}" --scope concept\``
   ].join('\n');
 
   const trunc = cluster.truncated
@@ -1169,7 +1169,7 @@ function renderApiDoc({ schemaMeta, table }) {
     '- This is a *suggested* DTO/public API view. Adjust per your domain rules.',
     '- If your business layer forbids Prisma types, treat this as a DTO sketch only.',
     '- For full schema details, use:',
-    `  - \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query ${table.name} --view table\``
+    `  - \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query ${table.name} --view table\``
   ].join('\n');
 
   return [
@@ -1232,7 +1232,7 @@ function renderConceptModifyDoc({ schemaMeta, cluster, existingDbops }) {
     '- Prefer expressing changes as explicit ops below (grouped by table).',
     '- If the change is large, consider splitting into per-table modify docs.',
     '- For a full table detail view, run:',
-    '  - `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <Table>`'
+    '  - `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <Table>`'
   ].join('\n');
 
   const dbops = existingDbops && typeof existingDbops === 'object' ? existingDbops : defaultDbops();
@@ -1246,7 +1246,7 @@ function renderConceptModifyDoc({ schemaMeta, cluster, existingDbops }) {
     '',
     '## Next steps',
     '',
-    `- Run: \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs plan "${cluster.term}"\``
+    `- Run: \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs plan "${cluster.term}"\``
   ].join('\n');
 
   return [header, metaLines, snapshot, '', editable].join('\n');
@@ -1270,17 +1270,6 @@ function extractDbopsBlock(markdown) {
 
 function defaultDbops() {
   return { ops: [], notes: '' };
-}
-
-function replaceOrAppendDbopsBlock(markdown, dbopsObj) {
-  const block = `\n\n\`\`\`dbops\n${JSON.stringify(dbopsObj, null, 2)}\n\`\`\`\n`;
-
-  const re = /```dbops\s*[\s\S]*?```/m;
-  if (re.test(markdown)) {
-    return String(markdown).replace(re, block.trimStart());
-  }
-
-  return String(markdown).trimEnd() + block;
 }
 
 function renderModifyDoc({ schemaMeta, idx, table, existingDbops }) {
@@ -1324,7 +1313,7 @@ function renderModifyDoc({ schemaMeta, idx, table, existingDbops }) {
     '',
     '## Next steps',
     '',
-    `- Run: \`node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs plan ${table.name}\``
+    `- Run: \`node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs plan ${table.name}\``
   ].join('\n');
 
   return [header, metaLines, snapshot, '', editable].join('\n');
@@ -2043,7 +2032,7 @@ function renderRunbookDoc({ schemaMeta, idx, objectLabel, dbops }) {
     '- Run workflow skill `sync-code-schema-from-db` (DB → Prisma → mirror → context).',
     '- Or run the underlying commands (if your process allows):',
     '  - `npx prisma db pull` (human, correct env)',
-    '  - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/dbctl.mjs import-prisma`',
+    '  - `node .ai/skills/features/database/sync-code-schema-from-db/scripts/ctl-db.mjs import-prisma`',
     '  - `node .ai/scripts/ctl-db-ssot.mjs sync-to-context`'
   ].join('\n');
 
@@ -2051,13 +2040,13 @@ function renderRunbookDoc({ schemaMeta, idx, objectLabel, dbops }) {
 }
 
 function printHelp() {
-  const msg = `dbdocctl.mjs — Human-friendly DB structure and change drafting\n\n` +
+  const msg = `ctl-db-doc.mjs — Human-friendly DB structure and change drafting\n\n` +
     `Usage:\n` +
-    `  node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs status\n` +
-    `  node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs search <term>\n` +
-    `  node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <object> [--view table|concept|graph|api] [--depth <n>] [--max-tables <n>]\n` +
-    `  node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify <object> [--scope table|concept] [--depth <n>] [--max-tables <n>]\n` +
-    `  node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs plan <object>\n\n` +
+    `  node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs status\n` +
+    `  node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs search <term>\n` +
+    `  node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <object> [--view table|concept|graph|api] [--depth <n>] [--max-tables <n>]\n` +
+    `  node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify <object> [--scope table|concept] [--depth <n>] [--max-tables <n>]\n` +
+    `  node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs plan <object>\n\n` +
     `Artifacts:\n` +
     `  .ai/.tmp/database/structure_query/<object>.md\n` +
     `  .ai/.tmp/database/structure_modify/<object>.md\n` +
@@ -2202,7 +2191,7 @@ async function main() {
           '## Next step',
           '',
           '- Re-run with an explicit table name:',
-          '  - `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs query <TableName> --view api`'
+          '  - `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs query <TableName> --view api`'
         ].join('\n');
       } else {
         outName = safeSlug(table.name) + '__api';
@@ -2278,7 +2267,7 @@ async function main() {
           '## Next step',
           '',
           '- Refine the term, or pick a candidate table and run:',
-          '  - `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify <TableName>`'
+          '  - `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify <TableName>`'
         ].join('\n');
 
         writeText(outPath, doc);
@@ -2325,7 +2314,7 @@ async function main() {
         '## Next step',
         '',
         '- Re-run with an explicit table name:',
-        '  - `node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify <TableName>`'
+        '  - `node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify <TableName>`'
       ].join('\n');
 
       writeText(outPath, doc);
@@ -2383,8 +2372,8 @@ async function main() {
       console.error(
         `Modify doc not found for '${term}'.\n` +
           `Run one of:\n` +
-          `- node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify "${term}"\n` +
-          `- node .ai/skills/features/database/db-human-interface/scripts/dbdocctl.mjs modify "${term}" --scope concept`
+          `- node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify "${term}"\n` +
+          `- node .ai/skills/features/database/db-human-interface/scripts/ctl-db-doc.mjs modify "${term}" --scope concept`
       );
       return EXIT.FAILED;
     }

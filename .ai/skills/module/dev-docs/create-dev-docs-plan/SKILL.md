@@ -114,6 +114,14 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
      - `Current status: planned`
      - `Last updated: YYYY-MM-DD`
 
+6. Register with project governance (recommended for non-temporary scope)
+   - After creating the bundle under `modules/`, run sync to register the task in the project hub:
+     ```
+     node .ai/scripts/ctl-project-governance.mjs sync --apply --project main
+     ```
+   - This generates the `.ai-task.yaml` identity file and upserts the task into `registry.yaml`.
+   - For temporary scope (`.ai/.tmp/dev-docs/`), skip this step (temporary tasks are not tracked by governance).
+
 ## Notes
 
 - Prefer linking to SSOT: module MANIFEST, `.system/modular/flow_graph.yaml`, and context registries.
@@ -135,6 +143,8 @@ Even though `create-dev-docs-plan` is docs-only, the workflow is designed to mak
   - Integration: `modules/integration/dev-docs/active/<task_slug>/`
   - Temporary: `.ai/.tmp/dev-docs/<task_slug>/`
 - Confirm the bundle files exist and are filled in (no empty placeholders).
+- For non-temporary scope: confirm `.ai-task.yaml` exists in the task directory (created by sync), or suggest running:
+  - `node .ai/scripts/ctl-project-governance.mjs sync --apply --project main`
 
 ## Boundaries
 

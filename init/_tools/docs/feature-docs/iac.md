@@ -39,13 +39,13 @@ When enabled, Stage C:
 2) Runs:
 
 ```bash
-node .ai/skills/features/iac/scripts/iacctl.mjs init --tool <tool> --repo-root .
+node .ai/skills/features/iac/scripts/ctl-iac.mjs init --tool <tool> --repo-root .
 ```
 
 Optional verification (when Stage C is run with `--verify-features`):
 
 ```bash
-node .ai/skills/features/iac/scripts/iacctl.mjs verify --repo-root .
+node .ai/skills/features/iac/scripts/ctl-iac.mjs verify --repo-root .
 ```
 
 ## Key outputs

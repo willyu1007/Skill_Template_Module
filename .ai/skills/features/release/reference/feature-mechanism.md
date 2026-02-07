@@ -16,7 +16,7 @@ New files/directories (created if missing):
 - `release/changelog-template.md` (changelog template)
 - `release/CHANGELOG.md` (project changelog)
 - `release/handbook/` (release planning)
-- `.ai/skills/features/release/scripts/releasectl.mjs` (release management)
+- `.ai/skills/features/release/scripts/ctl-release.mjs` (release management)
 - `release/.releaserc.json.template` (semantic-release config template)
 - `.ai/skills/features/release/` (feature documentation)
 
@@ -27,7 +27,7 @@ New files/directories (created if missing):
 2. Initialize release scaffolding:
 
 ```bash
-node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
+node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy semantic
 ```
 
 ## Usage
@@ -36,30 +36,30 @@ node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
 
 ```bash
 # Initialize with semantic versioning
-node .ai/skills/features/release/scripts/releasectl.mjs init --strategy semantic
+node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy semantic
 
 # Initialize with manual versioning
-node .ai/skills/features/release/scripts/releasectl.mjs init --strategy manual
+node .ai/skills/features/release/scripts/ctl-release.mjs init --strategy manual
 ```
 
 ### Prepare Release
 
 ```bash
 # Prepare a new release
-node .ai/skills/features/release/scripts/releasectl.mjs prepare --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version 1.2.0
 
 # Generate changelog
-node .ai/skills/features/release/scripts/releasectl.mjs changelog --from v1.0.0 --to HEAD
+node .ai/skills/features/release/scripts/ctl-release.mjs changelog --from v1.0.0 --to HEAD
 ```
 
 ### Tag Release
 
 ```bash
 # Create release tag
-node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs tag --version 1.2.0
 
 # Show release status
-node .ai/skills/features/release/scripts/releasectl.mjs status
+node .ai/skills/features/release/scripts/ctl-release.mjs status
 ```
 
 ## Versioning Strategies
@@ -74,10 +74,10 @@ node .ai/skills/features/release/scripts/releasectl.mjs status
 
 ```bash
 # Check release status
-node .ai/skills/features/release/scripts/releasectl.mjs status
+node .ai/skills/features/release/scripts/ctl-release.mjs status
 
 # Verify configuration
-node .ai/skills/features/release/scripts/releasectl.mjs verify
+node .ai/skills/features/release/scripts/ctl-release.mjs verify
 ```
 
 ## Rollback / Uninstall
@@ -85,6 +85,6 @@ node .ai/skills/features/release/scripts/releasectl.mjs verify
 Delete these paths:
 
 - `release/`
-- `.ai/skills/features/release/scripts/releasectl.mjs`
+- `.ai/skills/features/release/scripts/ctl-release.mjs`
 - `.releaserc.json` (if generated)
 - `.ai/skills/features/release/`

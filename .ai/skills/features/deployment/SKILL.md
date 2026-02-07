@@ -23,7 +23,7 @@ When enabled, this feature materializes:
 
 Controller scripts (provided by the template SSOT):
 
-- `node .ai/skills/features/deployment/scripts/deployctl.mjs` — deployment configuration management
+- `node .ai/skills/features/deployment/scripts/ctl-deploy.mjs` — deployment configuration management
 - `node .ai/skills/features/deployment/scripts/rollback.mjs` — rollback entry point (human-run)
 
 ## How to enable
@@ -36,8 +36,8 @@ Controller scripts (provided by the template SSOT):
 2. Initialize:
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs init
-node .ai/skills/features/deployment/scripts/deployctl.mjs verify
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs init
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs verify
 ```
 
 ## Operating rules
@@ -53,7 +53,7 @@ If your repo has multiple deployable modules under `modules/`, prefer aligning d
 ## Verification
 
 ```bash
-node .ai/skills/features/deployment/scripts/deployctl.mjs verify
+node .ai/skills/features/deployment/scripts/ctl-deploy.mjs verify
 ```
 
 ## Boundaries

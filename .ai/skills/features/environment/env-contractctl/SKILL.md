@@ -149,9 +149,9 @@ python3 -B -S .ai/skills/features/environment/env-contractctl/scripts/env_contra
 If your repo uses `modules/` with `modules/<module_id>/MANIFEST.yaml` env declarations (`env.owns` / `env.requires`), refresh module env slices after contract changes:
 
 ```bash
-node .ai/scripts/modules/env-contractctl-module.mjs verify --strict
-node .ai/scripts/modules/env-contractctl-module.mjs conflicts
-node .ai/scripts/modules/env-contractctl-module.mjs sync-slices
+node .ai/scripts/modules/ctl-env-contract-module.mjs verify --strict
+node .ai/scripts/modules/ctl-env-contract-module.mjs conflicts
+node .ai/scripts/modules/ctl-env-contract-module.mjs sync-slices
 ```
 
 This keeps per-module LLM context in sync and catches ownership conflicts early (no SSOT changes).

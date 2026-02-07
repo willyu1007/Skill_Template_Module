@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * env-contractctl-module.mjs
+ * ctl-env-contract-module.mjs
  *
  * Module-level env slice validation + conflict detection.
  *
@@ -26,7 +26,7 @@ import { createSliceController } from '../lib/slice-controller.mjs';
 
 const usageText = `
 Usage:
-  node .ai/scripts/modules/env-contractctl-module.mjs <command> [options]
+  node .ai/scripts/modules/ctl-env-contract-module.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -117,7 +117,7 @@ const controller = createSliceController({
   name: 'Env',
   sliceFilename: 'env-slice.json',
   tags: ['env', 'slice'],
-  cmdLabel: 'env-contractctl-module sync-slices',
+  cmdLabel: 'ctl-env-contract-module sync-slices',
   usesLabel: 'Requires',
 
   loadContract(repoRoot, opts) {

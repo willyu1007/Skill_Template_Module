@@ -5,7 +5,7 @@ Use when user asks what to do next, needs guidance on priorities, or is picking 
 ## Data Source
 
 ```bash
-node .ai/scripts/ctl-project-state.mjs query --project <project> --json
+node .ai/scripts/ctl-project-governance.mjs query --project <project> --json
 ```
 
 ## Priority Rules

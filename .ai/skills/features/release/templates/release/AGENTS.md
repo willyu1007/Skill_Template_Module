@@ -2,16 +2,16 @@
 
 ## Conclusions (read first)
 
-- Use `releasectl.mjs` for all release operations.
+- Use `ctl-release.mjs` for all release operations.
 - AI proposes releases; humans approve and execute.
 - Follow the configured versioning strategy.
 
 ## Workflow
 
-1. **Prepare** release: `node .ai/skills/features/release/scripts/releasectl.mjs prepare --version <version>`
-2. **Generate** changelog: `node .ai/skills/features/release/scripts/releasectl.mjs changelog`
+1. **Prepare** release: `node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version <version>`
+2. **Generate** changelog: `node .ai/skills/features/release/scripts/ctl-release.mjs changelog`
 3. **Request human** approval
-4. **Tag** release: `node .ai/skills/features/release/scripts/releasectl.mjs tag --version <version>`
+4. **Tag** release: `node .ai/skills/features/release/scripts/ctl-release.mjs tag --version <version>`
 
 ## Version Strategies
 
@@ -31,16 +31,16 @@
 
 ```bash
 # Check status
-node .ai/skills/features/release/scripts/releasectl.mjs status
+node .ai/skills/features/release/scripts/ctl-release.mjs status
 
 # Prepare release
-node .ai/skills/features/release/scripts/releasectl.mjs prepare --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs prepare --version 1.2.0
 
 # Generate changelog
-node .ai/skills/features/release/scripts/releasectl.mjs changelog
+node .ai/skills/features/release/scripts/ctl-release.mjs changelog
 
 # Create tag
-node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.2.0
+node .ai/skills/features/release/scripts/ctl-release.mjs tag --version 1.2.0
 ```
 
 ## Forbidden Actions
@@ -48,4 +48,4 @@ node .ai/skills/features/release/scripts/releasectl.mjs tag --version 1.2.0
 - Direct version bumps without changelog
 - Skipping release approval
 - Tagging without verification
-- Manual git tag creation (use releasectl)
+- Manual git tag creation (use ctl-release)

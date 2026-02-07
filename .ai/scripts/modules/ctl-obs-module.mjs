@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * obsctl-module.mjs
+ * ctl-obs-module.mjs
  *
  * Module-level Observability slice validation + conflict detection.
  *
@@ -27,7 +27,7 @@ import { createSliceController } from '../lib/slice-controller.mjs';
 
 const usageText = `
 Usage:
-  node .ai/scripts/modules/obsctl-module.mjs <command> [options]
+  node .ai/scripts/modules/ctl-obs-module.mjs <command> [options]
 
 Options:
   --repo-root <path>          Repo root (default: cwd)
@@ -138,7 +138,7 @@ const controller = createSliceController({
   name: 'Observability',
   sliceFilename: 'observability-slice.json',
   tags: ['observability', 'slice'],
-  cmdLabel: 'obsctl-module sync-slices',
+  cmdLabel: 'ctl-obs-module sync-slices',
   usesLabel: 'Uses/Requires',
 
   loadContract(repoRoot, opts) {

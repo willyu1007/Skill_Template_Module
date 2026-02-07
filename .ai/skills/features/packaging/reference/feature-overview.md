@@ -43,7 +43,7 @@ Dockerfile templates are available for common languages:
 
 When working with packaging, AI should:
 
-1. **Register** new targets via `packctl`
+1. **Register** new targets via `ctl-pack`
 2. **Customize** Dockerfiles based on application needs
 3. **Document** decisions in `handbook/`
 4. **Never** execute builds directly (human responsibility)
@@ -52,14 +52,14 @@ When working with packaging, AI should:
 
 ```bash
 # Initialize
-node .ai/skills/features/packaging/scripts/packctl.mjs init
+node .ai/skills/features/packaging/scripts/ctl-pack.mjs init
 
 # Add service
-node .ai/skills/features/packaging/scripts/packctl.mjs add-service --id api --module apps/backend
+node .ai/skills/features/packaging/scripts/ctl-pack.mjs add-service --id api --module apps/backend
 
 # List targets
-node .ai/skills/features/packaging/scripts/packctl.mjs list
+node .ai/skills/features/packaging/scripts/ctl-pack.mjs list
 
 # Verify
-node .ai/skills/features/packaging/scripts/packctl.mjs verify
+node .ai/skills/features/packaging/scripts/ctl-pack.mjs verify
 ```

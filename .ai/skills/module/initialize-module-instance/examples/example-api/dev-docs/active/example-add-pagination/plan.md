@@ -51,8 +51,8 @@ npx tsc --noEmit
 npm test -- --grep "pagination"
 
 # Integration test (if scenarios exist)
-node .ai/scripts/modules/integrationctl.mjs validate
-node .ai/scripts/modules/integrationctl.mjs compile
+node .ai/scripts/modules/ctl-integration.mjs validate
+node .ai/scripts/modules/ctl-integration.mjs compile
 
 # Lint
 npm run lint

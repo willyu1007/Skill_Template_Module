@@ -1220,25 +1220,6 @@ function listFilesRecursive(dir) {
   return out;
 }
 
-function copyDirWithTemplates(srcDir, dstDir, ctx, planOnly, record) {
-  const files = listFilesRecursive(srcDir);
-  for (const f of files) {
-    const rel = path.relative(srcDir, f);
-    const isTemplate = rel.endsWith('.template');
-    const relOut = isTemplate ? rel.replace(/\.template$/, '') : rel;
-    const dst = path.join(dstDir, relOut);
-
-    record.push({ type: 'create', path: dst });
-
-    if (planOnly) continue;
-
-    if (exists(dst)) continue; // no overwrite
-    const txt = readText(f);
-    const rendered = isTemplate ? renderTemplate(txt, ctx) : txt;
-    writeText(dst, rendered);
-  }
-}
-
 function buildContextFromBlueprint(bp) {
   const agentId = bp.agent.id;
   const agentName = bp.agent.name;
