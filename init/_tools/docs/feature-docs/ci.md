@@ -38,7 +38,10 @@ node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider <github|gitlab> -
 - GitLab CI: `.gitlab-ci.yml`
 - CI metadata: `ci/**` (`ci/config.json`, `ci/handbook/`, etc.)
 
-3) Optional verification (when Stage C is run with `--verify-features`):
+3) Uses shared check entrypoint in provider templates:
+- `node .githooks/ci-verify.mjs`
+
+4) Optional verification (when Stage C is run with `--verify-features`):
 
 ```bash
 node .ai/skills/features/ci/scripts/ctl-ci.mjs verify --repo-root .
@@ -64,4 +67,5 @@ node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab --
 ## Acceptance
 
 - `node .ai/skills/features/ci/scripts/ctl-ci.mjs --help` documents `init`, `add-delivery`, and `verify`
+- `node .githooks/ci-verify.mjs` is present as shared CI check entrypoint
 - Stage C installs exactly one CI provider workflow based on `ci.provider`

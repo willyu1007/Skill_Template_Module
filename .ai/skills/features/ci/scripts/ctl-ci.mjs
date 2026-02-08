@@ -138,6 +138,10 @@ function getConfigPath(repoRoot) {
   return path.join(getCiDir(repoRoot), 'config.json');
 }
 
+function getSharedVerifyScriptPath(repoRoot) {
+  return path.join(repoRoot, '.githooks', 'ci-verify.mjs');
+}
+
 function loadConfig(repoRoot) {
   return readJson(getConfigPath(repoRoot)) || {
     version: 1,
@@ -411,6 +415,11 @@ function cmdVerify(repoRoot) {
   }
   if (!fs.existsSync(getConfigPath(repoRoot))) {
     errors.push('ci/config.json not found. Run: node .ai/skills/features/ci/scripts/ctl-ci.mjs init');
+  }
+
+  const sharedVerifyScriptPath = getSharedVerifyScriptPath(repoRoot);
+  if (!fs.existsSync(sharedVerifyScriptPath)) {
+    warnings.push('.githooks/ci-verify.mjs not found. CI templates expect this shared verifier entrypoint.');
   }
 
   // Check provider-specific files

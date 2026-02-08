@@ -34,6 +34,7 @@ Provider skills (for workflow customization and troubleshooting):
 Controller script (feature-local):
 
 - `node .ai/skills/features/ci/scripts/ctl-ci.mjs`
+- `node .githooks/ci-verify.mjs` (shared CI verification entrypoint used by provider templates)
 
 ## How to enable
 
@@ -65,6 +66,7 @@ node .ai/skills/features/ci/scripts/ctl-ci.mjs add-delivery --provider gitlab --
 
 ```bash
 node .ai/skills/features/ci/scripts/ctl-ci.mjs --help
+node .githooks/ci-verify.mjs
 
 # Dry-run install (no writes)
 node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider github --repo-root . --dry-run

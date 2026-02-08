@@ -3,6 +3,25 @@
 ## Goal
 - <One-sentence goal statement>
 
+## Planning-mode context and merge policy
+- Runtime mode signal: <Plan | Default | Unknown>
+- User confirmation when signal is unknown: <yes | no | not-needed | unavailable>
+- Host plan artifact path(s): <path(s) or (none)>
+- Requirements baseline: <module/integration/temporary requirement.md path or (none)>
+- Merge method: set-union
+- Conflict precedence: latest user-confirmed > requirement.md > host plan artifact > model inference
+- Repository SSOT output: <scope-resolved roadmap.md path>
+- Mode fallback used: <non-Plan default applied: yes/no>
+
+## Input sources and usage
+| Source | Path/reference | Used for | Trust level | Notes |
+|---|---|---|---|---|
+| User-confirmed instructions | <chat/notes> | <goal/scope/etc.> | highest | <...> |
+| Requirements doc | <path or (none)> | <constraints/use cases> | high | <...> |
+| Host plan artifact | <path or (none)> | <seed milestones/phases> | medium | <...> |
+| Existing roadmap | <path or (none)> | <update baseline> | medium | <...> |
+| Model inference | N/A | <fill gaps only> | lowest | <...> |
+
 ## Non-goals
 - <Explicitly list what is out of scope>
 
@@ -14,11 +33,25 @@
 ### Assumptions (if unanswered)
 - A1: <assumption> (risk: <low|medium|high>)
 
+## Merge decisions and conflict log
+| ID | Topic | Conflicting inputs | Chosen decision | Precedence reason | Follow-up |
+|---|---|---|---|---|---|
+| C1 | <topic> | <source A vs source B> | <decision> | <precedence rule used> | <none or action> |
+
 ## Scope and impact
 - Affected areas/modules: <...>
 - External interfaces/APIs: <...>
 - Data/storage impact: <...>
 - Backward compatibility: <...>
+
+## Consistency baseline for dual artifacts (if applicable)
+- [ ] Goal is semantically aligned with host plan artifact
+- [ ] Boundaries/non-goals are aligned
+- [ ] Constraints are aligned
+- [ ] Milestones/phases ordering is aligned
+- [ ] Acceptance criteria are aligned
+- Intentional divergences:
+  - (none)
 
 ## Project structure change preview (may be empty)
 This section is a **non-binding, early hypothesis** to help humans confirm expected project-structure impact.
@@ -133,6 +166,9 @@ Suggested mapping:
 - The roadmap's **Verification** → `04-verification.md`
 
 ## To-dos
+- [ ] Confirm planning-mode signal handling and fallback record
+- [ ] Confirm input sources and trust levels
+- [ ] Confirm merge decisions and conflict log entries
 - [ ] Confirm open questions
 - [ ] Confirm phase ordering and DoD
 - [ ] Confirm verification/acceptance criteria

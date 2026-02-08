@@ -3,6 +3,25 @@
 ## Goal
 - Introduce a feature flag to safely roll out the new checkout flow to a subset of users, with a clean rollback path.
 
+## Planning-mode context and merge policy
+- Runtime mode signal: Plan
+- User confirmation when signal is unknown: not-needed
+- Host plan artifact path(s): `host://plan-mode/checkout-rollout-draft` (example)
+- Requirements baseline: `modules/integration/dev-docs/active/add-feature-flag-checkout/requirement.md`
+- Merge method: set-union
+- Conflict precedence: latest user-confirmed > requirement.md > host plan artifact > model inference
+- Repository SSOT output: `modules/integration/dev-docs/active/add-feature-flag-checkout/roadmap.md`
+- Mode fallback used: non-Plan default applied: no
+
+## Input sources and usage
+| Source | Path/reference | Used for | Trust level | Notes |
+|---|---|---|---|---|
+| User-confirmed instructions | planning thread notes | rollout guardrails and success metrics | highest | User asked for fast rollback within minutes |
+| Requirements doc | `modules/integration/dev-docs/active/add-feature-flag-checkout/requirement.md` | scope boundaries and constraints | high | Explicitly excludes payment provider changes |
+| Host plan artifact | `host://plan-mode/checkout-rollout-draft` | initial phase breakdown | medium | Used as first-pass draft |
+| Existing roadmap | (none) | N/A | medium | New task |
+| Model inference | N/A | fill missing risk rows | lowest | Used only where no explicit source existed |
+
 ## Non-goals
 - Rewrite the checkout architecture
 - Change payment provider integrations
@@ -15,11 +34,26 @@
 ### Assumptions (if unanswered)
 - A1: We already have a feature-flag provider and client library available in the codebase (risk: medium)
 
+## Merge decisions and conflict log
+| ID | Topic | Conflicting inputs | Chosen decision | Precedence reason | Follow-up |
+|---|---|---|---|---|---|
+| C1 | Rollout start percentage | Host artifact: 5% start; requirements doc: 1% start | Start at 1% | `requirement.md` outranks host artifact | Reconfirm after first canary window |
+| C2 | Monitoring metric set | Host artifact omitted latency; user requested latency tracking | Include latency in go/no-go gate | User-confirmed instruction has highest precedence | Add dashboard owner in execution docs |
+
 ## Scope and impact
 - Affected areas/modules: checkout UI, checkout API entry points
 - External interfaces/APIs: none (flagged behavior only)
 - Data/storage impact: minimal (flag evaluation only)
 - Backward compatibility: old checkout remains default until ramped
+
+## Consistency baseline for dual artifacts (if applicable)
+- [x] Goal is semantically aligned with host plan artifact
+- [x] Boundaries/non-goals are aligned
+- [x] Constraints are aligned
+- [x] Milestones/phases ordering is aligned
+- [x] Acceptance criteria are aligned
+- Intentional divergences:
+  - Rollout starts at 1% (requirements baseline) instead of host draft 5%
 
 ## Project structure change preview (may be empty)
 This section is a non-binding, early hypothesis to align expected project-structure impact.

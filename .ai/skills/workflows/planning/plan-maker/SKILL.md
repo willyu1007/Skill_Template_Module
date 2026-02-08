@@ -44,6 +44,8 @@ Avoid the skill when:
   - Module-scoped: `modules/<module_id>/dev-docs/active/<task_slug>/requirement.md`
   - Integration-scoped: `modules/integration/dev-docs/active/<task_slug>/requirement.md`
   - Temporary (confirmation-failure fallback): `.ai/.tmp/dev-docs/<task_slug>/requirement.md`
+- Host plan-mode artifact(s) (optional, read-only input)
+  - May exist in the host runtime (Cursor/Codex/other planning surfaces); treat as seed input only and do not overwrite from plan-maker.
 
 ### Scope resolution
 
@@ -62,6 +64,29 @@ Avoid the skill when:
 | Temporary | NO | YES |
 
 Critical rule: NEVER create dev-docs under `modules/` without explicit human confirmation of the full path. If confirmation is not obtained, fall back to `.ai/.tmp/dev-docs/`.
+
+## Plan-mode interoperability
+
+- Runtime signal contract:
+  - Planning mode is active only when a reliable runtime signal exists (for example, `collaboration_mode=Plan`) or the user explicitly confirms it.
+  - If the signal is missing, ask the user once.
+  - If the signal remains unavailable and user confirmation is unavailable, continue as non-Plan mode and record that assumption.
+- Seed artifact discovery order (after scope is resolved):
+  1. User-provided artifact paths
+  2. Runtime-provided host plan artifact paths
+  3. Scope-resolved `requirement.md` path (module/integration/temporary)
+  4. Scope-resolved existing `roadmap.md` path (update flow only)
+- Merge and conflict policy (required):
+  - Build the roadmap draft using set-union over available seed artifacts.
+  - Resolve conflicts using the strict precedence:
+    1. Latest user-confirmed instruction
+    2. `requirement.md`
+    3. Host plan-mode artifact
+    4. Model inference
+  - If conflicts remain unresolved, record them under roadmap open questions/assumptions and do not silently drop them.
+- Consistency baseline for dual artifacts:
+  - If both host plan artifact and roadmap exist, keep semantic consistency for goal, boundaries, constraints, milestone/phase ordering, and acceptance criteria.
+  - Scope-resolved `roadmap.md` remains repository SSOT for execution.
 
 ## Steps
 
@@ -96,26 +121,34 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 
 ### Phase 1 - Roadmap drafting and save
 
-1. Ask clarifying questions if needed (goal, constraints, scope, risks, verification).
-2. Resolve scope and path:
+1. Detect planning-mode context.
+   - Use runtime signal when available; otherwise ask user once.
+2. Ask clarifying questions if needed (goal, constraints, scope, risks, verification).
+3. Resolve scope and path:
    - Module: `modules/<module_id>/dev-docs/active/<task_slug>/`
    - Integration: `modules/integration/dev-docs/active/<task_slug>/`
    - Temporary: `.ai/.tmp/dev-docs/<task_slug>/`
-3. For module/integration scope, propose the full path and wait for explicit user confirmation before creating files.
-4. Draft the roadmap using `./templates/roadmap.md`.
+4. For module/integration scope, propose the full path and wait for explicit user confirmation before creating files.
+5. Discover seed artifacts.
+   - Follow the required discovery order from the interoperability rules.
+6. Draft the roadmap using `./templates/roadmap.md`.
    - Keep it macro-level: phases, deliverables, verification, risks, rollback.
    - Always include the "Project structure change preview" section from the template (may be empty).
+   - Include input trace and merge/conflict decisions in the roadmap draft.
+   - If plan-mode artifacts are available, use them as first-pass inputs and merge by union.
+   - Apply strict conflict precedence: user-confirmed > requirement.md > host artifact > inference.
+   - If planning-mode signal is unavailable and user confirmation is unavailable, proceed as non-Plan mode and record the assumption.
    - Only include specific file paths/APIs when you have evidence; otherwise add a discovery step.
    - Include an "Optional detailed documentation layout (convention)" section that declares the expected dev-docs layout without creating those files.
-5. Save the roadmap to the resolved scope.
-6. Return a short handoff message:
+7. Save the roadmap to the resolved scope.
+8. Return a short handoff message:
    - confirmed goal
    - where the roadmap was saved
    - the next 3 actions to start execution (without executing them)
 
 ### Phase 2 - Dev-docs linkage (conditional)
 
-7. Evaluate the dev-docs Decision Gate:
+9. Evaluate the dev-docs Decision Gate:
    - Apply the Decision Gate in `.ai/skills/module/dev-docs/AGENTS.md`.
    - If the task qualifies:
      - Inform user that the task qualifies for a full dev-docs bundle for context preservation and handoff.
@@ -130,6 +163,11 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 - [ ] Ambiguities are resolved or recorded as explicit open questions/assumptions
 - [ ] (If alignment mode) Requirements document saved alongside the roadmap at the chosen scope
 - [ ] (If alignment mode) User confirmed requirements understanding before roadmap creation
+- [ ] Planning-mode signal was checked; if missing, user was explicitly asked once before assuming non-Plan mode
+- [ ] Seed artifact discovery order was applied and recorded
+- [ ] Merge/conflict resolution applied strict precedence (user-confirmed > requirement.md > host artifact > inference)
+- [ ] Unresolved conflicts are preserved as open questions/assumptions
+- [ ] (If dual artifacts) Goal, boundaries, constraints, phases, and acceptance criteria are semantically consistent
 - [ ] Roadmap includes phases and per-step deliverables
 - [ ] Roadmap includes "Project structure change preview" section (may be empty)
 - [ ] Roadmap defines verification/acceptance criteria and a rollback strategy
@@ -145,10 +183,15 @@ Critical rule: NEVER create dev-docs under `modules/` without explicit human con
 - MUST use plan-maker when the user explicitly asks for a saved roadmap document/artifact (strong trigger)
 - MUST NOT create roadmap under `modules/` (module or integration scope) without explicit human confirmation of the full path
 - MUST fall back to `.ai/.tmp/dev-docs/` if human confirmation is not obtained for module/integration scope
+- MUST NOT assume planning mode unless a runtime signal exists or the user explicitly confirms planning mode
+- MUST default to non-Plan mode when no reliable signal or user confirmation is available, and record the assumption
+- MUST treat scope-resolved `roadmap.md` as repository SSOT
+- MUST apply conflict precedence: user-confirmed > requirement.md > host plan artifact > inference
 - If the task meets the dev-docs Decision Gate, MUST prompt user whether to continue with `create-dev-docs-plan`
 - If user confirms dev-docs bundle creation, MUST trigger `create-dev-docs-plan`
 - SHOULD keep the roadmap macro-level; deep design details belong in separate documentation artifacts
 - SHOULD NOT include secrets (credentials, tokens, private keys) in the roadmap
+- SHOULD preserve semantic consistency across dual artifacts while documenting intentional divergences
 - PRODUCES macro-level roadmaps: phases, scope, impact, risks, rollback strategy
 - PRODUCES requirements documents (when alignment mode is active)
 

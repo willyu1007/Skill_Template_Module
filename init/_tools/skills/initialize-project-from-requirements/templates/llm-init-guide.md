@@ -16,7 +16,7 @@ The document provides **step-by-step guidance** for an AI assistant to help a us
 2. [Phase 1: Requirements interview](#phase-1-requirements-interview)
 3. [Phase 2: Technology stack selection](#phase-2-technology-stack-selection)
 4. [Phase 3: Blueprint generation](#phase-3-blueprint-generation)
-5. [Phase 4: Feature recommendations](#phase-4-feature-recommendations)
+5. [Phase 4: Provider selection + feature overrides](#phase-4-provider-selection-feature-overrides)
 6. [Phase 5: Configuration generation](#phase-5-configuration-generation)
 7. [Post-init: Record key info in AGENTS.md](#post-init-record-key-info-in-agentsmd)
 8. [Decision tree reference](#decision-tree-reference)
