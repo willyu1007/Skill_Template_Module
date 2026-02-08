@@ -405,6 +405,7 @@ function cmdVerify(repoRoot) {
   const config = loadConfig(repoRoot);
   const errors = [];
   const warnings = [];
+  const sharedVerifyPattern = /node\s+["']?\.githooks\/ci-verify\.mjs["']?/;
 
   if (!config.provider) {
     warnings.push('No CI provider configured. Run: node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider <github|gitlab>');
@@ -431,12 +432,30 @@ function cmdVerify(repoRoot) {
       const workflows = fs.readdirSync(workflowDir).filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
       if (workflows.length === 0) {
         warnings.push('No workflow files found in .github/workflows/');
+      } else {
+        let usesSharedVerify = false;
+        for (const wf of workflows) {
+          const wfPath = path.join(workflowDir, wf);
+          const raw = fs.readFileSync(wfPath, 'utf8');
+          if (sharedVerifyPattern.test(raw)) {
+            usesSharedVerify = true;
+            break;
+          }
+        }
+        if (!usesSharedVerify) {
+          warnings.push('No GitHub workflow calls "node .githooks/ci-verify.mjs". Ensure CI checks use the shared verifier entrypoint.');
+        }
       }
     }
   } else if (config.provider === 'gitlab') {
     const gitlabCi = path.join(repoRoot, '.gitlab-ci.yml');
     if (!fs.existsSync(gitlabCi)) {
       warnings.push('.gitlab-ci.yml not found. Run: node .ai/skills/features/ci/scripts/ctl-ci.mjs init --provider gitlab');
+    } else {
+      const raw = fs.readFileSync(gitlabCi, 'utf8');
+      if (!sharedVerifyPattern.test(raw)) {
+        warnings.push('.gitlab-ci.yml does not call "node .githooks/ci-verify.mjs". Ensure CI checks use the shared verifier entrypoint.');
+      }
     }
   }
 
